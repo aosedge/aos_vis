@@ -15,5 +15,8 @@ func GetDataByPath(path string) (interface{}, error) {
 	if path == "Attribute.Vehicle.VehicleIdentification.VIN" {
 		return "1234567890QWERTYU", nil
 	}
+	if path == "Signal.Drivetrain.InternalCombustionEngine.RPM" {
+		return 2372, nil
+	}
 	return "", errors.New("404 Not found")
 }

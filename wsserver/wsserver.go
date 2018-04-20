@@ -1,20 +1,27 @@
 package wsserver
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 )
 
+/*******************************************************************************
+ * Types
+ ******************************************************************************/
 type WsServer struct {
 	addr       string
 	httpServer *http.Server
 	upgrader   websocket.Upgrader
 
-	//TODO: think to add list with client connections
+	//TODO: add list with client connections
 }
 
+/*******************************************************************************
+ * Public
+ ******************************************************************************/
 func New(addr string) (server *WsServer, err error) {
 	log.Debug("wsserver creation ", addr)
 	//TODO: add addr validation
@@ -30,22 +37,27 @@ func New(addr string) (server *WsServer, err error) {
 	return server, nil
 }
 
-func (server *WsServer) Stop() {
-	log.Info("Stop server")
-	//TODO: close all connections
-	server.httpServer.Shutdown(nil)
-
-}
-
+//start web socket server
 func (server *WsServer) Start() {
 	log.Info("Start server")
 	http.HandleFunc("/", server.handleConnection)
 
-	if err := server.httpServer.ListenAndServe(); err != nil {
+	if err := server.httpServer.ListenAndServe(); err != http.ErrServerClosed {
 		log.Debug("Httpserver: ListenAndServe() error: ", err)
 	}
 }
 
+//Stop web socket server
+func (server *WsServer) Stop() {
+	log.Info("Stop server!!")
+	//TODO: close all connections
+	server.httpServer.Shutdown(context.Background())
+	//server.httpServer.Close()
+}
+
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
 func myCheckOrigin(r *http.Request) bool {
 	return true
 }
