@@ -3,6 +3,8 @@ package wsserver
 import (
 	"encoding/json"
 	"errors"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -32,7 +34,7 @@ type WsClientConnection struct {
 	name         string
 	wsConn       *websocket.Conn
 	isAuthorised bool
-	permisssions permissionData
+	permissions  permissionData
 }
 
 type requestType struct {
@@ -115,11 +117,6 @@ func (client *WsClientConnection) ProcessConnection() {
 		if mt == 1 {
 			client.processIncommingMessage(message)
 		}
-
-		log.Debug("message type: ", mt)
-
-		//client.WriteMessage(message)
-
 	}
 	log.Debug("Stop processConnection")
 }
@@ -236,12 +233,12 @@ func (client *WsClientConnection) processAuthRequest(request *requestAuth) (resp
 			log.Error("Error auth code ", errInfo.Number)
 			msg = errorResponse{Action: actionAuth, RequestId: request.RequestId, Error: *errInfo, Timestamp: time.Now().Unix()}
 		} else {
-			client.permisssions = data
+			client.permissions = data
 			client.isAuthorised = true
 			msg = authSuccessResponse{Action: actionAuth, RequestId: request.RequestId, Ttl: 10000, Timestamp: time.Now().Unix()}
 		}
 	} else {
-		log.Info("Token ", request.Tokens.Authorization, " already authorised")
+		log.Info("Token ", request.Tokens.Authorization, " already authorized")
 		msg = authSuccessResponse{Action: actionAuth, RequestId: request.RequestId, Ttl: 10000, Timestamp: time.Now().Unix()}
 	}
 
@@ -255,7 +252,33 @@ func (client *WsClientConnection) processAuthRequest(request *requestAuth) (resp
 
 //check permission got set or get
 func (client *WsClientConnection) checkPermission(path string, permission uint) (resp bool) {
-	return true
+	regexpStr := strings.Replace(path, ".", "[.]", -1)
+	regexpStr = strings.Replace(regexpStr, "*", ".*?", -1)
+	regexpStr = "^" + regexpStr
+	log.Debug("filter =", regexpStr)
+	var validID = regexp.MustCompile(regexpStr)
+
+	for k, v := range client.permissions {
+		if validID.MatchString(k) == true {
+			switch permission {
+			case getPermission:
+				if v == "r" || v == "wr" || v == "rw" {
+					resp = true
+					log.Info("GET permission present for path ", path)
+					return
+				}
+
+			case setPermission:
+				if v == "w" || v == "wr" || v == "rw" {
+					resp = true
+					log.Info("SET permission present for path ", path)
+					return
+				}
+			}
+		}
+	}
+	log.Warn("Permission NOT present for path ", path)
+	return false
 }
 
 func (client *WsClientConnection) senderrorResponse(action string, reqID string, errResp *errorInfo) {
@@ -269,7 +292,7 @@ func (client *WsClientConnection) senderrorResponse(action string, reqID string,
 }
 
 func getPermissionListForClient(token string) (data permissionData, errInfo *errorInfo) {
-	//TODO imlements d-bus call get
+	//TODO: implement d-bus call get
 	data = make(permissionData)
 	log.Info("get Permission List For Client token ", token)
 	data["Signal.Drivetrain.InternalCombustionEngine.RPM"] = "r"
