@@ -218,3 +218,46 @@ func TestGetWithAuth(t *testing.T) {
 
 	defer c.Close()
 }
+
+func TestSubscribe(t *testing.T) {
+	log.Debug("[TEST] TestSubscribe")
+
+	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
+	log.Printf("connecting to %s", u.String())
+
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		t.Fatalf("Can't connect to ws server %v", err)
+		return
+	}
+	defer c.Close()
+
+	subscMessage := `{"action": "subscribe","path": "Attribute.Vehicle.VehicleIdentification.VIN", "requestId": "1004"}`
+
+	err = c.WriteMessage(websocket.TextMessage, []byte(subscMessage))
+	if err != nil {
+		t.Fatalf("Can't send message to server %v", err)
+		return
+	}
+	_, message, err := c.ReadMessage()
+	if err != nil {
+		t.Fatalf("Can't read message froms erver %v", err)
+		return
+	}
+	log.Debug("[TEST] read:", string(message))
+
+	var resp visResponce
+	err = json.Unmarshal(message, &resp)
+	if err != nil {
+		t.Fatalf("Error parce Subscribe responce  %v", err)
+		return
+	}
+
+	if (resp.Action != "subscribe") || (resp.RequestId != "1004") {
+		t.Fatalf("Unexpected value")
+	}
+	if resp.Error != nil {
+		t.Fatalf("unexpected error for subscribe  %v", err)
+	}
+
+}

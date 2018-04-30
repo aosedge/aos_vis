@@ -20,3 +20,7 @@ func GetDataByPath(path string) (interface{}, error) {
 	}
 	return "", errors.New("404 Not found")
 }
+
+func RegestrateSubscriptionClient(subasCahan chan interface{}, path string) (string, error) {
+	return "1111", nil
+}

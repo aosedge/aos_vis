@@ -18,8 +18,9 @@ import (
  ******************************************************************************/
 
 const (
-	actionGet  = "get"
-	actionAuth = "authorize"
+	actionGet       = "get"
+	actionAuth      = "authorize"
+	actionSubscribe = "subscribe"
 )
 
 const (
@@ -31,10 +32,11 @@ const (
  * Types
  ******************************************************************************/
 type WsClientConnection struct {
-	name         string
-	wsConn       *websocket.Conn
-	isAuthorised bool
-	permissions  permissionData
+	name           string
+	wsConn         *websocket.Conn
+	isAuthorised   bool
+	permissions    permissionData
+	subscriptionCh chan interface{} //TODO: change to struct from dataprovider
 }
 
 type requestType struct {
@@ -51,6 +53,13 @@ type requestAuth struct {
 	Action    string        `json:"action"`
 	Tokens    tockensStruct `json:"tokens"`
 	RequestId string        `json:"requestId"`
+}
+
+type requestSubscribe struct {
+	Action    string  `json:"action"`
+	Path      string  `json:"path"`
+	Filters   *string `json:"filters"` //TODO: will be implemented later
+	RequestId string  `json:"requestId"`
 }
 
 type tockensStruct struct {
@@ -70,6 +79,13 @@ type authSuccessResponse struct {
 	RequestId string `json:"requestId"`
 	Ttl       int64  `json:"TTL"`
 	Timestamp int64  `json:"timestamp"`
+}
+
+type subscribeSuccessResponse struct {
+	Action         string `json:"action"`
+	RequestId      string `json:"requestId"`
+	SubscriptionId string `json:"subscriptionId"`
+	Timestamp      int64  `json:"timestamp"`
 }
 
 type errorResponse struct {
@@ -100,6 +116,8 @@ func NewClientConn(wsConn *websocket.Conn) (wsClientCon *WsClientConnection, err
 	var localConnection WsClientConnection
 	localConnection.wsConn = wsConn
 	wsClientCon = &localConnection
+
+	wsClientCon.subscriptionCh = make(chan interface{}, 100)
 
 	return wsClientCon, nil
 }
@@ -173,6 +191,20 @@ func (client *WsClientConnection) processIncommingMessage(data []byte) {
 		}
 		responce := client.processAuthRequest(&rAuth)
 		client.WriteMessage(responce)
+	case actionSubscribe:
+		var rSubs requestSubscribe
+		err := json.Unmarshal(data, &rSubs)
+		if err != nil {
+			log.Error("Error parse Auth request  ", err)
+			client.senderrorResponse(actionSubscribe, "", &errorInfo{Number: 400})
+			return
+		}
+		if rSubs.Filters != nil {
+			log.Warn("Filter currently not implemented. Filters will be ignored")
+		}
+		log.Debug("req subs", rSubs)
+		responce := client.processSubscibeRequest(&rSubs)
+		client.WriteMessage(responce)
 
 	default:
 		log.Error("unsupported action type = ", rType.Action)
@@ -240,6 +272,48 @@ func (client *WsClientConnection) processAuthRequest(request *requestAuth) (resp
 	} else {
 		log.Info("Token ", request.Tokens.Authorization, " already authorized")
 		msg = authSuccessResponse{Action: actionAuth, RequestId: request.RequestId, Ttl: 10000, Timestamp: time.Now().Unix()}
+	}
+
+	resp, err = json.Marshal(msg)
+	if err != nil {
+		log.Warn("Error marshal json: ", err)
+		return []byte("Error marshal json")
+	}
+	return resp
+}
+
+// process Get request
+func (client *WsClientConnection) processSubscibeRequest(request *requestSubscribe) (resp []byte) {
+	var err error
+	var msg interface{}
+	isPermissionOK := false
+	if vehicledataprovider.IsPublicPath(request.Path) == true {
+		isPermissionOK = true
+	} else {
+		if client.isAuthorised == false {
+			log.Info("Client not Authorized send response 403 id", request.RequestId)
+			msg = errorResponse{Action: actionSubscribe, RequestId: request.RequestId, Error: errorInfo{Number: 403}, Timestamp: time.Now().Unix()}
+		} else {
+			if client.checkPermission(request.Path, getPermission) == true {
+				isPermissionOK = true
+			} else {
+				msg = errorResponse{Action: actionSubscribe, RequestId: request.RequestId,
+					Error:     errorInfo{Number: 403, Message: "The user is not permitted to access the requested resource"},
+					Timestamp: time.Now().Unix()}
+			}
+		}
+	}
+
+	if isPermissionOK == true {
+		subscrId, err := vehicledataprovider.RegestrateSubscriptionClient(client.subscriptionCh, request.Path)
+		if err != nil {
+			log.Warn("No data for path ", request.Path)
+			msg = errorResponse{Action: actionSubscribe, RequestId: request.RequestId, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
+
+		} else {
+			log.Debug("SubscriptionId from dataprovider ", subscrId)
+			msg = subscribeSuccessResponse{Action: actionSubscribe, RequestId: request.RequestId, SubscriptionId: subscrId, Timestamp: time.Now().Unix()}
+		}
 	}
 
 	resp, err = json.Marshal(msg)
