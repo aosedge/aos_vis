@@ -81,12 +81,12 @@ func TestGetNoAuth(t *testing.T) {
 
 	err = c.WriteMessage(websocket.TextMessage, []byte(getmessage))
 	if err != nil {
-		t.Fatalf("Can't send message to server ", err)
+		t.Fatalf("Can't send message to server %v", err)
 		return
 	}
 	_, message, err := c.ReadMessage()
 	if err != nil {
-		t.Fatalf("Can't read message froms erver  ", err)
+		t.Fatalf("Can't read message froms erver %v", err)
 		return
 	}
 	log.Debug("[TEST] read:", string(message))
@@ -94,7 +94,7 @@ func TestGetNoAuth(t *testing.T) {
 	var resp visResponce
 	err = json.Unmarshal(message, &resp)
 	if err != nil {
-		t.Fatalf("Error parce Get responce  ", err)
+		t.Fatalf("Error parce Get responce  %v", err)
 		return
 	}
 
@@ -102,7 +102,7 @@ func TestGetNoAuth(t *testing.T) {
 		t.Fatalf("Unexpected value")
 	}
 	if resp.Error != nil {
-		t.Fatalf("Error parce Get request  ", err)
+		t.Fatalf("Error parce Get request  %v", err)
 	}
 
 }
@@ -126,20 +126,20 @@ func TestGetWithAuth(t *testing.T) {
 
 	err = c.WriteMessage(websocket.TextMessage, []byte(requestMsg))
 	if err != nil {
-		t.Fatalf("Can't send message to server ", err)
+		t.Fatalf("Can't send message to server %v", err)
 		return
 	}
 
 	_, message, err := c.ReadMessage()
 	if err != nil {
-		t.Fatalf("Can't read message froms erver  ", err)
+		t.Fatalf("Can't read message froms erver %v", err)
 		return
 	}
 	log.Debug("[TEST] read:", string(message))
 
 	err = json.Unmarshal(message, &resp)
 	if err != nil {
-		t.Fatalf("Error parce Get responce  ", err)
+		t.Fatalf("Error parce Get responce %v", err)
 		return
 	}
 
@@ -162,12 +162,12 @@ func TestGetWithAuth(t *testing.T) {
 
 	err = c.WriteMessage(websocket.TextMessage, []byte(requestMsg))
 	if err != nil {
-		t.Fatalf("Can't send message to server ", err)
+		t.Fatalf("Can't send message to server %v", err)
 		return
 	}
 	_, message, err = c.ReadMessage()
 	if err != nil {
-		t.Fatalf("Can't read message froms erver  ", err)
+		t.Fatalf("Can't read message froms erver %v", err)
 		return
 	}
 	log.Debug("[TEST] read:", string(message))
@@ -175,7 +175,7 @@ func TestGetWithAuth(t *testing.T) {
 	var resp2 visResponce
 	err = json.Unmarshal(message, &resp2)
 	if err != nil {
-		t.Fatalf("Error parce authorization responce  ", err)
+		t.Fatalf("Error parce authorization responce %v", err)
 		return
 	}
 
@@ -185,26 +185,26 @@ func TestGetWithAuth(t *testing.T) {
 
 	log.Debug("[TEST] read: ", resp2)
 	if resp2.Error != nil {
-		t.Fatalf("Error authorize", resp2.Error.Number)
+		t.Fatalf("Error authorize %v", resp2.Error.Number)
 	}
 
 	requestMsg = `{"action": "get", "path": "Signal.Drivetrain.InternalCombustionEngine.RPM", "requestId": "12347"}`
 
 	err = c.WriteMessage(websocket.TextMessage, []byte(requestMsg))
 	if err != nil {
-		t.Fatalf("Can't send message to server ", err)
+		t.Fatalf("Can't send message to server %v", err)
 		return
 	}
 	_, message, err = c.ReadMessage()
 	log.Debug("[TEST] read:", string(message))
 	if err != nil {
-		t.Fatalf("Can't read message froms erver  ", err)
+		t.Fatalf("Can't read message froms erver %v", err)
 		return
 	}
 	var resp3 visResponce
 	err = json.Unmarshal(message, &resp3)
 	if err != nil {
-		t.Fatalf("Error parce Get responce  ", err)
+		t.Fatalf("Error parce Get responce %v", err)
 		return
 	}
 
@@ -213,7 +213,7 @@ func TestGetWithAuth(t *testing.T) {
 	}
 
 	if resp3.Error != nil {
-		t.Fatalf("Error get", resp3.Error.Number)
+		t.Fatalf("Error get %v", resp3.Error.Number)
 	}
 
 	defer c.Close()
