@@ -18,9 +18,11 @@ import (
  ******************************************************************************/
 
 const (
-	actionGet       = "get"
-	actionAuth      = "authorize"
-	actionSubscribe = "subscribe"
+	actionGet            = "get"
+	actionAuth           = "authorize"
+	actionSubscribe      = "subscribe"
+	actionUnsubscribe    = "unsubscribe"
+	actionUnsubscribeAll = "unsubscribeAll"
 )
 
 const (
@@ -40,7 +42,8 @@ type WsClientConnection struct {
 }
 
 type requestType struct {
-	Action string `json:"action"`
+	Action    string `json:"action"`
+	RequestId string `json:"requestId"`
 }
 
 type requestGet struct {
@@ -62,6 +65,12 @@ type requestSubscribe struct {
 	RequestId string  `json:"requestId"`
 }
 
+type requestUnsubscribe struct {
+	Action         string `json:"action"`
+	SubscriptionId string `json:"subscriptionId"`
+	RequestId      string `json:"requestId"`
+}
+
 type tockensStruct struct {
 	Authorization      *string `json:"authorization"`
 	www_vehicle_device *string `json:"www-vehicle-device"`
@@ -81,18 +90,25 @@ type authSuccessResponse struct {
 	Timestamp int64  `json:"timestamp"`
 }
 
-type subscribeSuccessResponse struct {
+type subscribeUnsubscribeSuccessResponse struct {
 	Action         string `json:"action"`
-	RequestId      string `json:"requestId"`
 	SubscriptionId string `json:"subscriptionId"`
+	RequestId      string `json:"requestId"`
 	Timestamp      int64  `json:"timestamp"`
 }
 
+type unsubscribeAllSuccessResponse struct {
+	Action    string `json:"action"`
+	RequestId string `json:"requestId"`
+	Timestamp int64  `json:"timestamp"`
+}
+
 type errorResponse struct {
-	Action    string    `json:"action"`
-	RequestId string    `json:"requestId"`
-	Error     errorInfo `json:"error"`
-	Timestamp int64     `json:"timestamp"`
+	Action         string    `json:"action"`
+	RequestId      string    `json:"requestId"`
+	Error          errorInfo `json:"error"`
+	SubscriptionId *string   `json:"subscriptionId"`
+	Timestamp      int64     `json:"timestamp"`
 }
 
 //TODO: add map arror number message
@@ -180,7 +196,7 @@ func (client *WsClientConnection) processIncommingMessage(data []byte) {
 		err := json.Unmarshal(data, &rAuth)
 		if err != nil {
 			log.Error("Error parse Auth request  ", err)
-			client.senderrorResponse(actionAuth, "", &errorInfo{Number: 400})
+			client.senderrorResponse(actionAuth, rType.RequestId, &errorInfo{Number: 400})
 			return
 		}
 
@@ -191,12 +207,13 @@ func (client *WsClientConnection) processIncommingMessage(data []byte) {
 		}
 		responce := client.processAuthRequest(&rAuth)
 		client.WriteMessage(responce)
+
 	case actionSubscribe:
 		var rSubs requestSubscribe
 		err := json.Unmarshal(data, &rSubs)
 		if err != nil {
-			log.Error("Error parse Auth request  ", err)
-			client.senderrorResponse(actionSubscribe, "", &errorInfo{Number: 400})
+			log.Error("Error parse Subscribe request  ", err)
+			client.senderrorResponse(actionSubscribe, rType.RequestId, &errorInfo{Number: 400})
 			return
 		}
 		if rSubs.Filters != nil {
@@ -206,9 +223,38 @@ func (client *WsClientConnection) processIncommingMessage(data []byte) {
 		responce := client.processSubscibeRequest(&rSubs)
 		client.WriteMessage(responce)
 
+	case actionUnsubscribe:
+		var rUnsubs requestUnsubscribe
+		err := json.Unmarshal(data, &rUnsubs)
+		if err != nil {
+			log.Error("Error parse Unsubscribe request  ", err)
+			client.senderrorResponse(actionUnsubscribe, rType.RequestId, &errorInfo{Number: 400})
+			return
+		}
+		log.Debug("req Unsubs", rUnsubs)
+		responce := client.processUnsubscibeRequest(&rUnsubs)
+		client.WriteMessage(responce)
+
+	case actionUnsubscribeAll:
+		log.Debug("req UnsubscribeAll")
+		err := vehicledataprovider.RegestrateUnSubscribAll(client.subscriptionCh)
+		if err != nil {
+			client.senderrorResponse(actionUnsubscribeAll, rType.RequestId, &errorInfo{Number: 400})
+			return
+		}
+		msg := unsubscribeAllSuccessResponse{Action: actionUnsubscribeAll, RequestId: rType.RequestId, Timestamp: time.Now().Unix()}
+
+		var resp []byte
+		resp, err = json.Marshal(msg)
+		if err != nil {
+			log.Warn("Error marshal json: ", err)
+			resp = []byte("Error marshal json")
+		}
+		client.WriteMessage(resp)
+
 	default:
 		log.Error("unsupported action type = ", rType.Action)
-		client.senderrorResponse(rType.Action, "", &errorInfo{Number: 400})
+		client.senderrorResponse(rType.Action, rType.RequestId, &errorInfo{Number: 400})
 	}
 }
 
@@ -254,6 +300,7 @@ func (client *WsClientConnection) processGetRequest(request *requestGet) (resp [
 	return resp
 }
 
+// process Auth request
 func (client *WsClientConnection) processAuthRequest(request *requestAuth) (resp []byte) {
 	var msg interface{}
 	var err error
@@ -282,7 +329,7 @@ func (client *WsClientConnection) processAuthRequest(request *requestAuth) (resp
 	return resp
 }
 
-// process Get request
+// process Subscibe request
 func (client *WsClientConnection) processSubscibeRequest(request *requestSubscribe) (resp []byte) {
 	var err error
 	var msg interface{}
@@ -312,8 +359,29 @@ func (client *WsClientConnection) processSubscibeRequest(request *requestSubscri
 
 		} else {
 			log.Debug("SubscriptionId from dataprovider ", subscrId)
-			msg = subscribeSuccessResponse{Action: actionSubscribe, RequestId: request.RequestId, SubscriptionId: subscrId, Timestamp: time.Now().Unix()}
+			msg = subscribeUnsubscribeSuccessResponse{Action: actionSubscribe, RequestId: request.RequestId, SubscriptionId: subscrId, Timestamp: time.Now().Unix()}
 		}
+	}
+
+	resp, err = json.Marshal(msg)
+	if err != nil {
+		log.Warn("Error marshal json: ", err)
+		return []byte("Error marshal json")
+	}
+	return resp
+}
+
+// process Unsubscibe request
+func (client *WsClientConnection) processUnsubscibeRequest(request *requestUnsubscribe) (resp []byte) {
+	var err error
+	var msg interface{}
+	err = vehicledataprovider.RegestrateUnSubscription(client.subscriptionCh, request.SubscriptionId)
+	if err != nil {
+		log.Warn("Can' unsibscribe from ID", request.SubscriptionId)
+		msg = errorResponse{Action: actionUnsubscribe, SubscriptionId: &request.SubscriptionId, RequestId: request.RequestId, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
+	} else {
+		log.Debug("UnSubscription from ID ", request.SubscriptionId)
+		msg = subscribeUnsubscribeSuccessResponse{Action: actionUnsubscribe, SubscriptionId: request.SubscriptionId, RequestId: request.RequestId, Timestamp: time.Now().Unix()}
 	}
 
 	resp, err = json.Marshal(msg)

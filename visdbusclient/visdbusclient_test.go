@@ -39,7 +39,8 @@ func TestMain(m *testing.M) {
 
 	conn, err := dbus.SessionBus()
 	if err != nil {
-		panic(err)
+		log.Error("Can't create session connection %v", err)
+		os.Exit(1)
 	}
 	reply, err := conn.RequestName("com.aosservicemanager.vistoken",
 		dbus.NameFlagDoNotQueue)

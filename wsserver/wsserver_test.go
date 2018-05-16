@@ -17,12 +17,13 @@ var server *wsserver.WsServer
 var addr string = "localhost:8088"
 
 type visResponce struct {
-	Action    string       `json:"action"`
-	RequestId string       `json:"requestId"`
-	Value     *interface{} `json:"value"` //TODO: redo to {}interface
-	Error     *errorInfo   `json:"error"`
-	Ttl       int64        `json:"TTL"`
-	Timestamp int64        `json:"timestamp"`
+	Action         string       `json:"action"`
+	RequestId      string       `json:"requestId"`
+	Value          *interface{} `json:"value"`
+	Error          *errorInfo   `json:"error"`
+	Ttl            int64        `json:"TTL"`
+	SubscriptionId *string      `json:"subscriptionId"`
+	Timestamp      int64        `json:"timestamp"`
 }
 
 type errorInfo struct {
@@ -219,8 +220,8 @@ func TestGetWithAuth(t *testing.T) {
 	defer c.Close()
 }
 
-func TestSubscribe(t *testing.T) {
-	log.Debug("[TEST] TestSubscribe")
+func TestSubscribeUnsubscribe(t *testing.T) {
+	log.Debug("[TEST] TestSubscribeUnsubscribe")
 
 	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
 	log.Printf("connecting to %s", u.String())
@@ -258,6 +259,93 @@ func TestSubscribe(t *testing.T) {
 	}
 	if resp.Error != nil {
 		t.Fatalf("unexpected error for subscribe  %v", err)
+	}
+	if resp.SubscriptionId == nil {
+		t.Fatalf("No subscriptionID")
+	}
+
+	unsubscMessage := `{"action": "unsubscribe", "SubscriptionId": "0000", "requestId": "1004"}`
+
+	err = c.WriteMessage(websocket.TextMessage, []byte(unsubscMessage))
+	if err != nil {
+		t.Fatalf("Can't send message to server %v", err)
+		return
+	}
+	_, message2, err := c.ReadMessage()
+	if err != nil {
+		t.Fatalf("Can't read message froms erver %v", err)
+		return
+	}
+	log.Debug("[TEST] read:", string(message2))
+
+	var resp2 visResponce
+	err = json.Unmarshal(message2, &resp2)
+	if err != nil {
+		t.Fatalf("Error parce Unsubscribe responce  %v", err)
+		return
+	}
+
+	if (resp2.Action != "unsubscribe") || (resp2.RequestId != "1004") {
+		t.Fatalf("Unexpected value")
+	}
+	if resp2.Error == nil {
+		t.Fatalf("unexpected positive responce ")
+	}
+
+	unsubscMessageOK := `{"action": "unsubscribe", "SubscriptionId": "1111", "requestId": "1004"}`
+
+	err = c.WriteMessage(websocket.TextMessage, []byte(unsubscMessageOK))
+	if err != nil {
+		t.Fatalf("Can't send message to server %v", err)
+		return
+	}
+	_, message3, err := c.ReadMessage()
+	if err != nil {
+		t.Fatalf("Can't read message froms erver %v", err)
+		return
+	}
+	log.Debug("[TEST] read:", string(message3))
+
+	var resp3 visResponce
+	err = json.Unmarshal(message3, &resp3)
+	if err != nil {
+		t.Fatalf("Error parce Unsubscribe responce  %v", err)
+		return
+	}
+
+	if (resp3.Action != "unsubscribe") || (resp3.RequestId != "1004") {
+		t.Fatalf("Unexpected value")
+	}
+	if resp3.Error != nil {
+		t.Fatalf("unexpected error for Unsubscribe  %v", err)
+	}
+
+	unsubscMessageAll := `{"action": "unsubscribeAll", "requestId": "1004"}`
+
+	err = c.WriteMessage(websocket.TextMessage, []byte(unsubscMessageAll))
+	if err != nil {
+		t.Fatalf("Can't send message to server %v", err)
+		return
+	}
+	_, messageAll, err := c.ReadMessage()
+	if err != nil {
+		t.Fatalf("Can't read message froms erver %v", err)
+		return
+	}
+	log.Debug("[TEST] read:", string(messageAll))
+
+	var respAll visResponce
+	err = json.Unmarshal(messageAll, &respAll)
+	if err != nil {
+		t.Fatalf("Error parce Unsubscribe responce  %v", err)
+		return
+	}
+
+	if (respAll.Action != "unsubscribeAll") || (resp3.RequestId != "1004") {
+		t.Fatalf("Unexpected value")
+	}
+	if resp3.Error != nil {
+		t.Fatalf("unexpected error for Unsubscribe All %v", err)
 	}
 
 }

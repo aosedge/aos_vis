@@ -21,6 +21,18 @@ func GetDataByPath(path string) (interface{}, error) {
 	return "", errors.New("404 Not found")
 }
 
-func RegestrateSubscriptionClient(subasCahan chan interface{}, path string) (string, error) {
+func RegestrateSubscriptionClient(subasChan chan interface{}, path string) (string, error) {
 	return "1111", nil
+}
+
+func RegestrateUnSubscription(subasChan chan interface{}, subscID string) (err error) {
+	err = nil
+	if subscID != "1111" {
+		err = errors.New("404 Not found")
+	}
+	return err
+}
+
+func RegestrateUnSubscribAll(subasChan chan interface{}) (err error) {
+	return nil
 }
