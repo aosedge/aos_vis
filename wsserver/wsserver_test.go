@@ -19,11 +19,11 @@ var addr string = "localhost:8088"
 
 type visResponce struct {
 	Action         string       `json:"action"`
-	RequestId      string       `json:"requestId"`
+	RequestID      string       `json:"requestId"`
 	Value          *interface{} `json:"value"`
 	Error          *errorInfo   `json:"error"`
 	Ttl            int64        `json:"TTL"`
-	SubscriptionId *string      `json:"subscriptionId"`
+	SubscriptionID *string      `json:"subscriptionId"`
 	Timestamp      int64        `json:"timestamp"`
 }
 
@@ -127,7 +127,7 @@ func TestGetNoAuth(t *testing.T) {
 		return
 	}
 
-	if (resp.Action != "get") || (resp.RequestId != "8756") {
+	if (resp.Action != "get") || (resp.RequestID != "8756") {
 		t.Fatalf("Unexpected value")
 	}
 	if resp.Error != nil {
@@ -172,7 +172,7 @@ func TestGetWithAuth(t *testing.T) {
 		return
 	}
 
-	if (resp.Action != "get") || (resp.RequestId != "8755") {
+	if (resp.Action != "get") || (resp.RequestID != "8755") {
 		t.Fatalf("Unexpected value")
 	}
 
@@ -208,7 +208,7 @@ func TestGetWithAuth(t *testing.T) {
 		return
 	}
 
-	if (resp2.Action != "authorize") || (resp2.RequestId != "12345") {
+	if (resp2.Action != "authorize") || (resp2.RequestID != "12345") {
 		t.Fatalf("Unexpected value")
 	}
 
@@ -237,7 +237,7 @@ func TestGetWithAuth(t *testing.T) {
 		return
 	}
 
-	if (resp3.Action != "get") || (resp3.RequestId != "12347") {
+	if (resp3.Action != "get") || (resp3.RequestID != "12347") {
 		t.Fatalf("Unexpected value")
 	}
 
@@ -282,17 +282,17 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		return
 	}
 
-	if (resp.Action != "subscribe") || (resp.RequestId != "1004") {
+	if (resp.Action != "subscribe") || (resp.RequestID != "1004") {
 		t.Fatalf("Unexpected value")
 	}
 	if resp.Error != nil {
 		t.Fatalf("Unexpected error for subscribe  %v", err)
 	}
-	if resp.SubscriptionId == nil {
-		t.Fatalf("No subscriptionID")
+	if resp.SubscriptionID == nil {
+		t.Fatalf("No subscriptionId")
 	}
 
-	unsubscMessage := `{"action": "unsubscribe", "SubscriptionId": "0000", "requestId": "1004"}`
+	unsubscMessage := `{"action": "unsubscribe", "subscriptionId": "0000", "requestId": "1004"}`
 
 	err = c.WriteMessage(websocket.TextMessage, []byte(unsubscMessage))
 	if err != nil {
@@ -313,14 +313,14 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		return
 	}
 
-	if (resp2.Action != "unsubscribe") || (resp2.RequestId != "1004") {
+	if (resp2.Action != "unsubscribe") || (resp2.RequestID != "1004") {
 		t.Fatalf("Unexpected value")
 	}
 	if resp2.Error == nil {
 		t.Fatalf("Unexpected positive responce ")
 	}
 
-	unsubscMessageOK := `{"action": "unsubscribe", "SubscriptionId": "1111", "requestId": "1004"}`
+	unsubscMessageOK := `{"action": "unsubscribe", "subscriptionId": "1111", "requestId": "1004"}`
 
 	err = c.WriteMessage(websocket.TextMessage, []byte(unsubscMessageOK))
 	if err != nil {
@@ -341,7 +341,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		return
 	}
 
-	if (resp3.Action != "unsubscribe") || (resp3.RequestId != "1004") {
+	if (resp3.Action != "unsubscribe") || (resp3.RequestID != "1004") {
 		t.Fatalf("Unexpected value")
 	}
 	if resp3.Error != nil {
@@ -369,7 +369,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		return
 	}
 
-	if (respAll.Action != "unsubscribeAll") || (resp3.RequestId != "1004") {
+	if (respAll.Action != "unsubscribeAll") || (resp3.RequestID != "1004") {
 		t.Fatalf("Unexpected value")
 	}
 	if resp3.Error != nil {

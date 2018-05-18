@@ -34,6 +34,8 @@ const (
 /*******************************************************************************
  * Types
  ******************************************************************************/
+
+//WsClientConnection websocket client connection struncture
 type WsClientConnection struct {
 	name           string
 	wsConn         *websocket.Conn
@@ -44,71 +46,71 @@ type WsClientConnection struct {
 
 type requestType struct {
 	Action    string `json:"action"`
-	RequestId string `json:"requestId"`
+	RequestID string `json:"requestId"`
 }
 
 type requestGet struct {
 	Action    string `json:"action"`
 	Path      string `json:"path"`
-	RequestId string `json:"requestId"`
+	RequestID string `json:"requestId"`
 }
 
 type requestAuth struct {
 	Action    string        `json:"action"`
 	Tokens    tockensStruct `json:"tokens"`
-	RequestId string        `json:"requestId"`
+	RequestID string        `json:"requestId"`
 }
 
 type requestSubscribe struct {
 	Action    string  `json:"action"`
 	Path      string  `json:"path"`
 	Filters   *string `json:"filters"` //TODO: will be implemented later
-	RequestId string  `json:"requestId"`
+	RequestID string  `json:"requestId"`
 }
 
 type requestUnsubscribe struct {
 	Action         string `json:"action"`
-	SubscriptionId string `json:"subscriptionId"`
-	RequestId      string `json:"requestId"`
+	SubscriptionID string `json:"subscriptionId"`
+	RequestID      string `json:"requestId"`
 }
 
 type tockensStruct struct {
-	Authorization      *string `json:"authorization"`
-	www_vehicle_device *string `json:"www-vehicle-device"`
+	Authorization    *string `json:"authorization"`
+	wwwVehicleDevice *string `json:"www-vehicle-device"`
 }
 
 type getSuccessResponse struct {
 	Action    string      `json:"action"`
-	RequestId string      `json:"requestId"`
+	RequestID string      `json:"requestId"`
 	Value     interface{} `json:"value"`
 	Timestamp int64       `json:"timestamp"`
 }
 
 type authSuccessResponse struct {
 	Action    string `json:"action"`
-	RequestId string `json:"requestId"`
-	Ttl       int64  `json:"TTL"`
+	RequestID string `json:"requestId"`
+	TTL       int64  `json:"TTL"`
 	Timestamp int64  `json:"timestamp"`
 }
 
 type subscribeUnsubscribeSuccessResponse struct {
 	Action         string `json:"action"`
-	SubscriptionId string `json:"subscriptionId"`
-	RequestId      string `json:"requestId"`
+	SubscriptionID string `json:"subscriptionId"`
+	RequestID      string `json:"requestId"`
 	Timestamp      int64  `json:"timestamp"`
 }
 
 type unsubscribeAllSuccessResponse struct {
 	Action    string `json:"action"`
-	RequestId string `json:"requestId"`
+	RequestID string `json:"requestId"`
 	Timestamp int64  `json:"timestamp"`
 }
 
 type errorResponse struct {
 	Action         string    `json:"action"`
-	RequestId      string    `json:"requestId"`
+	RequestID      string    `json:"requestId"`
 	Error          errorInfo `json:"error"`
-	SubscriptionId *string   `json:"subscriptionId"`
+	SubscriptionID *string   `json:"subscriptionId"`
 	Timestamp      int64     `json:"timestamp"`
 }
 
@@ -124,7 +126,8 @@ type permissionData map[string]string
 /*******************************************************************************
  * Public
  ******************************************************************************/
-//create web socket client connection information
+
+//NewClientConn create web socket client connection information
 func NewClientConn(wsConn *websocket.Conn) (wsClientCon *WsClientConnection, err error) {
 	log.Debug("NewClientConn")
 	if wsConn == nil {
@@ -156,6 +159,7 @@ func (client *WsClientConnection) ProcessConnection() {
 	log.Debug("Stop processConnection")
 }
 
+//WriteMessage write data to opened WS connection
 func (client *WsClientConnection) WriteMessage(data []byte) {
 	err := client.wsConn.WriteMessage(1, data)
 	if err != nil {
@@ -197,13 +201,13 @@ func (client *WsClientConnection) processIncommingMessage(data []byte) {
 		err := json.Unmarshal(data, &rAuth)
 		if err != nil {
 			log.Error("Error parse Auth request  ", err)
-			client.senderrorResponse(actionAuth, rType.RequestId, &errorInfo{Number: 400})
+			client.senderrorResponse(actionAuth, rType.RequestID, &errorInfo{Number: 400})
 			return
 		}
 
 		if rAuth.Tokens.Authorization == nil {
 			log.Error("Error Tokens.Authorization = nil  ")
-			client.senderrorResponse(actionAuth, rAuth.RequestId, &errorInfo{Number: 400})
+			client.senderrorResponse(actionAuth, rAuth.RequestID, &errorInfo{Number: 400})
 			return
 		}
 		responce := client.processAuthRequest(&rAuth)
@@ -214,7 +218,7 @@ func (client *WsClientConnection) processIncommingMessage(data []byte) {
 		err := json.Unmarshal(data, &rSubs)
 		if err != nil {
 			log.Error("Error parse Subscribe request  ", err)
-			client.senderrorResponse(actionSubscribe, rType.RequestId, &errorInfo{Number: 400})
+			client.senderrorResponse(actionSubscribe, rType.RequestID, &errorInfo{Number: 400})
 			return
 		}
 		if rSubs.Filters != nil {
@@ -229,7 +233,7 @@ func (client *WsClientConnection) processIncommingMessage(data []byte) {
 		err := json.Unmarshal(data, &rUnsubs)
 		if err != nil {
 			log.Error("Error parse Unsubscribe request  ", err)
-			client.senderrorResponse(actionUnsubscribe, rType.RequestId, &errorInfo{Number: 400})
+			client.senderrorResponse(actionUnsubscribe, rType.RequestID, &errorInfo{Number: 400})
 			return
 		}
 		log.Debug("req Unsubs", rUnsubs)
@@ -240,10 +244,10 @@ func (client *WsClientConnection) processIncommingMessage(data []byte) {
 		log.Debug("req UnsubscribeAll")
 		err := vehicledataprovider.RegestrateUnSubscribAll(client.subscriptionCh)
 		if err != nil {
-			client.senderrorResponse(actionUnsubscribeAll, rType.RequestId, &errorInfo{Number: 400})
+			client.senderrorResponse(actionUnsubscribeAll, rType.RequestID, &errorInfo{Number: 400})
 			return
 		}
-		msg := unsubscribeAllSuccessResponse{Action: actionUnsubscribeAll, RequestId: rType.RequestId, Timestamp: time.Now().Unix()}
+		msg := unsubscribeAllSuccessResponse{Action: actionUnsubscribeAll, RequestID: rType.RequestID, Timestamp: time.Now().Unix()}
 
 		var resp []byte
 		resp, err = json.Marshal(msg)
@@ -255,7 +259,7 @@ func (client *WsClientConnection) processIncommingMessage(data []byte) {
 
 	default:
 		log.Error("unsupported action type = ", rType.Action)
-		client.senderrorResponse(rType.Action, rType.RequestId, &errorInfo{Number: 400})
+		client.senderrorResponse(rType.Action, rType.RequestID, &errorInfo{Number: 400})
 	}
 }
 
@@ -269,12 +273,12 @@ func (client *WsClientConnection) processGetRequest(request *requestGet) (resp [
 	} else {
 		if client.isAuthorised == false {
 			log.Info("Client not Authorized send response 403")
-			msg = errorResponse{Action: actionGet, RequestId: request.RequestId, Error: errorInfo{Number: 403}, Timestamp: time.Now().Unix()}
+			msg = errorResponse{Action: actionGet, RequestID: request.RequestID, Error: errorInfo{Number: 403}, Timestamp: time.Now().Unix()}
 		} else {
 			if client.checkPermission(request.Path, getPermission) == true {
 				needToAskForData = true
 			} else {
-				msg = errorResponse{Action: actionGet, RequestId: request.RequestId,
+				msg = errorResponse{Action: actionGet, RequestID: request.RequestID,
 					Error:     errorInfo{Number: 403, Message: "The user is not permitted to access the requested resource"},
 					Timestamp: time.Now().Unix()}
 			}
@@ -285,11 +289,11 @@ func (client *WsClientConnection) processGetRequest(request *requestGet) (resp [
 		vehData, err := vehicledataprovider.GetDataByPath(request.Path)
 		if err != nil {
 			log.Warn("No data for path ", request.Path)
-			msg = errorResponse{Action: actionGet, RequestId: request.RequestId, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
+			msg = errorResponse{Action: actionGet, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
 
 		} else {
-			log.Debug("Data from dataprovider ", vehData)
-			msg = getSuccessResponse{Action: actionGet, RequestId: request.RequestId, Value: vehData, Timestamp: time.Now().Unix()}
+			log.Debug("Data from dataprovider ", vehData, request.RequestID)
+			msg = getSuccessResponse{Action: actionGet, RequestID: request.RequestID, Value: vehData, Timestamp: time.Now().Unix()}
 		}
 	}
 
@@ -312,17 +316,17 @@ func (client *WsClientConnection) processAuthRequest(request *requestAuth) (resp
 		data, err := visdbusclient.GetVisPermissionByToken(*request.Tokens.Authorization)
 		if err != nil {
 			log.Error("Error auth", err)
-			msg = errorResponse{Action: actionAuth, RequestId: request.RequestId,
+			msg = errorResponse{Action: actionAuth, RequestID: request.RequestID,
 				Error:     errorInfo{Number: 404, Reason: "", Message: err.Error()},
 				Timestamp: time.Now().Unix()}
 		} else {
 			client.permissions = data
 			client.isAuthorised = true
-			msg = authSuccessResponse{Action: actionAuth, RequestId: request.RequestId, Ttl: 10000, Timestamp: time.Now().Unix()}
+			msg = authSuccessResponse{Action: actionAuth, RequestID: request.RequestID, TTL: 10000, Timestamp: time.Now().Unix()}
 		}
 	} else {
 		log.Info("Token ", request.Tokens.Authorization, " already authorized")
-		msg = authSuccessResponse{Action: actionAuth, RequestId: request.RequestId, Ttl: 10000, Timestamp: time.Now().Unix()}
+		msg = authSuccessResponse{Action: actionAuth, RequestID: request.RequestID, TTL: 10000, Timestamp: time.Now().Unix()}
 	}
 
 	resp, err = json.Marshal(msg)
@@ -342,13 +346,13 @@ func (client *WsClientConnection) processSubscibeRequest(request *requestSubscri
 		isPermissionOK = true
 	} else {
 		if client.isAuthorised == false {
-			log.Info("Client not Authorized send response 403 id", request.RequestId)
-			msg = errorResponse{Action: actionSubscribe, RequestId: request.RequestId, Error: errorInfo{Number: 403}, Timestamp: time.Now().Unix()}
+			log.Info("Client not Authorized send response 403 id", request.RequestID)
+			msg = errorResponse{Action: actionSubscribe, RequestID: request.RequestID, Error: errorInfo{Number: 403}, Timestamp: time.Now().Unix()}
 		} else {
 			if client.checkPermission(request.Path, getPermission) == true {
 				isPermissionOK = true
 			} else {
-				msg = errorResponse{Action: actionSubscribe, RequestId: request.RequestId,
+				msg = errorResponse{Action: actionSubscribe, RequestID: request.RequestID,
 					Error:     errorInfo{Number: 403, Message: "The user is not permitted to access the requested resource"},
 					Timestamp: time.Now().Unix()}
 			}
@@ -356,14 +360,14 @@ func (client *WsClientConnection) processSubscibeRequest(request *requestSubscri
 	}
 
 	if isPermissionOK == true {
-		subscrId, err := vehicledataprovider.RegestrateSubscriptionClient(client.subscriptionCh, request.Path)
+		subscrID, err := vehicledataprovider.RegestrateSubscriptionClient(client.subscriptionCh, request.Path)
 		if err != nil {
 			log.Warn("No data for path ", request.Path)
-			msg = errorResponse{Action: actionSubscribe, RequestId: request.RequestId, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
+			msg = errorResponse{Action: actionSubscribe, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
 
 		} else {
-			log.Debug("SubscriptionId from dataprovider ", subscrId)
-			msg = subscribeUnsubscribeSuccessResponse{Action: actionSubscribe, RequestId: request.RequestId, SubscriptionId: subscrId, Timestamp: time.Now().Unix()}
+			log.Debug("SubscriptionID from dataprovider ", subscrID)
+			msg = subscribeUnsubscribeSuccessResponse{Action: actionSubscribe, RequestID: request.RequestID, SubscriptionID: subscrID, Timestamp: time.Now().Unix()}
 		}
 	}
 
@@ -379,13 +383,13 @@ func (client *WsClientConnection) processSubscibeRequest(request *requestSubscri
 func (client *WsClientConnection) processUnsubscibeRequest(request *requestUnsubscribe) (resp []byte) {
 	var err error
 	var msg interface{}
-	err = vehicledataprovider.RegestrateUnSubscription(client.subscriptionCh, request.SubscriptionId)
+	err = vehicledataprovider.RegestrateUnSubscription(client.subscriptionCh, request.SubscriptionID)
 	if err != nil {
-		log.Warn("Can' unsibscribe from ID", request.SubscriptionId)
-		msg = errorResponse{Action: actionUnsubscribe, SubscriptionId: &request.SubscriptionId, RequestId: request.RequestId, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
+		log.Warn("Can' unsibscribe from ID", request.SubscriptionID)
+		msg = errorResponse{Action: actionUnsubscribe, SubscriptionID: &request.SubscriptionID, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
 	} else {
-		log.Debug("UnSubscription from ID ", request.SubscriptionId)
-		msg = subscribeUnsubscribeSuccessResponse{Action: actionUnsubscribe, SubscriptionId: request.SubscriptionId, RequestId: request.RequestId, Timestamp: time.Now().Unix()}
+		log.Debug("UnSubscription from ID ", request.SubscriptionID)
+		msg = subscribeUnsubscribeSuccessResponse{Action: actionUnsubscribe, SubscriptionID: request.SubscriptionID, RequestID: request.RequestID, Timestamp: time.Now().Unix()}
 	}
 
 	resp, err = json.Marshal(msg)
@@ -428,11 +432,11 @@ func (client *WsClientConnection) checkPermission(path string, permission uint) 
 }
 
 func (client *WsClientConnection) senderrorResponse(action string, reqID string, errResp *errorInfo) {
-	msg := errorResponse{Action: action, Timestamp: time.Now().Unix(), Error: *errResp, RequestId: reqID}
-	respJson, err := json.Marshal(msg)
+	msg := errorResponse{Action: action, Timestamp: time.Now().Unix(), Error: *errResp, RequestID: reqID}
+	respJSON, err := json.Marshal(msg)
 	if err != nil {
 		log.Warn("Error marshal json: ", err)
 		return
 	}
-	client.WriteMessage(respJson)
+	client.WriteMessage(respJSON)
 }

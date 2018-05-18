@@ -11,6 +11,8 @@ import (
 /*******************************************************************************
  * Types
  ******************************************************************************/
+
+//WsServer websocket server structure
 type WsServer struct {
 	addr       string
 	httpServer *http.Server
@@ -22,6 +24,8 @@ type WsServer struct {
 /*******************************************************************************
  * Public
  ******************************************************************************/
+
+//New create new Web socket server
 func New(addr string) (server *WsServer, err error) {
 	log.Debug("wsserver creation ", addr)
 	//TODO: add addr validation
@@ -37,7 +41,7 @@ func New(addr string) (server *WsServer, err error) {
 	return server, nil
 }
 
-//start web socket server
+//Start start web socket server
 func (server *WsServer) Start() {
 	log.Info("Start server")
 	http.HandleFunc("/", server.handleConnection)
