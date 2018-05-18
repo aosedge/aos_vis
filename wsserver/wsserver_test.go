@@ -2,6 +2,7 @@ package wsserver_test
 
 import (
 	"encoding/json"
+	"github.com/godbus/dbus"
 	"net/url"
 	"os"
 	"testing"
@@ -32,6 +33,9 @@ type errorInfo struct {
 	Message string
 }
 
+type dbusInterface struct {
+}
+
 /*******************************************************************************
  * Init
  ******************************************************************************/
@@ -45,11 +49,35 @@ func init() {
 	log.SetOutput(os.Stdout)
 }
 
+func (GetPermission dbusInterface) GetPermission(token string) (string, string, *dbus.Error) {
+	log.Info("[TEST] GetPermission token: ", token)
+
+	return `{"Signal.Drivetrain.InternalCombustionEngine.RPM": "r"}`, "OK", nil
+}
+
 /*******************************************************************************
  * Main
  ******************************************************************************/
 
 func TestMain(m *testing.M) {
+
+	conn, err := dbus.SessionBus()
+	if err != nil {
+		log.Error("Can't create session connection %v", err)
+		os.Exit(1)
+	}
+	reply, err := conn.RequestName("com.aosservicemanager.vistoken",
+		dbus.NameFlagDoNotQueue)
+	if err != nil {
+		log.Error("Can't RequestName")
+		os.Exit(1)
+	}
+	if reply != dbus.RequestNameReplyPrimaryOwner {
+		log.Error("Name already taken")
+		os.Exit(1)
+	}
+	dbusserver := dbusInterface{}
+	conn.Export(dbusserver, "/com/aosservicemanager/vistoken", "com.aosservicemanager.vistoken")
 
 	server, err := wsserver.New(addr)
 
@@ -70,7 +98,7 @@ func TestGetNoAuth(t *testing.T) {
 	log.Debug("[TEST] TestGet")
 
 	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
-	log.Printf("connecting to %s", u.String())
+	log.Debug("Connecting to %s", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -114,7 +142,7 @@ func TestGetWithAuth(t *testing.T) {
 	var resp visResponce
 
 	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
-	log.Printf("connecting to %s", u.String())
+	log.Debug("Connecting to %s", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -149,11 +177,11 @@ func TestGetWithAuth(t *testing.T) {
 	}
 
 	if resp.Error == nil {
-		t.Fatalf("should be error 403")
+		t.Fatalf("Should be error 403")
 		return
 	}
 	if resp.Error.Number != 403 {
-		t.Fatalf("should be error 403")
+		t.Fatalf("Should be error 403")
 		return
 	}
 
@@ -258,7 +286,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		t.Fatalf("Unexpected value")
 	}
 	if resp.Error != nil {
-		t.Fatalf("unexpected error for subscribe  %v", err)
+		t.Fatalf("Unexpected error for subscribe  %v", err)
 	}
 	if resp.SubscriptionId == nil {
 		t.Fatalf("No subscriptionID")
@@ -289,7 +317,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		t.Fatalf("Unexpected value")
 	}
 	if resp2.Error == nil {
-		t.Fatalf("unexpected positive responce ")
+		t.Fatalf("Unexpected positive responce ")
 	}
 
 	unsubscMessageOK := `{"action": "unsubscribe", "SubscriptionId": "1111", "requestId": "1004"}`
@@ -317,7 +345,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		t.Fatalf("Unexpected value")
 	}
 	if resp3.Error != nil {
-		t.Fatalf("unexpected error for Unsubscribe  %v", err)
+		t.Fatalf("Unexpected error for Unsubscribe  %v", err)
 	}
 
 	unsubscMessageAll := `{"action": "unsubscribeAll", "requestId": "1004"}`
@@ -345,7 +373,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		t.Fatalf("Unexpected value")
 	}
 	if resp3.Error != nil {
-		t.Fatalf("unexpected error for Unsubscribe All %v", err)
+		t.Fatalf("Unexpected error for Unsubscribe All %v", err)
 	}
 
 }

@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"gitpct.epam.com/epmd-aepr/aos_vis/vehicledataprovider"
+	"gitpct.epam.com/epmd-aepr/aos_vis/visdbusclient"
 )
 
 /*******************************************************************************
@@ -307,10 +308,13 @@ func (client *WsClientConnection) processAuthRequest(request *requestAuth) (resp
 
 	if client.isAuthorised == false {
 		//TODO: add retry count
-		data, errInfo := getPermissionListForClient(*request.Tokens.Authorization)
-		if errInfo != nil {
-			log.Error("Error auth code ", errInfo.Number)
-			msg = errorResponse{Action: actionAuth, RequestId: request.RequestId, Error: *errInfo, Timestamp: time.Now().Unix()}
+		//data, errInfo := getPermissionListForClient(*request.Tokens.Authorization)
+		data, err := visdbusclient.GetVisPermissionByToken(*request.Tokens.Authorization)
+		if err != nil {
+			log.Error("Error auth", err)
+			msg = errorResponse{Action: actionAuth, RequestId: request.RequestId,
+				Error:     errorInfo{Number: 404, Reason: "", Message: err.Error()},
+				Timestamp: time.Now().Unix()}
 		} else {
 			client.permissions = data
 			client.isAuthorised = true
@@ -431,12 +435,4 @@ func (client *WsClientConnection) senderrorResponse(action string, reqID string,
 		return
 	}
 	client.WriteMessage(respJson)
-}
-
-func getPermissionListForClient(token string) (data permissionData, errInfo *errorInfo) {
-	//TODO: implement d-bus call get
-	data = make(permissionData)
-	log.Info("get Permission List For Client token ", token)
-	data["Signal.Drivetrain.InternalCombustionEngine.RPM"] = "r"
-	return data, nil
 }
