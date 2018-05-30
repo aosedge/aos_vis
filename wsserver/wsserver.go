@@ -25,7 +25,7 @@ type WsServer struct {
  * Public
  ******************************************************************************/
 
-//New create new Web socket server
+//New creates new Web socket server
 func New(addr string) (server *WsServer, err error) {
 	log.Debug("wsserver creation ", addr)
 	//TODO: add addr validation
@@ -67,7 +67,6 @@ func myCheckOrigin(r *http.Request) bool {
 }
 
 func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request) {
-
 	log.Debug("New connection ")
 	if websocket.IsWebSocketUpgrade(r) != true {
 		log.Warning("New connection is not websocket")

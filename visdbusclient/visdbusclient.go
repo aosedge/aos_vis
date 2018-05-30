@@ -13,7 +13,6 @@ const (
 
 //GetVisPermissionByToken dbus call GetPermission
 func GetVisPermissionByToken(token string) (permissions map[string]string, err error) {
-
 	log.Info("GetVisPermissionByToken token ", token)
 
 	var permissionJSON string
@@ -22,13 +21,14 @@ func GetVisPermissionByToken(token string) (permissions map[string]string, err e
 	conn, err := dbus.SessionBus()
 	if err != nil {
 		log.Error("No system bus conn ", err)
+		return permissions, err
 	}
 
 	obj := conn.Object(interfaceName, objectPath)
 
 	err = obj.Call(interfaceName+".GetPermission", 0, token).Store(&permissionJSON, &dbusErr)
 	if err != nil {
-		log.Error("can't make call ", err)
+		log.Error("Can't make call ", err)
 		return permissions, err
 	}
 

@@ -60,7 +60,6 @@ func (GetPermission dbusInterface) GetPermission(token string) (string, string, 
  ******************************************************************************/
 
 func TestMain(m *testing.M) {
-
 	conn, err := dbus.SessionBus()
 	if err != nil {
 		log.Error("Can't create session connection %v", err)
@@ -133,7 +132,6 @@ func TestGetNoAuth(t *testing.T) {
 	if resp.Error != nil {
 		t.Fatalf("Error parce Get request  %v", err)
 	}
-
 }
 
 func TestGetWithAuth(t *testing.T) {
@@ -375,5 +373,4 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	if resp3.Error != nil {
 		t.Fatalf("Unexpected error for Unsubscribe All %v", err)
 	}
-
 }
