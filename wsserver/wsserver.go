@@ -17,7 +17,8 @@ type WsServer struct {
 	addr       string
 	httpServer *http.Server
 	upgrader   websocket.Upgrader
-
+	crt        string
+	key        string
 	//TODO: add list with client connections
 }
 
@@ -26,7 +27,7 @@ type WsServer struct {
  ******************************************************************************/
 
 //New creates new Web socket server
-func New(addr string) (server *WsServer, err error) {
+func New(addr, crt, key string) (server *WsServer, err error) {
 	log.Debug("wsserver creation ", addr)
 	//TODO: add addr validation
 	var localServer WsServer
@@ -34,9 +35,13 @@ func New(addr string) (server *WsServer, err error) {
 	localServer.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
-		CheckOrigin:     myCheckOrigin,
+		CheckOrigin:     customCheckOrigin,
 	}
+
+	localServer.crt = crt
+	localServer.key = key
 	localServer.httpServer = &http.Server{Addr: addr}
+
 	server = &localServer
 	return server, nil
 }
@@ -46,7 +51,7 @@ func (server *WsServer) Start() {
 	log.Info("Start server")
 	http.HandleFunc("/", server.handleConnection)
 
-	if err := server.httpServer.ListenAndServe(); err != http.ErrServerClosed {
+	if err := server.httpServer.ListenAndServeTLS(server.crt, server.key); err != http.ErrServerClosed {
 		log.Debug("Httpserver: ListenAndServe() error: ", err)
 	}
 }
@@ -62,7 +67,7 @@ func (server *WsServer) Stop() {
 /*******************************************************************************
  * Private
  ******************************************************************************/
-func myCheckOrigin(r *http.Request) bool {
+func customCheckOrigin(r *http.Request) bool {
 	return true
 }
 
