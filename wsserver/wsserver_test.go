@@ -36,6 +36,14 @@ type errorInfo struct {
 type dbusInterface struct {
 }
 
+type configuration struct {
+	ServerUrl string
+	VISCert   string
+	VISKey    string
+}
+
+var servConfig configuration
+
 /*******************************************************************************
  * Init
  ******************************************************************************/
@@ -78,7 +86,19 @@ func TestMain(m *testing.M) {
 	dbusserver := dbusInterface{}
 	conn.Export(dbusserver, "/com/aosservicemanager/vistoken", "com.aosservicemanager.vistoken")
 
-	server, err := wsserver.New(addr)
+	file, err := os.Open("../visconfig.json")
+	if err != nil {
+		log.Fatal("Error while opening fcrypt configurataion file: ", err)
+	}
+
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&servConfig)
+	if err != nil {
+		log.Error("Erro while parsing visconfig.json: ", err)
+		os.Exit(1)
+	}
+
+	server, err := wsserver.New(servConfig.ServerUrl, servConfig.VISCert, servConfig.VISKey)
 
 	if err != nil {
 		log.Fatal("Can't create ws server ", err)
@@ -96,8 +116,8 @@ func TestMain(m *testing.M) {
 func TestGetNoAuth(t *testing.T) {
 	log.Debug("[TEST] TestGet")
 
-	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
-	log.Debug("Connecting to %s", u.String())
+	u := url.URL{Scheme: "wss", Host: servConfig.ServerUrl, Path: "/"}
+	log.Debug("[TEST] Connecting to ", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -139,8 +159,8 @@ func TestGetWithAuth(t *testing.T) {
 
 	var resp visResponce
 
-	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
-	log.Debug("Connecting to %s", u.String())
+	u := url.URL{Scheme: "wss", Host: servConfig.ServerUrl, Path: "/"}
+	log.Debug("[TEST] Connecting to ", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -249,8 +269,8 @@ func TestGetWithAuth(t *testing.T) {
 func TestSubscribeUnsubscribe(t *testing.T) {
 	log.Debug("[TEST] TestSubscribeUnsubscribe")
 
-	u := url.URL{Scheme: "ws", Host: addr, Path: "/"}
-	log.Printf("connecting to %s", u.String())
+	u := url.URL{Scheme: "wss", Host: servConfig.ServerUrl, Path: "/"}
+	log.Debug("[TEST] Connecting to ", u.String())
 
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
@@ -323,12 +343,10 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	err = c.WriteMessage(websocket.TextMessage, []byte(unsubscMessageOK))
 	if err != nil {
 		t.Fatalf("Can't send message to server %v", err)
-		return
 	}
 	_, message3, err := c.ReadMessage()
 	if err != nil {
 		t.Fatalf("Can't read message froms erver %v", err)
-		return
 	}
 	log.Debug("[TEST] read:", string(message3))
 
@@ -336,7 +354,6 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	err = json.Unmarshal(message3, &resp3)
 	if err != nil {
 		t.Fatalf("Error parce Unsubscribe responce  %v", err)
-		return
 	}
 
 	if (resp3.Action != "unsubscribe") || (resp3.RequestID != "1004") {
@@ -356,7 +373,6 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	_, messageAll, err := c.ReadMessage()
 	if err != nil {
 		t.Fatalf("Can't read message froms erver %v", err)
-		return
 	}
 	log.Debug("[TEST] read:", string(messageAll))
 
@@ -364,7 +380,6 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	err = json.Unmarshal(messageAll, &respAll)
 	if err != nil {
 		t.Fatalf("Error parce Unsubscribe responce  %v", err)
-		return
 	}
 
 	if (respAll.Action != "unsubscribeAll") || (resp3.RequestID != "1004") {
