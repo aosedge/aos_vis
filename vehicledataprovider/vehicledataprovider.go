@@ -5,8 +5,15 @@ import (
 	"sync"
 )
 
+//
+type VisData struct {
+	path string
+	data interface{}
+}
+
 // VehicleDataProvider interface for geeting vehicle data
 type VehicleDataProvider struct {
+	sensorDataChannel <-chan VisData
 }
 
 var instance *VehicleDataProvider
@@ -16,8 +23,14 @@ var once sync.Once
 func GetInstance() *VehicleDataProvider {
 	once.Do(func() {
 		instance = &VehicleDataProvider{}
+		instance.sensorDataChannel = make(chan VisData, 100)
+		instance.start()
 	})
 	return instance
+}
+
+func (dataprovider *VehicleDataProvider) start() {
+
 }
 
 // IsPublicPath if path is public no authentication is required
