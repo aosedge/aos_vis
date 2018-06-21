@@ -39,7 +39,7 @@ const (
 type WsClientConnection struct {
 	name           string
 	wsConn         *websocket.Conn
-	isAuthorised   bool
+	isAuthorized   bool
 	permissions    permissionData
 	subscriptionCh chan interface{} //TODO: change to struct from dataprovider
 }
@@ -76,7 +76,7 @@ type requestUnsubscribe struct {
 
 type tockensStruct struct {
 	Authorization    *string `json:"authorization"`
-	wwwVehicleDevice *string `json:"www-vehicle-device"`
+	WwwVehicleDevice *string `json:"www-vehicle-device"`
 }
 
 type getSuccessResponse struct {
@@ -114,7 +114,7 @@ type errorResponse struct {
 	Timestamp      int64     `json:"timestamp"`
 }
 
-//TODO: add map arror number message
+//TODO: add map error number message
 type errorInfo struct {
 	Number  int
 	Reason  string
@@ -142,7 +142,7 @@ func NewClientConn(wsConn *websocket.Conn) (wsClientCon *WsClientConnection, err
 	return wsClientCon, nil
 }
 
-//ProcessConnection process incommming websoket connection
+//ProcessConnection process incommoding websocket connection
 func (client *WsClientConnection) ProcessConnection() {
 	//TODO: add select fro processing subscription channel
 	log.Debug("Start processing new WS connection")
@@ -153,7 +153,7 @@ func (client *WsClientConnection) ProcessConnection() {
 			break
 		}
 		if mt == 1 {
-			client.processIncommingMessage(message)
+			client.processIncomingMessage(message)
 		}
 	}
 	log.Debug("Stop processConnection")
@@ -171,7 +171,7 @@ func (client *WsClientConnection) WriteMessage(data []byte) {
  * Private
  ******************************************************************************/
 
-func (client *WsClientConnection) processIncommingMessage(data []byte) {
+func (client *WsClientConnection) processIncomingMessage(data []byte) {
 	log.Info("receive : ", string(data))
 
 	var rType requestType
@@ -225,7 +225,7 @@ func (client *WsClientConnection) processIncommingMessage(data []byte) {
 			log.Warn("Filter currently not implemented. Filters will be ignored")
 		}
 		log.Debug("req subs", rSubs)
-		responce := client.processSubscibeRequest(&rSubs)
+		responce := client.processSubscribeRequest(&rSubs)
 		client.WriteMessage(responce)
 
 	case actionUnsubscribe:
@@ -236,13 +236,13 @@ func (client *WsClientConnection) processIncommingMessage(data []byte) {
 			client.senderrorResponse(actionUnsubscribe, rType.RequestID, &errorInfo{Number: 400})
 			return
 		}
-		log.Debug("req Unsubs", rUnsubs)
-		responce := client.processUnsubscibeRequest(&rUnsubs)
+		log.Debug("req Unsubscribe", rUnsubs)
+		responce := client.processUnsubscribeRequest(&rUnsubs)
 		client.WriteMessage(responce)
 
 	case actionUnsubscribeAll:
 		log.Debug("req UnsubscribeAll")
-		err := vehicledataprovider.RegestrateUnSubscribAll(client.subscriptionCh)
+		err := vehicledataprovider.GetInstance().RegestrateUnSubscribAll(client.subscriptionCh)
 		if err != nil {
 			client.senderrorResponse(actionUnsubscribeAll, rType.RequestID, &errorInfo{Number: 400})
 			return
@@ -268,10 +268,11 @@ func (client *WsClientConnection) processGetRequest(request *requestGet) (resp [
 	var err error
 	var msg interface{}
 	needToAskForData := false
-	if vehicledataprovider.IsPublicPath(request.Path) == true {
+	dataProvider := vehicledataprovider.GetInstance()
+	if dataProvider.IsPublicPath(request.Path) == true {
 		needToAskForData = true
 	} else {
-		if client.isAuthorised == false {
+		if client.isAuthorized == false {
 			log.Info("Client not Authorized send response 403")
 			msg = errorResponse{Action: actionGet, RequestID: request.RequestID, Error: errorInfo{Number: 403}, Timestamp: time.Now().Unix()}
 		} else {
@@ -286,7 +287,7 @@ func (client *WsClientConnection) processGetRequest(request *requestGet) (resp [
 	}
 
 	if needToAskForData == true {
-		vehData, err := vehicledataprovider.GetDataByPath(request.Path)
+		vehData, err := dataProvider.GetDataByPath(request.Path)
 		if err != nil {
 			log.Warn("No data for path ", request.Path)
 			msg = errorResponse{Action: actionGet, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
@@ -310,7 +311,7 @@ func (client *WsClientConnection) processAuthRequest(request *requestAuth) (resp
 	var msg interface{}
 	var err error
 
-	if client.isAuthorised == false {
+	if client.isAuthorized == false {
 		//TODO: add retry count
 		//data, errInfo := getPermissionListForClient(*request.Tokens.Authorization)
 		data, err := visdbusclient.GetVisPermissionByToken(*request.Tokens.Authorization)
@@ -321,7 +322,7 @@ func (client *WsClientConnection) processAuthRequest(request *requestAuth) (resp
 				Timestamp: time.Now().Unix()}
 		} else {
 			client.permissions = data
-			client.isAuthorised = true
+			client.isAuthorized = true
 			msg = authSuccessResponse{Action: actionAuth, RequestID: request.RequestID, TTL: 10000, Timestamp: time.Now().Unix()}
 		}
 	} else {
@@ -338,14 +339,15 @@ func (client *WsClientConnection) processAuthRequest(request *requestAuth) (resp
 }
 
 // process Subscibe request
-func (client *WsClientConnection) processSubscibeRequest(request *requestSubscribe) (resp []byte) {
+func (client *WsClientConnection) processSubscribeRequest(request *requestSubscribe) (resp []byte) {
 	var err error
 	var msg interface{}
 	isPermissionOK := false
-	if vehicledataprovider.IsPublicPath(request.Path) == true {
+	dataProvider := vehicledataprovider.GetInstance()
+	if dataProvider.IsPublicPath(request.Path) == true {
 		isPermissionOK = true
 	} else {
-		if client.isAuthorised == false {
+		if client.isAuthorized == false {
 			log.Info("Client not Authorized send response 403 id", request.RequestID)
 			msg = errorResponse{Action: actionSubscribe, RequestID: request.RequestID, Error: errorInfo{Number: 403}, Timestamp: time.Now().Unix()}
 		} else {
@@ -360,7 +362,7 @@ func (client *WsClientConnection) processSubscibeRequest(request *requestSubscri
 	}
 
 	if isPermissionOK == true {
-		subscrID, err := vehicledataprovider.RegestrateSubscriptionClient(client.subscriptionCh, request.Path)
+		subscrID, err := dataProvider.RegestrateSubscriptionClient(client.subscriptionCh, request.Path)
 		if err != nil {
 			log.Warn("No data for path ", request.Path)
 			msg = errorResponse{Action: actionSubscribe, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
@@ -380,12 +382,12 @@ func (client *WsClientConnection) processSubscibeRequest(request *requestSubscri
 }
 
 // process Unsubscibe request
-func (client *WsClientConnection) processUnsubscibeRequest(request *requestUnsubscribe) (resp []byte) {
+func (client *WsClientConnection) processUnsubscribeRequest(request *requestUnsubscribe) (resp []byte) {
 	var err error
 	var msg interface{}
-	err = vehicledataprovider.RegestrateUnSubscription(client.subscriptionCh, request.SubscriptionID)
+	err = vehicledataprovider.GetInstance().RegestrateUnSubscription(client.subscriptionCh, request.SubscriptionID)
 	if err != nil {
-		log.Warn("Can' unsibscribe from ID", request.SubscriptionID)
+		log.Warn("Can' unsubscribe from ID", request.SubscriptionID)
 		msg = errorResponse{Action: actionUnsubscribe, SubscriptionID: &request.SubscriptionID, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
 	} else {
 		log.Debug("UnSubscription from ID ", request.SubscriptionID)

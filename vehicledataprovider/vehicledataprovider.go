@@ -2,9 +2,26 @@ package vehicledataprovider
 
 import (
 	"errors"
+	"sync"
 )
 
-func IsPublicPath(path string) bool {
+// VehicleDataProvider interface for geeting vehicle data
+type VehicleDataProvider struct {
+}
+
+var instance *VehicleDataProvider
+var once sync.Once
+
+// GetInstance  get pointer to VehicleDataProvider
+func GetInstance() *VehicleDataProvider {
+	once.Do(func() {
+		instance = &VehicleDataProvider{}
+	})
+	return instance
+}
+
+// IsPublicPath if path is public no authentication is required
+func (dataprovider *VehicleDataProvider) IsPublicPath(path string) bool {
 	if path == "Attribute.Vehicle.VehicleIdentification.VIN" {
 		return true
 	}
@@ -14,7 +31,8 @@ func IsPublicPath(path string) bool {
 	return false
 }
 
-func GetDataByPath(path string) (interface{}, error) {
+// GetDataByPath get vehicle data by path
+func (dataprovider *VehicleDataProvider) GetDataByPath(path string) (interface{}, error) {
 	if path == "Attribute.Vehicle.VehicleIdentification.VIN" {
 		return "1234567890QWERTYU", nil
 	}
@@ -27,18 +45,21 @@ func GetDataByPath(path string) (interface{}, error) {
 	return "", errors.New("404 Not found")
 }
 
-func RegestrateSubscriptionClient(subasChan chan interface{}, path string) (string, error) {
+// RegestrateSubscriptionClient TODO
+func (dataprovider *VehicleDataProvider) RegestrateSubscriptionClient(subsChan chan interface{}, path string) (string, error) {
 	return "1111", nil
 }
 
-func RegestrateUnSubscription(subasChan chan interface{}, subscID string) (err error) {
+// RegestrateUnSubscription TODO
+func (dataprovider *VehicleDataProvider) RegestrateUnSubscription(subsChan chan interface{}, subsID string) (err error) {
 	err = nil
-	if subscID != "1111" {
+	if subsID != "1111" {
 		err = errors.New("404 Not found")
 	}
 	return err
 }
 
-func RegestrateUnSubscribAll(subasChan chan interface{}) (err error) {
+// RegestrateUnSubscribAll TODO
+func (dataprovider *VehicleDataProvider) RegestrateUnSubscribAll(subsChan chan interface{}) (err error) {
 	return nil
 }
