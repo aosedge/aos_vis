@@ -13,3 +13,5 @@ Specify path to certificates in visconfig.json file.  example is located in conf
 	"VISKey": "src/gitpct.epam.com/epmd-aepr/aos_vis/data/wwwivi.key.pem"
 }
 ```
+
+Put root certificate rootCA.crt.pem to /etc/ssl/certs in your system.
