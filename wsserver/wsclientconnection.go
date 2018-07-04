@@ -292,7 +292,7 @@ func (client *WsClientConnection) processGetRequest(request *requestGet) (resp [
 			msg = errorResponse{Action: actionGet, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
 
 		} else {
-			log.Debug("Data from dataprovider ", vehData, request.RequestID)
+			log.Debugf("Data from dataprovider: %v, request ID: %s", vehData, request.RequestID)
 			msg = getSuccessResponse{Action: actionGet, RequestID: request.RequestID, Value: vehData, Timestamp: time.Now().Unix()}
 		}
 	}
