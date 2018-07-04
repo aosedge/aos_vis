@@ -8,6 +8,9 @@ func IsPublicPath(path string) bool {
 	if path == "Attribute.Vehicle.VehicleIdentification.VIN" {
 		return true
 	}
+	if path == "Attribute.Vehicle.UserIdentification.Users" {
+		return true
+	}
 	return false
 }
 
@@ -17,6 +20,9 @@ func GetDataByPath(path string) (interface{}, error) {
 	}
 	if path == "Signal.Drivetrain.InternalCombustionEngine.RPM" {
 		return 2372, nil
+	}
+	if path == "Attribute.Vehicle.UserIdentification.Users" {
+		return []string{"User1"}, nil
 	}
 	return "", errors.New("404 Not found")
 }
