@@ -38,7 +38,7 @@ func (GetPermission dbusInterface) GetPermission(token string) (string, string, 
 func TestMain(m *testing.M) {
 	conn, err := dbus.SessionBus()
 	if err != nil {
-		log.Error("Can't create session connection %v", err)
+		log.Errorf("Can't create session connection: %s", err)
 		os.Exit(1)
 	}
 	reply, err := conn.RequestName("com.aosservicemanager.vistoken",
@@ -72,6 +72,6 @@ func TestDBUS(t *testing.T) {
 	}
 
 	if permission["*"] != "rw" {
-		t.Fatalf("Incorrect permisson")
+		t.Fatalf("Incorrect permissions")
 	}
 }

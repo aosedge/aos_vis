@@ -35,7 +35,7 @@ const (
  * Types
  ******************************************************************************/
 
-//WsClientConnection websocket client connection struncture
+// WsClientConnection websocket client connection structure
 type WsClientConnection struct {
 	name           string
 	wsConn         *websocket.Conn
@@ -56,9 +56,9 @@ type requestGet struct {
 }
 
 type requestAuth struct {
-	Action    string        `json:"action"`
-	Tokens    tockensStruct `json:"tokens"`
-	RequestID string        `json:"requestId"`
+	Action    string       `json:"action"`
+	Tokens    tokensStruct `json:"tokens"`
+	RequestID string       `json:"requestId"`
 }
 
 type requestSubscribe struct {
@@ -74,7 +74,7 @@ type requestUnsubscribe struct {
 	RequestID      string `json:"requestId"`
 }
 
-type tockensStruct struct {
+type tokensStruct struct {
 	Authorization    *string `json:"authorization"`
 	WwwVehicleDevice *string `json:"www-vehicle-device"`
 }
@@ -338,7 +338,7 @@ func (client *WsClientConnection) processAuthRequest(request *requestAuth) (resp
 	return resp
 }
 
-// process Subscibe request
+// process Subscribe request
 func (client *WsClientConnection) processSubscribeRequest(request *requestSubscribe) (resp []byte) {
 	var err error
 	var msg interface{}
@@ -381,7 +381,7 @@ func (client *WsClientConnection) processSubscribeRequest(request *requestSubscr
 	return resp
 }
 
-// process Unsubscibe request
+// process Unsubscribe request
 func (client *WsClientConnection) processUnsubscribeRequest(request *requestUnsubscribe) (resp []byte) {
 	var err error
 	var msg interface{}
