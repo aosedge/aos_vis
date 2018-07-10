@@ -11,9 +11,28 @@ type VisData struct {
 	data interface{}
 }
 
+type visInternalData struct {
+	path          string
+	data          interface{}
+	id            int32
+	isInitialized bool
+}
+
+type subscriptionElement struct {
+	subsChan chan interface{}
+	ids      []subscriptionPare
+}
+
+type subscriptionPare struct {
+	subscriptionID int
+	value          string
+}
+
 // VehicleDataProvider interface for geeting vehicle data
 type VehicleDataProvider struct {
 	sensorDataChannel <-chan VisData
+	subscription      []subscriptionElement
+	visSnapshot       []visInternalData
 }
 
 var instance *VehicleDataProvider
@@ -75,4 +94,18 @@ func (dataprovider *VehicleDataProvider) RegestrateUnSubscription(subsChan chan 
 // RegestrateUnSubscribAll TODO
 func (dataprovider *VehicleDataProvider) RegestrateUnSubscribAll(subsChan chan interface{}) (err error) {
 	return nil
+}
+
+func createVisDataStorage() []visInternalData {
+	var storage []visInternalData
+	element := visInternalData{path: "Attribute.Vehicle.UserIdentification.Users", id: 8888, data: []string{"User1"}, isInitialized: true}
+	storage = append(storage, element)
+	element = visInternalData{path: "Attribute.Vehicle.VehicleIdentification.VIN", id: 39, data: "1234567890QWERTYU", isInitialized: true}
+	storage = append(storage, element)
+	element = visInternalData{path: "Signal.Drivetrain.InternalCombustionEngine.RPM", id: 58, data: 2372, isInitialized: true}
+	storage = append(storage, element)
+	element = visInternalData{path: "Signal.Drivetrain.InternalCombustionEngine.Power", id: 65, data: 60, isInitialized: true}
+	storage = append(storage, element)
+
+	return storage
 }
