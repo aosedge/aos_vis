@@ -1,4 +1,4 @@
-package vehicledataprovider
+package visdataadapter
 
 import (
 	"os"
@@ -33,9 +33,9 @@ func (sensorAdapter *FakeAdapter) StartGettingData(dataChan chan<- []VisData) {
 		case <-ticker.C:
 			dataTosend := []VisData{}
 			RPM += 50
-			oneElement := VisData{path: "Signal.Drivetrain.InternalCombustionEngine.RPM", data: RPM}
+			oneElement := VisData{Path: "Signal.Drivetrain.InternalCombustionEngine.RPM", Data: RPM}
 			dataTosend = append(dataTosend, oneElement)
-			oneElement = VisData{path: "Attribute.Vehicle.UserIdentification.Users", data: []string{"User2"}}
+			oneElement = VisData{Path: "Attribute.Vehicle.UserIdentification.Users", Data: []string{"User2"}}
 			dataTosend = append(dataTosend, oneElement)
 			dataChan <- dataTosend
 		case <-interrupt:
@@ -43,4 +43,9 @@ func (sensorAdapter *FakeAdapter) StartGettingData(dataChan chan<- []VisData) {
 			break
 		}
 	}
+}
+
+// Stop stop getting data
+func (sensorAdapter *FakeAdapter) Stop() {
+
 }

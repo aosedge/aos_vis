@@ -9,18 +9,13 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
+	"gitpct.epam.com/epmd-aepr/aos_vis/visdataadapter"
 )
 
 //SubscriptionOutputData struct to inform aboute data change by subscription
 type SubscriptionOutputData struct {
 	ID      string
 	OutData interface{}
-}
-
-//
-type VisData struct {
-	path string
-	data interface{}
 }
 
 type visInternalData struct {
@@ -42,11 +37,11 @@ type subscriptionPare struct {
 
 // VehicleDataProvider interface for geeting vehicle data
 type VehicleDataProvider struct {
-	sensorDataChannel chan []VisData
+	sensorDataChannel chan []visdataadapter.VisData
 	subscription      []subscriptionElement
 	visDataStorage    []visInternalData
 	currentSubsID     uint64
-	adapter           *FakeAdapter //TODO: change to interface
+	adapter           visdataadapter.VisDataAdapter //TODO: change to interface
 }
 
 type notificationData struct {
@@ -61,10 +56,10 @@ var once sync.Once
 func GetInstance() *VehicleDataProvider {
 	once.Do(func() {
 		instance = &VehicleDataProvider{}
-		instance.sensorDataChannel = make(chan []VisData, 100)
+		instance.sensorDataChannel = make(chan []visdataadapter.VisData, 100)
 		instance.visDataStorage = createVisDataStorage()
 		go instance.start()
-		instance.adapter = NewFakeAdapter()
+		instance.adapter = visdataadapter.GetVisDataAdapter()
 		go instance.adapter.StartGettingData(instance.sensorDataChannel)
 
 	})
@@ -78,7 +73,7 @@ func (dataprovider *VehicleDataProvider) start() {
 	}
 }
 
-func (dataprovider *VehicleDataProvider) processIncomingData(incomeData []VisData) {
+func (dataprovider *VehicleDataProvider) processIncomingData(incomeData []visdataadapter.VisData) {
 
 	type notificationPair struct {
 		id   uint64
@@ -93,24 +88,24 @@ func (dataprovider *VehicleDataProvider) processIncomingData(incomeData []VisDat
 	var notificationArray []notificationElement
 	for _, data := range incomeData {
 		//find element which receive in dataStorage
-		log.Debug("process path = ", data.path, " data= ", data.data)
+		log.Debug("process path = ", data.Path, " data= ", data.Data)
 		wasChanged := false
 		for i := range dataprovider.visDataStorage {
 			log.Debug("Check vStorage path = ", dataprovider.visDataStorage[i].path, " data= ", dataprovider.visDataStorage[i].data)
 
-			if dataprovider.visDataStorage[i].path == data.path {
+			if dataprovider.visDataStorage[i].path == data.Path {
 				dataprovider.visDataStorage[i].isInitialized = true
-				valueType := reflect.TypeOf(data.data).Kind()
+				valueType := reflect.TypeOf(data.Data).Kind()
 				log.Debug("value type ", valueType)
-				log.Debug("Path was found ", data.path)
+				log.Debug("Path was found ", data.Path)
 				if valueType == reflect.Array || valueType == reflect.Slice {
 					//TODO: add array comeration
 					wasChanged = true
-					dataprovider.visDataStorage[i].data = data.data
+					dataprovider.visDataStorage[i].data = data.Data
 				} else {
-					if dataprovider.visDataStorage[i].data != data.data {
-						log.Debug("Data for ", data.path, " was changed from ", dataprovider.visDataStorage[i].data, " to ", data.data)
-						dataprovider.visDataStorage[i].data = data.data
+					if dataprovider.visDataStorage[i].data != data.Data {
+						log.Debug("Data for ", data.Path, " was changed from ", dataprovider.visDataStorage[i].data, " to ", data.Data)
+						dataprovider.visDataStorage[i].data = data.Data
 
 						wasChanged = true
 					}
@@ -122,7 +117,7 @@ func (dataprovider *VehicleDataProvider) processIncomingData(incomeData []VisDat
 		log.Debug("wasChanged = ", wasChanged)
 		if wasChanged == true {
 			// prepare data fro change notification
-			notifyData := dataprovider.getNotificationElementsByPath(data.path)
+			notifyData := dataprovider.getNotificationElementsByPath(data.Path)
 			for _, notifyElement := range notifyData {
 				//go across all channels
 				wasChFound := false
@@ -133,7 +128,7 @@ func (dataprovider *VehicleDataProvider) processIncomingData(incomeData []VisDat
 						for k := range notificationArray[j].notificationData {
 							if notificationArray[j].notificationData[k].id == notifyElement.id {
 								wasIDFound = true
-								notificationArray[j].notificationData[k].data[data.path] = data.data
+								notificationArray[j].notificationData[k].data[data.Path] = data.Data
 								log.Debug("Add notification to abaliable ID ")
 								break
 							}
@@ -142,7 +137,7 @@ func (dataprovider *VehicleDataProvider) processIncomingData(incomeData []VisDat
 							//Add noe ID to available channel
 							log.Debug("Create new notification element ID for available channel ")
 							pair := notificationPair{id: notifyElement.id, data: make(map[string]interface{})}
-							pair.data[data.path] = data.data
+							pair.data[data.Path] = data.Data
 							notificationArray[j].notificationData = append(notificationArray[j].notificationData, pair)
 						}
 						wasChFound = true
@@ -152,7 +147,7 @@ func (dataprovider *VehicleDataProvider) processIncomingData(incomeData []VisDat
 					//add new channel
 					log.Debug("Create new channel")
 					pair := notificationPair{id: notifyElement.id, data: make(map[string]interface{})}
-					pair.data[data.path] = data.data
+					pair.data[data.Path] = data.Data
 					pairStore := []notificationPair{pair}
 
 					notificationArray = append(notificationArray, notificationElement{subsChan: notifyElement.subsChan, notificationData: pairStore})
@@ -200,7 +195,7 @@ func (dataprovider *VehicleDataProvider) IsPublicPath(path string) bool {
 	if path == "Signal.Drivetrain.InternalCombustionEngine.Power" {
 		return true
 	}
-	return true //TODO currently make all public
+	return true //TODO: currently make all public
 }
 
 // GetDataByPath get vehicle data by path

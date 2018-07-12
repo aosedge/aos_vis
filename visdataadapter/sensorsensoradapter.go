@@ -1,4 +1,4 @@
-package vehicledataprovider
+package visdataadapter
 
 import (
 	"io/ioutil"
