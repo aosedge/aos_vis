@@ -24,6 +24,7 @@ const (
 	actionSubscribe      = "subscribe"
 	actionUnsubscribe    = "unsubscribe"
 	actionUnsubscribeAll = "unsubscribeAll"
+	actionSubscription   = "subscription"
 )
 
 const (
@@ -41,7 +42,7 @@ type WsClientConnection struct {
 	wsConn         *websocket.Conn
 	isAuthorized   bool
 	permissions    permissionData
-	subscriptionCh chan interface{} //TODO: change to struct from dataprovider
+	subscriptionCh chan vehicledataprovider.SubscriptionOutputData //TODO: change to struct from dataprovider
 }
 
 type requestType struct {
@@ -106,6 +107,13 @@ type unsubscribeAllSuccessResponse struct {
 	Timestamp int64  `json:"timestamp"`
 }
 
+type sunscribeNotification struct {
+	Action         string      `json:"action"`
+	SubscriptionID string      `json:"subscriptionId"`
+	Value          interface{} `json:"value"`
+	Timestamp      int64       `json:"timestamp"`
+}
+
 type errorResponse struct {
 	Action         string    `json:"action"`
 	RequestID      string    `json:"requestId"`
@@ -137,15 +145,32 @@ func NewClientConn(wsConn *websocket.Conn) (wsClientCon *WsClientConnection, err
 	localConnection.wsConn = wsConn
 	wsClientCon = &localConnection
 
-	wsClientCon.subscriptionCh = make(chan interface{}, 100)
+	wsClientCon.subscriptionCh = make(chan vehicledataprovider.SubscriptionOutputData, 100)
 
 	return wsClientCon, nil
+}
+
+func (client *WsClientConnection) processSubscriptionChannel() {
+	for {
+		data := <-client.subscriptionCh
+		msg := sunscribeNotification{Action: actionSubscription,
+			SubscriptionID: data.ID,
+			Value:          data.OutData,
+			Timestamp:      time.Now().Unix()}
+		resp, err := json.Marshal(msg)
+		if err != nil {
+			log.Warn("Error marshal json: ", err)
+			//todo create error subscriptionmsg
+		}
+		client.WriteMessage(resp)
+	}
 }
 
 //ProcessConnection process incommoding websocket connection
 func (client *WsClientConnection) ProcessConnection() {
 	//TODO: add select fro processing subscription channel
 	log.Debug("Start processing new WS connection")
+	go client.processSubscriptionChannel()
 	for {
 		mt, message, err := client.wsConn.ReadMessage()
 		if err != nil {
