@@ -38,10 +38,13 @@ type subscriptionPare struct {
 // VehicleDataProvider interface for geeting vehicle data
 type VehicleDataProvider struct {
 	sensorDataChannel chan []visdataadapter.VisData
-	subscription      []subscriptionElement
-	visDataStorage    []visInternalData
-	currentSubsID     uint64
-	adapter           visdataadapter.VisDataAdapter //TODO: change to interface
+	subscription      struct {
+		ar    []subscriptionElement
+		mutex sync.Mutex
+	}
+	visDataStorage []visInternalData
+	currentSubsID  uint64
+	adapter        visdataadapter.VisDataAdapter //TODO: change to interface
 }
 
 type notificationData struct {
@@ -84,6 +87,9 @@ func (dataprovider *VehicleDataProvider) processIncomingData(incomeData []visdat
 		subsChan         chan<- SubscriptionOutputData
 		notificationData []notificationPair
 	}
+
+	dataprovider.subscription.mutex.Lock()
+	defer dataprovider.subscription.mutex.Unlock()
 
 	var notificationArray []notificationElement
 	for _, data := range incomeData {
@@ -167,19 +173,24 @@ func (dataprovider *VehicleDataProvider) processIncomingData(incomeData []visdat
 	}
 }
 func (dataprovider *VehicleDataProvider) getNotificationElementsByPath(path string) (returnData []notificationData) {
-	log.Debug("getNotificationElementsByPath path= path")
-	for i := range dataprovider.subscription {
-		for j := range dataprovider.subscription[i].ids {
-			if dataprovider.subscription[i].ids[j].value.MatchString(path) {
-				log.Debug("Find subscription element ID ", dataprovider.subscription[i].ids[j].subscriptionID, " path= ", path)
+	log.Debug("getNotificationElementsByPath path=", path)
+	wasFound := false
+	for i := range dataprovider.subscription.ar {
+		for j := range dataprovider.subscription.ar[i].ids {
+			if dataprovider.subscription.ar[i].ids[j].value.MatchString(path) {
+				log.Debug("Find subscription element ID ", dataprovider.subscription.ar[i].ids[j].subscriptionID, " path= ", path)
 				returnData = append(returnData, notificationData{
-					subsChan: dataprovider.subscription[i].subsChan,
-					id:       dataprovider.subscription[i].ids[j].subscriptionID})
-
+					subsChan: dataprovider.subscription.ar[i].subsChan,
+					id:       dataprovider.subscription.ar[i].ids[j].subscriptionID})
+				wasFound = true
 				break
 			}
 		}
 	}
+	if wasFound == false {
+		log.Debug("No subscription for ", path)
+	}
+
 	return returnData
 }
 
@@ -244,14 +255,18 @@ func (dataprovider *VehicleDataProvider) RegestrateSubscriptionClient(subsChan c
 		log.Error("incorrect path ", err)
 		return "", errors.New("404 Not found")
 	}
+
+	dataprovider.subscription.mutex.Lock()
+	defer dataprovider.subscription.mutex.Unlock()
+
 	dataprovider.currentSubsID++
 
 	subsElement.subscriptionID = dataprovider.currentSubsID
 	var wasFound bool
-	for i := range dataprovider.subscription {
-		if dataprovider.subscription[i].subsChan == subsChan {
+	for i := range dataprovider.subscription.ar {
+		if dataprovider.subscription.ar[i].subsChan == subsChan {
 			wasFound = true
-			dataprovider.subscription[i].ids = append(dataprovider.subscription[i].ids, subsElement)
+			dataprovider.subscription.ar[i].ids = append(dataprovider.subscription.ar[i].ids, subsElement)
 			log.Debug("Add subscription to available channel ID", dataprovider.currentSubsID, " path ", path)
 		}
 	}
@@ -260,7 +275,7 @@ func (dataprovider *VehicleDataProvider) RegestrateSubscriptionClient(subsChan c
 		var subscripRootElement subscriptionElement
 		subscripRootElement.subsChan = subsChan
 		subscripRootElement.ids = append(subscripRootElement.ids, subsElement)
-		dataprovider.subscription = append(dataprovider.subscription, subscripRootElement)
+		dataprovider.subscription.ar = append(dataprovider.subscription.ar, subscripRootElement)
 		log.Debug("Create new subscription ID", dataprovider.currentSubsID, " path ", path)
 	}
 	return strconv.FormatUint(dataprovider.currentSubsID, 10), nil
@@ -268,16 +283,51 @@ func (dataprovider *VehicleDataProvider) RegestrateSubscriptionClient(subsChan c
 
 // RegestrateUnSubscription TODO
 func (dataprovider *VehicleDataProvider) RegestrateUnSubscription(subsChan chan<- SubscriptionOutputData, subsID string) (err error) {
-	err = nil
-	if subsID != "1111" {
-		err = errors.New("404 Not found")
+	var intSubs uint64
+	intSubs, err = strconv.ParseUint(subsID, 10, 64)
+	if err != nil {
+		log.Error("Error cant convert subsID to int64")
+		return err
 	}
-	return err
+	dataprovider.subscription.mutex.Lock()
+	defer dataprovider.subscription.mutex.Unlock()
+
+	for i := range dataprovider.subscription.ar {
+		if dataprovider.subscription.ar[i].subsChan == subsChan {
+			wasFound := false
+			for j, sID := range dataprovider.subscription.ar[i].ids {
+				if intSubs == sID.subscriptionID {
+					dataprovider.subscription.ar[i].ids = append(dataprovider.subscription.ar[i].ids[:j], dataprovider.subscription.ar[i].ids[j+1:]...)
+					wasFound = true
+					break
+				}
+			}
+			if wasFound {
+				if len(dataprovider.subscription.ar[i].ids) == 0 {
+					dataprovider.subscription.ar = append(dataprovider.subscription.ar[:i], dataprovider.subscription.ar[i+1:]...)
+					log.Debug("Remove channel subscription")
+				}
+				return nil
+			}
+			break
+		}
+	}
+
+	return errors.New("404 Not found")
 }
 
 // RegestrateUnSubscribAll TODO
 func (dataprovider *VehicleDataProvider) RegestrateUnSubscribAll(subsChan chan<- SubscriptionOutputData) (err error) {
-	return nil
+	dataprovider.subscription.mutex.Lock()
+	defer dataprovider.subscription.mutex.Unlock()
+
+	for i := range dataprovider.subscription.ar {
+		if dataprovider.subscription.ar[i].subsChan == subsChan {
+			dataprovider.subscription.ar = append(dataprovider.subscription.ar[:i], dataprovider.subscription.ar[i+1:]...)
+			return nil
+		}
+	}
+	return errors.New("404 Not found")
 }
 
 func createVisDataStorage() []visInternalData {

@@ -152,17 +152,23 @@ func NewClientConn(wsConn *websocket.Conn) (wsClientCon *WsClientConnection, err
 
 func (client *WsClientConnection) processSubscriptionChannel() {
 	for {
-		data := <-client.subscriptionCh
-		msg := sunscribeNotification{Action: actionSubscription,
-			SubscriptionID: data.ID,
-			Value:          data.OutData,
-			Timestamp:      time.Now().Unix()}
-		resp, err := json.Marshal(msg)
-		if err != nil {
-			log.Warn("Error marshal json: ", err)
-			//todo create error subscriptionmsg
+		data, more := <-client.subscriptionCh
+		if more {
+			msg := sunscribeNotification{Action: actionSubscription,
+				SubscriptionID: data.ID,
+				Value:          data.OutData,
+				Timestamp:      getCurTime()}
+			resp, err := json.Marshal(msg)
+			if err != nil {
+				log.Warn("Error marshal json: ", err)
+				//TODO: create error subscriptionmsg
+			}
+			client.WriteMessage(resp)
+		} else {
+			log.Debug("channelClosed")
+			return
 		}
-		client.WriteMessage(resp)
+
 	}
 }
 
@@ -175,6 +181,8 @@ func (client *WsClientConnection) ProcessConnection() {
 		mt, message, err := client.wsConn.ReadMessage()
 		if err != nil {
 			log.Warning("Can't read from WS: ", err)
+			vehicledataprovider.GetInstance().RegestrateUnSubscribAll(client.subscriptionCh)
+			close(client.subscriptionCh)
 			break
 		}
 		if mt == 1 {
@@ -272,7 +280,7 @@ func (client *WsClientConnection) processIncomingMessage(data []byte) {
 			client.senderrorResponse(actionUnsubscribeAll, rType.RequestID, &errorInfo{Number: 400})
 			return
 		}
-		msg := unsubscribeAllSuccessResponse{Action: actionUnsubscribeAll, RequestID: rType.RequestID, Timestamp: time.Now().Unix()}
+		msg := unsubscribeAllSuccessResponse{Action: actionUnsubscribeAll, RequestID: rType.RequestID, Timestamp: getCurTime()}
 
 		var resp []byte
 		resp, err = json.Marshal(msg)
@@ -299,14 +307,14 @@ func (client *WsClientConnection) processGetRequest(request *requestGet) (resp [
 	} else {
 		if client.isAuthorized == false {
 			log.Info("Client not Authorized send response 403")
-			msg = errorResponse{Action: actionGet, RequestID: request.RequestID, Error: errorInfo{Number: 403}, Timestamp: time.Now().Unix()}
+			msg = errorResponse{Action: actionGet, RequestID: request.RequestID, Error: errorInfo{Number: 403}, Timestamp: getCurTime()}
 		} else {
 			if client.checkPermission(request.Path, getPermission) == true {
 				needToAskForData = true
 			} else {
 				msg = errorResponse{Action: actionGet, RequestID: request.RequestID,
 					Error:     errorInfo{Number: 403, Message: "The user is not permitted to access the requested resource"},
-					Timestamp: time.Now().Unix()}
+					Timestamp: getCurTime()}
 			}
 		}
 	}
@@ -315,11 +323,11 @@ func (client *WsClientConnection) processGetRequest(request *requestGet) (resp [
 		vehData, err := dataProvider.GetDataByPath(request.Path)
 		if err != nil {
 			log.Warn("No data for path ", request.Path)
-			msg = errorResponse{Action: actionGet, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
+			msg = errorResponse{Action: actionGet, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: getCurTime()}
 
 		} else {
-			log.Debugf("Data from dataprovider: %v, request ID: %s", vehData, request.RequestID)
-			msg = getSuccessResponse{Action: actionGet, RequestID: request.RequestID, Value: vehData, Timestamp: time.Now().Unix()}
+			log.Debug("Data from dataprovider: %v, request ID: %s", vehData, request.RequestID)
+			msg = getSuccessResponse{Action: actionGet, RequestID: request.RequestID, Value: vehData, Timestamp: getCurTime()}
 		}
 	}
 
@@ -344,15 +352,15 @@ func (client *WsClientConnection) processAuthRequest(request *requestAuth) (resp
 			log.Error("Error auth", err)
 			msg = errorResponse{Action: actionAuth, RequestID: request.RequestID,
 				Error:     errorInfo{Number: 404, Reason: "", Message: err.Error()},
-				Timestamp: time.Now().Unix()}
+				Timestamp: getCurTime()}
 		} else {
 			client.permissions = data
 			client.isAuthorized = true
-			msg = authSuccessResponse{Action: actionAuth, RequestID: request.RequestID, TTL: 10000, Timestamp: time.Now().Unix()}
+			msg = authSuccessResponse{Action: actionAuth, RequestID: request.RequestID, TTL: 10000, Timestamp: getCurTime()}
 		}
 	} else {
 		log.Info("Token ", request.Tokens.Authorization, " already authorized")
-		msg = authSuccessResponse{Action: actionAuth, RequestID: request.RequestID, TTL: 10000, Timestamp: time.Now().Unix()}
+		msg = authSuccessResponse{Action: actionAuth, RequestID: request.RequestID, TTL: 10000, Timestamp: getCurTime()}
 	}
 
 	resp, err = json.Marshal(msg)
@@ -374,14 +382,14 @@ func (client *WsClientConnection) processSubscribeRequest(request *requestSubscr
 	} else {
 		if client.isAuthorized == false {
 			log.Info("Client not Authorized send response 403 id", request.RequestID)
-			msg = errorResponse{Action: actionSubscribe, RequestID: request.RequestID, Error: errorInfo{Number: 403}, Timestamp: time.Now().Unix()}
+			msg = errorResponse{Action: actionSubscribe, RequestID: request.RequestID, Error: errorInfo{Number: 403}, Timestamp: getCurTime()}
 		} else {
 			if client.checkPermission(request.Path, getPermission) == true {
 				isPermissionOK = true
 			} else {
 				msg = errorResponse{Action: actionSubscribe, RequestID: request.RequestID,
 					Error:     errorInfo{Number: 403, Message: "The user is not permitted to access the requested resource"},
-					Timestamp: time.Now().Unix()}
+					Timestamp: getCurTime()}
 			}
 		}
 	}
@@ -390,11 +398,11 @@ func (client *WsClientConnection) processSubscribeRequest(request *requestSubscr
 		subscrID, err := dataProvider.RegestrateSubscriptionClient(client.subscriptionCh, request.Path)
 		if err != nil {
 			log.Warn("No data for path ", request.Path)
-			msg = errorResponse{Action: actionSubscribe, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
+			msg = errorResponse{Action: actionSubscribe, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: getCurTime()}
 
 		} else {
 			log.Debug("SubscriptionID from dataprovider ", subscrID)
-			msg = subscribeUnsubscribeSuccessResponse{Action: actionSubscribe, RequestID: request.RequestID, SubscriptionID: subscrID, Timestamp: time.Now().Unix()}
+			msg = subscribeUnsubscribeSuccessResponse{Action: actionSubscribe, RequestID: request.RequestID, SubscriptionID: subscrID, Timestamp: getCurTime()}
 		}
 	}
 
@@ -413,10 +421,10 @@ func (client *WsClientConnection) processUnsubscribeRequest(request *requestUnsu
 	err = vehicledataprovider.GetInstance().RegestrateUnSubscription(client.subscriptionCh, request.SubscriptionID)
 	if err != nil {
 		log.Warn("Can' unsubscribe from ID", request.SubscriptionID)
-		msg = errorResponse{Action: actionUnsubscribe, SubscriptionID: &request.SubscriptionID, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: time.Now().Unix()}
+		msg = errorResponse{Action: actionUnsubscribe, SubscriptionID: &request.SubscriptionID, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: getCurTime()}
 	} else {
 		log.Debug("UnSubscription from ID ", request.SubscriptionID)
-		msg = subscribeUnsubscribeSuccessResponse{Action: actionUnsubscribe, SubscriptionID: request.SubscriptionID, RequestID: request.RequestID, Timestamp: time.Now().Unix()}
+		msg = subscribeUnsubscribeSuccessResponse{Action: actionUnsubscribe, SubscriptionID: request.SubscriptionID, RequestID: request.RequestID, Timestamp: getCurTime()}
 	}
 
 	resp, err = json.Marshal(msg)
@@ -459,11 +467,15 @@ func (client *WsClientConnection) checkPermission(path string, permission uint) 
 }
 
 func (client *WsClientConnection) senderrorResponse(action string, reqID string, errResp *errorInfo) {
-	msg := errorResponse{Action: action, Timestamp: time.Now().Unix(), Error: *errResp, RequestID: reqID}
+	msg := errorResponse{Action: action, Timestamp: getCurTime(), Error: *errResp, RequestID: reqID}
 	respJSON, err := json.Marshal(msg)
 	if err != nil {
 		log.Warn("Error marshal json: ", err)
 		return
 	}
 	client.WriteMessage(respJSON)
+}
+
+func getCurTime() int64 {
+	return time.Now().UnixNano() / 1000000
 }
