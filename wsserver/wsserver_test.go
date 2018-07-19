@@ -61,7 +61,7 @@ func init() {
 func (GetPermission dbusInterface) GetPermission(token string) (string, string, *dbus.Error) {
 	log.Info("[TEST] GetPermission token: ", token)
 
-	return `{"Signal.Drivetrain.InternalCombustionEngine.RPM": "r"}`, "OK", nil
+	return `{"Signal.Test.RPM": "r"}`, "OK", nil
 }
 
 /*******************************************************************************
@@ -155,6 +155,47 @@ func TestGetNoAuth(t *testing.T) {
 	}
 }
 
+func TestSet(t *testing.T) {
+	log.Debug("[TEST] TestSet")
+
+	u := url.URL{Scheme: "wss", Host: servConfig.ServerUrl, Path: "/"}
+	log.Debug("[TEST] Connecting to ", u.String())
+
+	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	if err != nil {
+		t.Fatalf("Can't connect to ws server %v", err)
+		return
+	}
+	defer c.Close()
+	getmessage := `{"action": "set", "path": "Signal.Drivetrain.InternalCombustionEngine.Power", "value": 1000, "requestId": "8888"}`
+
+	err = c.WriteMessage(websocket.TextMessage, []byte(getmessage))
+	if err != nil {
+		t.Fatalf("Can't send message to server %v", err)
+		return
+	}
+	_, message, err := c.ReadMessage()
+	if err != nil {
+		t.Fatalf("Can't read message from server %v", err)
+		return
+	}
+	log.Debug("[TEST] read:", string(message))
+
+	var resp visResponce
+	err = json.Unmarshal(message, &resp)
+	if err != nil {
+		t.Fatalf("Error parcing set response: %v", err)
+		return
+	}
+
+	if (resp.Action != "set") || (resp.RequestID != "8888") {
+		t.Fatalf("Unexpected value")
+	}
+	if resp.Error != nil {
+		t.Fatalf("Error parsing get request:  %v", err)
+	}
+}
+
 func TestGetWithAuth(t *testing.T) {
 	log.Debug("[TEST] TestGetWithAuth")
 
@@ -170,7 +211,7 @@ func TestGetWithAuth(t *testing.T) {
 	}
 	defer c.Close()
 	//--------------- send GET wait for error 403
-	requestMsg := `{"action": "get", "path": "Signal.Drivetrain.InternalCombustionEngine.RPM", "requestId": "8755"}`
+	requestMsg := `{"action": "get", "path": "Signal.Test.RPM", "requestId": "8755"}`
 
 	err = c.WriteMessage(websocket.TextMessage, []byte(requestMsg))
 	if err != nil {
@@ -236,7 +277,7 @@ func TestGetWithAuth(t *testing.T) {
 		t.Fatalf("Error authorize %v", resp2.Error.Number)
 	}
 
-	requestMsg = `{"action": "get", "path": "Signal.Drivetrain.InternalCombustionEngine.RPM", "requestId": "12347"}`
+	requestMsg = `{"action": "get", "path": "Signal.Test.RPM", "requestId": "12347"}`
 
 	err = c.WriteMessage(websocket.TextMessage, []byte(requestMsg))
 	if err != nil {
@@ -339,7 +380,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		t.Fatalf("Unexpected positive responce ")
 	}
 
-	unsubscMessageOK := `{"action": "unsubscribe", "subscriptionId": "1111", "requestId": "1004"}`
+	unsubscMessageOK := `{"action": "unsubscribe", "subscriptionId": "1", "requestId": "1004"}`
 
 	err = c.WriteMessage(websocket.TextMessage, []byte(unsubscMessageOK))
 	if err != nil {

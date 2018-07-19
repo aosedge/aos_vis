@@ -196,6 +196,8 @@ func (dataprovider *VehicleDataProvider) getNotificationElementsByPath(path stri
 	return returnData
 }
 
+//TODO: add parameter to read or write
+
 // IsPublicPath if path is public no authentication is required
 func (dataprovider *VehicleDataProvider) IsPublicPath(path string) bool {
 	if path == "Attribute.Vehicle.VehicleIdentification.VIN" {
@@ -208,18 +210,22 @@ func (dataprovider *VehicleDataProvider) IsPublicPath(path string) bool {
 	if path == "Signal.Drivetrain.InternalCombustionEngine.Power" {
 		return true
 	}
+	if path == "Signal.Test.RPM" {
+		return false
+	}
+
 	return true //TODO: currently make all public
 }
 
 // GetDataByPath get vehicle data by path
-func (dataprovider *VehicleDataProvider) GetDataByPath(path string) (outoutData interface{}, err error) {
+func (dataprovider *VehicleDataProvider) GetDataByPath(path string) (outData interface{}, err error) {
 	var wasFound bool
 	wasFound = false
 	err = nil
 	validID, err := createRegexpFromPath(path)
 	if err != nil {
 		log.Error("Incorrect path ", err)
-		return outoutData, errors.New("404 Not found")
+		return outData, errors.New("404 Not found")
 	}
 	//var outputArray []map[string]interface{}
 	m := make(map[string]interface{})
@@ -242,9 +248,16 @@ func (dataprovider *VehicleDataProvider) GetDataByPath(path string) (outoutData 
 		err = errors.New("404 Not found")
 	}
 	//TODO : return one value, or array or object
-	//outoutData = outputArray
-	outoutData = m
-	return outoutData, err
+	//outData = outputArray
+	outData = m
+	return outData, err
+}
+
+// SetDataByPath get vehicle data by path
+func (dataprovider *VehicleDataProvider) SetDataByPath(path string, inputData interface{}) (err error) {
+	//TODO: prepare data and send set to adapter
+
+	return nil
 }
 
 // RegestrateSubscriptionClient TODO
@@ -340,6 +353,10 @@ func createVisDataStorage() map[string]visInternalData {
 	storage["Attribute.Vehicle.UserIdentification.Users"] = visInternalData{id: 8888, data: []string{"User1"}, isInitialized: true}
 	storage["Attribute.Vehicle.VehicleIdentification.VIN"] = visInternalData{id: 39, data: "1234567890QWERTYU", isInitialized: true}
 
+	//TODO: addede temporary for test
+	storage["Signal.Drivetrain.InternalCombustionEngine.RPM"] = visInternalData{id: 58, data: 2372, isInitialized: true}
+	storage["Signal.Drivetrain.InternalCombustionEngine.Power"] = visInternalData{id: 65, data: 60, isInitialized: true}
+	storage["Signal.Test.RPM"] = visInternalData{id: 9000, data: 60, isInitialized: true}
 	return storage
 }
 
