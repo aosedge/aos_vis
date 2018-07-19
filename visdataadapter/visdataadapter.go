@@ -14,6 +14,6 @@ type VisDataAdapter interface {
 
 //GetVisDataAdapter create necessary adapter
 func GetVisDataAdapter() VisDataAdapter {
-	adapter := NewFakeAdapter()
+	adapter := NewSensorEmulatorAdapter("http://sensors:8800/stats")
 	return adapter
 }
