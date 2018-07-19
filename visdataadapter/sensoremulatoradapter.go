@@ -9,8 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// SensorSensorAdapter adapter for read data from sensorsender
-type SensorSensorAdapter struct {
+// SensorEmulatorAdapter adapter for read data from sensorsender
+type SensorEmulatorAdapter struct {
 	url string
 }
 
@@ -129,15 +129,15 @@ type sensorSenderData struct {
  * Public
  ******************************************************************************/
 
-// NewSensorSensorAdapter Create SensorSensorAdapter
-func NewSensorSensorAdapter(url string) (sensorAdapter *SensorSensorAdapter) {
-	sensorAdapter = new(SensorSensorAdapter)
+// NewSensorEmulatorAdapter Create SensorEmulatorAdapter
+func NewSensorEmulatorAdapter(url string) (sensorAdapter *SensorEmulatorAdapter) {
+	sensorAdapter = new(SensorEmulatorAdapter)
 	sensorAdapter.url = url
 	return sensorAdapter
 }
 
 // StartGettingData start getting data with interval
-func (sensorAdapter *SensorSensorAdapter) StartGettingData(period uint, dataChan chan<- VisData) {
+func (sensorAdapter *SensorEmulatorAdapter) StartGettingData(period uint, dataChan chan<- VisData) {
 	ticker := time.NewTicker(time.Duration(period) * time.Second)
 	interrupt := make(chan os.Signal, 1) //TODO redo
 	defer ticker.Stop()
@@ -167,7 +167,7 @@ func (sensorAdapter *SensorSensorAdapter) StartGettingData(period uint, dataChan
 }
 
 // Stop TODO
-func (sensorAdapter *SensorSensorAdapter) Stop() {
+func (sensorAdapter *SensorEmulatorAdapter) Stop() {
 
 }
 
@@ -175,7 +175,7 @@ func (sensorAdapter *SensorSensorAdapter) Stop() {
  * Private
  ******************************************************************************/
 
-func (sensorAdapter *SensorSensorAdapter) readDataFromSensors() (data []byte, err error) {
+func (sensorAdapter *SensorEmulatorAdapter) readDataFromSensors() (data []byte, err error) {
 	res, err := http.Get(sensorAdapter.url)
 	if err != nil {
 		log.Error("Error HTTP GET to ", sensorAdapter.url, err)
@@ -192,7 +192,7 @@ func (sensorAdapter *SensorSensorAdapter) readDataFromSensors() (data []byte, er
 }
 
 //TODO
-func (sensorAdapter *SensorSensorAdapter) convertDataToVisFormat(str *string) ([]VisData, error) {
+func (sensorAdapter *SensorEmulatorAdapter) convertDataToVisFormat(str *string) ([]VisData, error) {
 	log.Info("Do some action")
 	return nil, nil
 }
