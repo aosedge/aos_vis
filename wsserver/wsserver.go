@@ -12,7 +12,7 @@ import (
  * Types
  ******************************************************************************/
 
-//WsServer websocket server structure
+// WsServer websocket server structure
 type WsServer struct {
 	addr       string
 	httpServer *http.Server
@@ -26,9 +26,10 @@ type WsServer struct {
  * Public
  ******************************************************************************/
 
-//New creates new Web socket server
+// New creates new Web socket server
 func New(addr, crt, key string) (server *WsServer, err error) {
-	log.Debug("wsserver creation ", addr)
+	log.WithField("address", addr).Debug("Create wsserver")
+
 	//TODO: add addr validation
 	var localServer WsServer
 	localServer.addr = addr
@@ -46,7 +47,7 @@ func New(addr, crt, key string) (server *WsServer, err error) {
 	return server, nil
 }
 
-//Start start web socket server
+// Start start web socket server
 func (server *WsServer) Start() {
 	log.Info("Start server")
 	http.HandleFunc("/", server.handleConnection)
@@ -56,7 +57,7 @@ func (server *WsServer) Start() {
 	}
 }
 
-//Stop web socket server
+// Stop web socket server
 func (server *WsServer) Stop() {
 	log.Info("Stop server!!")
 	//TODO: close all connections
@@ -67,12 +68,14 @@ func (server *WsServer) Stop() {
 /*******************************************************************************
  * Private
  ******************************************************************************/
+
 func customCheckOrigin(r *http.Request) bool {
 	return true
 }
 
 func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request) {
-	log.Debug("New connection ")
+	log.Debug("New connection")
+
 	if websocket.IsWebSocketUpgrade(r) != true {
 		log.Warning("New connection is not websocket")
 		return
@@ -80,7 +83,7 @@ func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request)
 
 	c, err := server.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Error("Can't make websocket coinnection :", err)
+		log.Error("Can't make websocket connection :", err)
 		return
 	}
 
@@ -91,6 +94,8 @@ func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request)
 		log.Error("Can't create ws client connection :", err)
 		return
 	}
+
 	wsClientCon.ProcessConnection()
-	log.Debug("Stop handleConnection")
+
+	log.Debug("Stop connection handling")
 }

@@ -12,7 +12,7 @@ import (
 )
 
 type configuration struct {
-	ServerUrl string
+	ServerURL string
 	VISCert   string
 	VISKey    string
 }
@@ -28,26 +28,28 @@ func init() {
 
 func main() {
 	log.Info("main")
+
 	file, err := os.Open("visconfig.json")
 	if err != nil {
-		log.Fatal("Error while opening fcrypt configurataion file: ", err)
+		log.Fatal("Error opening visconfig.json: ", err)
 	}
+
 	var config configuration
 
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&config)
 	if err != nil {
-		log.Error("Erro while parsing visconfig.json: ", err)
+		log.Error("Error parsing visconfig.json: ", err)
 		return
 	}
 
-	log.Info("ServerURl:  ", config.ServerUrl)
+	log.Info("ServerURl:  ", config.ServerURL)
 	log.Info("VISCert:    ", config.VISCert)
 	log.Info("VISKey:     ", config.VISKey)
 
-	server, err := wsserver.New(config.ServerUrl, config.VISCert, config.VISKey)
+	server, err := wsserver.New(config.ServerURL, config.VISCert, config.VISKey)
 	if err != nil {
-		log.Error("Can't create ws server ", err)
+		log.Error("Can't create ws server: ", err)
 		return
 	}
 

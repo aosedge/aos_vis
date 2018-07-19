@@ -2,10 +2,11 @@ package wsserver_test
 
 import (
 	"encoding/json"
-	"github.com/godbus/dbus"
 	"net/url"
 	"os"
 	"testing"
+
+	"github.com/godbus/dbus"
 	//	"time"
 
 	"github.com/gorilla/websocket"
@@ -70,7 +71,7 @@ func (GetPermission dbusInterface) GetPermission(token string) (string, string, 
 func TestMain(m *testing.M) {
 	conn, err := dbus.SessionBus()
 	if err != nil {
-		log.Error("Can't create session connection %v", err)
+		log.Errorf("Can't create session connection: %v", err)
 		os.Exit(1)
 	}
 	reply, err := conn.RequestName("com.aosservicemanager.vistoken",
@@ -88,13 +89,13 @@ func TestMain(m *testing.M) {
 
 	file, err := os.Open("../visconfig.json")
 	if err != nil {
-		log.Fatal("Error while opening fcrypt configurataion file: ", err)
+		log.Fatal("Error opening visconfig.json: ", err)
 	}
 
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&servConfig)
 	if err != nil {
-		log.Error("Erro while parsing visconfig.json: ", err)
+		log.Error("Error parsing visconfig.json: ", err)
 		os.Exit(1)
 	}
 
@@ -134,7 +135,7 @@ func TestGetNoAuth(t *testing.T) {
 	}
 	_, message, err := c.ReadMessage()
 	if err != nil {
-		t.Fatalf("Can't read message froms erver %v", err)
+		t.Fatalf("Can't read message from server %v", err)
 		return
 	}
 	log.Debug("[TEST] read:", string(message))
@@ -142,7 +143,7 @@ func TestGetNoAuth(t *testing.T) {
 	var resp visResponce
 	err = json.Unmarshal(message, &resp)
 	if err != nil {
-		t.Fatalf("Error parce Get responce  %v", err)
+		t.Fatalf("Error parcing get response: %v", err)
 		return
 	}
 
@@ -150,7 +151,7 @@ func TestGetNoAuth(t *testing.T) {
 		t.Fatalf("Unexpected value")
 	}
 	if resp.Error != nil {
-		t.Fatalf("Error parce Get request  %v", err)
+		t.Fatalf("Error parsing get request:  %v", err)
 	}
 }
 
@@ -179,14 +180,14 @@ func TestGetWithAuth(t *testing.T) {
 
 	_, message, err := c.ReadMessage()
 	if err != nil {
-		t.Fatalf("Can't read message froms erver %v", err)
+		t.Fatalf("Can't read message from server: %v", err)
 		return
 	}
 	log.Debug("[TEST] read:", string(message))
 
 	err = json.Unmarshal(message, &resp)
 	if err != nil {
-		t.Fatalf("Error parce Get responce %v", err)
+		t.Fatalf("Error parsing get response: %v", err)
 		return
 	}
 
@@ -214,7 +215,7 @@ func TestGetWithAuth(t *testing.T) {
 	}
 	_, message, err = c.ReadMessage()
 	if err != nil {
-		t.Fatalf("Can't read message froms erver %v", err)
+		t.Fatalf("Can't read message from server: %v", err)
 		return
 	}
 	log.Debug("[TEST] read:", string(message))
@@ -222,7 +223,7 @@ func TestGetWithAuth(t *testing.T) {
 	var resp2 visResponce
 	err = json.Unmarshal(message, &resp2)
 	if err != nil {
-		t.Fatalf("Error parce authorization responce %v", err)
+		t.Fatalf("Error parcing authorization response: %v", err)
 		return
 	}
 
@@ -245,13 +246,13 @@ func TestGetWithAuth(t *testing.T) {
 	_, message, err = c.ReadMessage()
 	log.Debug("[TEST] read:", string(message))
 	if err != nil {
-		t.Fatalf("Can't read message froms erver %v", err)
+		t.Fatalf("Can't read message from server: %v", err)
 		return
 	}
 	var resp3 visResponce
 	err = json.Unmarshal(message, &resp3)
 	if err != nil {
-		t.Fatalf("Error parce Get responce %v", err)
+		t.Fatalf("Error parcing get response: %v", err)
 		return
 	}
 
@@ -288,7 +289,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	}
 	_, message, err := c.ReadMessage()
 	if err != nil {
-		t.Fatalf("Can't read message froms erver %v", err)
+		t.Fatalf("Can't read message from server: %v", err)
 		return
 	}
 	log.Debug("[TEST] read:", string(message))
@@ -296,7 +297,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	var resp visResponce
 	err = json.Unmarshal(message, &resp)
 	if err != nil {
-		t.Fatalf("Error parce Subscribe responce  %v", err)
+		t.Fatalf("Error parcing subscribe response: %v", err)
 		return
 	}
 
@@ -319,7 +320,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	}
 	_, message2, err := c.ReadMessage()
 	if err != nil {
-		t.Fatalf("Can't read message froms erver %v", err)
+		t.Fatalf("Can't read message from server: %v", err)
 		return
 	}
 	log.Debug("[TEST] read:", string(message2))
@@ -327,7 +328,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	var resp2 visResponce
 	err = json.Unmarshal(message2, &resp2)
 	if err != nil {
-		t.Fatalf("Error parce Unsubscribe responce  %v", err)
+		t.Fatalf("Error parcing unsubscribe response: %v", err)
 		return
 	}
 
@@ -346,14 +347,14 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	}
 	_, message3, err := c.ReadMessage()
 	if err != nil {
-		t.Fatalf("Can't read message froms erver %v", err)
+		t.Fatalf("Can't read message from server: %v", err)
 	}
 	log.Debug("[TEST] read:", string(message3))
 
 	var resp3 visResponce
 	err = json.Unmarshal(message3, &resp3)
 	if err != nil {
-		t.Fatalf("Error parce Unsubscribe responce  %v", err)
+		t.Fatalf("Error parcing unsubscribe response: %v", err)
 	}
 
 	if (resp3.Action != "unsubscribe") || (resp3.RequestID != "1004") {
@@ -372,14 +373,14 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	}
 	_, messageAll, err := c.ReadMessage()
 	if err != nil {
-		t.Fatalf("Can't read message froms erver %v", err)
+		t.Fatalf("Can't read message from server: %v", err)
 	}
 	log.Debug("[TEST] read:", string(messageAll))
 
 	var respAll visResponce
 	err = json.Unmarshal(messageAll, &respAll)
 	if err != nil {
-		t.Fatalf("Error parce Unsubscribe responce  %v", err)
+		t.Fatalf("Error parcing unsubscribe response: %v", err)
 	}
 
 	if (respAll.Action != "unsubscribeAll") || (resp3.RequestID != "1004") {
