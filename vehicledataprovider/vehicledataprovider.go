@@ -19,7 +19,6 @@ type SubscriptionOutputData struct {
 }
 
 type visInternalData struct {
-	path          string
 	data          interface{}
 	id            int32
 	isInitialized bool
@@ -42,7 +41,7 @@ type VehicleDataProvider struct {
 		ar    []subscriptionElement
 		mutex sync.Mutex
 	}
-	visDataStorage []visInternalData
+	visDataStorage map[string]visInternalData
 	currentSubsID  uint64
 	adapter        visdataadapter.VisDataAdapter //TODO: change to interface
 }
@@ -94,34 +93,37 @@ func (dataprovider *VehicleDataProvider) processIncomingData(incomeData []visdat
 	var notificationArray []notificationElement
 	for _, data := range incomeData {
 		//find element which receive in dataStorage
-		log.Debug("process path = ", data.Path, " data= ", data.Data)
+
+		//		log.Debug("process path = ", data.Path, " data= ", data.Data)
 		wasChanged := false
-		for i := range dataprovider.visDataStorage {
-			log.Debug("Check vStorage path = ", dataprovider.visDataStorage[i].path, " data= ", dataprovider.visDataStorage[i].data)
 
-			if dataprovider.visDataStorage[i].path == data.Path {
-				dataprovider.visDataStorage[i].isInitialized = true
-				valueType := reflect.TypeOf(data.Data).Kind()
-				log.Debug("value type ", valueType)
-				log.Debug("Path was found ", data.Path)
-				if valueType == reflect.Array || valueType == reflect.Slice {
-					//TODO: add array comeration
-					wasChanged = true
-					dataprovider.visDataStorage[i].data = data.Data
-				} else {
-					if dataprovider.visDataStorage[i].data != data.Data {
-						log.Debug("Data for ", data.Path, " was changed from ", dataprovider.visDataStorage[i].data, " to ", data.Data)
-						dataprovider.visDataStorage[i].data = data.Data
+		if data.Data == nil {
+			continue
+		}
 
-						wasChanged = true
-					}
-				}
-				break
+		item := dataprovider.visDataStorage[data.Path]
+
+		item.isInitialized = true
+		item.data = data.Data
+
+		valueType := reflect.TypeOf(data.Data).Kind()
+		//		log.Debug("Value type ", valueType)
+
+		if valueType == reflect.Array || valueType == reflect.Slice {
+			//TODO: add array comeration
+			wasChanged = true
+			dataprovider.visDataStorage[data.Path] = item
+		} else {
+			if dataprovider.visDataStorage[data.Path].data != data.Data {
+				log.Debug("Data for ", data.Path, " was changed from ", dataprovider.visDataStorage[data.Path].data, " to ", data.Data)
+				dataprovider.visDataStorage[data.Path] = item
+				wasChanged = true
 			}
 		}
 
-		log.Debug("wasChanged = ", wasChanged)
+		//		log.Debug("wasChanged = ", wasChanged)
 		if wasChanged == true {
+			log.Debug("process path = ", data.Path, " data= ", data.Data)
 			// prepare data fro change notification
 			notifyData := dataprovider.getNotificationElementsByPath(data.Path)
 			for _, notifyElement := range notifyData {
@@ -222,18 +224,18 @@ func (dataprovider *VehicleDataProvider) GetDataByPath(path string) (outoutData 
 	//var outputArray []map[string]interface{}
 	m := make(map[string]interface{})
 
-	for _, data := range dataprovider.visDataStorage {
-		if validID.MatchString(data.path) == true {
+	for path, data := range dataprovider.visDataStorage {
+		if validID.MatchString(path) == true {
 			wasFound = true
 			if data.isInitialized == false {
 				//TODO: request data from adapter
 			}
 			//var m map[string]interface{}
 
-			m[data.path] = data.data
+			m[path] = data.data
 			//		outputArray = append(outputArray, m)
 
-			log.Debug("data = ", m[data.path])
+			log.Debug("data = ", m[path])
 		}
 	}
 	if wasFound == false {
@@ -330,16 +332,13 @@ func (dataprovider *VehicleDataProvider) RegestrateUnSubscribAll(subsChan chan<-
 	return errors.New("404 Not found")
 }
 
-func createVisDataStorage() []visInternalData {
-	var storage []visInternalData
-	element := visInternalData{path: "Attribute.Vehicle.UserIdentification.Users", id: 8888, data: []string{"User1"}, isInitialized: true}
-	storage = append(storage, element)
-	element = visInternalData{path: "Attribute.Vehicle.VehicleIdentification.VIN", id: 39, data: "1234567890QWERTYU", isInitialized: true}
-	storage = append(storage, element)
-	element = visInternalData{path: "Signal.Drivetrain.InternalCombustionEngine.RPM", id: 58, data: 2372, isInitialized: true}
-	storage = append(storage, element)
-	element = visInternalData{path: "Signal.Drivetrain.InternalCombustionEngine.Power", id: 65, data: 60, isInitialized: true}
-	storage = append(storage, element)
+func createVisDataStorage() map[string]visInternalData {
+	var storage map[string]visInternalData
+
+	storage = make(map[string]visInternalData)
+
+	storage["Attribute.Vehicle.UserIdentification.Users"] = visInternalData{id: 8888, data: []string{"User1"}, isInitialized: true}
+	storage["Attribute.Vehicle.VehicleIdentification.VIN"] = visInternalData{id: 39, data: "1234567890QWERTYU", isInitialized: true}
 
 	return storage
 }
