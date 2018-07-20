@@ -9,6 +9,7 @@ type VisData struct {
 //VisDataAdapter interface for working with real data
 type VisDataAdapter interface {
 	StartGettingData(dataChan chan<- []VisData)
+	SetData([]VisData) error
 	Stop()
 }
 

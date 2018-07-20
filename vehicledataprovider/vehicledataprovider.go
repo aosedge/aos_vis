@@ -257,7 +257,38 @@ func (dataprovider *VehicleDataProvider) GetDataByPath(path string) (outData int
 func (dataprovider *VehicleDataProvider) SetDataByPath(path string, inputData interface{}) (err error) {
 	//TODO: prepare data and send set to adapter
 
-	return nil
+	validID, err := createRegexpFromPath(path)
+	if err != nil {
+		log.Error("Incorrect path: ", err)
+		return err
+	}
+
+	var visData []visdataadapter.VisData
+
+	for path := range dataprovider.visDataStorage {
+		if validID.MatchString(path) == true {
+			// array - try to find appropriate item to set
+			arrayData, ok := inputData.([]interface{})
+			if ok {
+				for _, itemData := range arrayData {
+					itemMap, ok := itemData.(map[string]interface{})
+					if !ok {
+						return errors.New("Wrong value format")
+					}
+					for dataPath, data := range itemMap {
+						if strings.HasSuffix(path, dataPath) {
+							visData = append(visData, visdataadapter.VisData{Path: path, Data: data})
+						}
+					}
+				}
+			} else {
+				// just value - set this for all matched items
+				visData = append(visData, visdataadapter.VisData{Path: path, Data: inputData})
+			}
+		}
+	}
+
+	return dataprovider.adapter.SetData(visData)
 }
 
 // RegestrateSubscriptionClient TODO
@@ -357,6 +388,13 @@ func createVisDataStorage() map[string]visInternalData {
 	storage["Signal.Drivetrain.InternalCombustionEngine.RPM"] = visInternalData{id: 58, data: 2372, isInitialized: true}
 	storage["Signal.Drivetrain.InternalCombustionEngine.Power"] = visInternalData{id: 65, data: 60, isInitialized: true}
 	storage["Signal.Test.RPM"] = visInternalData{id: 9000, data: 60, isInitialized: true}
+
+	storage["Attribute.Emulator.rectangle_long0"] = visInternalData{id: 9001, isInitialized: false}
+	storage["Attribute.Emulator.rectangle_lat0"] = visInternalData{id: 9002, isInitialized: false}
+	storage["Attribute.Emulator.rectangle_long1"] = visInternalData{id: 9003, isInitialized: false}
+	storage["Attribute.Emulator.rectangle_lat1"] = visInternalData{id: 9004, isInitialized: false}
+	storage["Attribute.Emulator.to_rectangle"] = visInternalData{id: 9005, isInitialized: false}
+
 	return storage
 }
 

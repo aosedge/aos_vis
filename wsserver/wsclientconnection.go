@@ -390,7 +390,7 @@ func (client *WsClientConnection) processSetRequest(request *requestSet) (resp [
 	if needToSetData == true {
 		err := dataProvider.SetDataByPath(request.Path, request.Value)
 		if err != nil {
-			log.Warn("No data for path ", request.Path) //TODO: add error responce processing
+			log.Errorf("Error setting data. Path: %s, err: %s", request.Path, err)
 			msg = errorResponse{Action: actionSet, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: getCurTime()}
 
 		} else {

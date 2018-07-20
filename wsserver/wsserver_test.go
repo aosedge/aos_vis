@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/godbus/dbus"
 	//	"time"
@@ -161,13 +162,16 @@ func TestSet(t *testing.T) {
 	u := url.URL{Scheme: "wss", Host: servConfig.ServerUrl, Path: "/"}
 	log.Debug("[TEST] Connecting to ", u.String())
 
+	time.Sleep(time.Second)
+
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		t.Fatalf("Can't connect to ws server %v", err)
 		return
 	}
 	defer c.Close()
-	getmessage := `{"action": "set", "path": "Signal.Drivetrain.InternalCombustionEngine.Power", "value": 1000, "requestId": "8888"}`
+	getmessage := `{"action": "set", "path": "Attribute.Emulator.*", "value": [ {"rectangle_long0": 100 },
+	{"rectangle_lat0": 150}, {"rectangle_long1": 200 }, {"rectangle_lat1": 250} ], "requestId": "8888"}`
 
 	err = c.WriteMessage(websocket.TextMessage, []byte(getmessage))
 	if err != nil {
