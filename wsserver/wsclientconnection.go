@@ -20,6 +20,7 @@ import (
 
 const (
 	actionGet            = "get"
+	actionSet            = "set"
 	actionAuth           = "authorize"
 	actionSubscribe      = "subscribe"
 	actionUnsubscribe    = "unsubscribe"
@@ -56,6 +57,13 @@ type requestGet struct {
 	RequestID string `json:"requestId"`
 }
 
+type requestSet struct {
+	Action    string      `json:"action"`
+	Path      string      `json:"path"`
+	Value     interface{} `json:"value"`
+	RequestID string      `json:"requestId"`
+}
+
 type requestAuth struct {
 	Action    string       `json:"action"`
 	Tokens    tokensStruct `json:"tokens"`
@@ -85,6 +93,12 @@ type getSuccessResponse struct {
 	RequestID string      `json:"requestId"`
 	Value     interface{} `json:"value"`
 	Timestamp int64       `json:"timestamp"`
+}
+
+type setSuccessResponse struct {
+	Action    string `json:"action"`
+	RequestID string `json:"requestId"`
+	Timestamp int64  `json:"timestamp"`
 }
 
 type authSuccessResponse struct {
@@ -229,6 +243,17 @@ func (client *WsClientConnection) processIncomingMessage(data []byte) {
 		responce := client.processGetRequest(&rGet)
 		client.WriteMessage(responce)
 
+	case actionSet:
+		var rSet requestSet
+		err := json.Unmarshal(data, &rSet)
+		if err != nil {
+			log.Error("Error parse Set request  ", err)
+			client.senderrorResponse("", "", &errorInfo{Number: 400})
+			return
+		}
+		responce := client.processSetRequest(&rSet)
+		client.WriteMessage(responce)
+
 	case actionAuth:
 		var rAuth requestAuth
 		err := json.Unmarshal(data, &rAuth)
@@ -328,6 +353,49 @@ func (client *WsClientConnection) processGetRequest(request *requestGet) (resp [
 		} else {
 			log.Debug("Data from dataprovider: %v, request ID: %s", vehData, request.RequestID)
 			msg = getSuccessResponse{Action: actionGet, RequestID: request.RequestID, Value: vehData, Timestamp: getCurTime()}
+		}
+	}
+
+	resp, err = json.Marshal(msg)
+	if err != nil {
+		log.Warn("Error marshal json: ", err)
+		return []byte("Error marshal json")
+	}
+	return resp
+}
+
+// process Set request
+func (client *WsClientConnection) processSetRequest(request *requestSet) (resp []byte) {
+	var err error
+	var msg interface{}
+	needToSetData := false
+	dataProvider := vehicledataprovider.GetInstance()
+	if dataProvider.IsPublicPath(request.Path) == true { //TODO: check for set permission
+		needToSetData = true
+	} else {
+		if client.isAuthorized == false {
+			log.Info("Client not Authorized send response 403")
+			msg = errorResponse{Action: actionSet, RequestID: request.RequestID, Error: errorInfo{Number: 403}, Timestamp: getCurTime()}
+		} else {
+			if client.checkPermission(request.Path, setPermission) == true {
+				needToSetData = true
+			} else {
+				msg = errorResponse{Action: actionSet, RequestID: request.RequestID,
+					Error:     errorInfo{Number: 403, Message: "The user is not permitted to access the requested resource"},
+					Timestamp: getCurTime()}
+			}
+		}
+	}
+
+	if needToSetData == true {
+		err := dataProvider.SetDataByPath(request.Path, request.Value)
+		if err != nil {
+			log.Warn("No data for path ", request.Path) //TODO: add error responce processing
+			msg = errorResponse{Action: actionSet, RequestID: request.RequestID, Error: errorInfo{Number: 404}, Timestamp: getCurTime()}
+
+		} else {
+			log.Debug("Set Data done path ", request.Path, " value ", request.Value)
+			msg = setSuccessResponse{Action: actionSet, RequestID: request.RequestID, Timestamp: getCurTime()}
 		}
 	}
 
