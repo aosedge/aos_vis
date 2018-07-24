@@ -1,10 +1,13 @@
 package visdataadapter
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -16,7 +19,7 @@ type SensorEmulatorAdapter struct {
 }
 
 const (
-	updatePeriod = 1000
+	updatePeriod = 500
 )
 
 /*******************************************************************************
@@ -44,7 +47,7 @@ func (sensorAdapter *SensorEmulatorAdapter) StartGettingData(dataChan chan<- []V
 				log.Error("Can't read data: ", err)
 				continue
 			}
-			visData, err := sensorAdapter.convertDataToVisFormat(jsonData)
+			visData, err := convertDataToVisFormat(jsonData)
 			if err != nil {
 				log.Error("Can't convert to vis data: ", err)
 				continue
@@ -58,9 +61,28 @@ func (sensorAdapter *SensorEmulatorAdapter) StartGettingData(dataChan chan<- []V
 	}
 }
 
+// SetData sets VIS data
+func (sensorAdapter *SensorEmulatorAdapter) SetData(data []VisData) (err error) {
+	sendData, err := convertVisFormatToData(data)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Send data: %s", string(sendData))
+
+	res, err := http.Post(sensorAdapter.url, "application/json", bytes.NewReader(sendData))
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != 200 {
+		return errors.New(res.Status)
+	}
+
+	return nil
+}
+
 // Stop TODO
 func (sensorAdapter *SensorEmulatorAdapter) Stop() {
-
 }
 
 /*******************************************************************************
@@ -95,7 +117,7 @@ func parseNode(prefix string, element interface{}, visData *[]VisData) {
 	}
 }
 
-func (sensorAdapter *SensorEmulatorAdapter) convertDataToVisFormat(jsonData []byte) (visData []VisData, err error) {
+func convertDataToVisFormat(jsonData []byte) (visData []VisData, err error) {
 	var data interface{}
 
 	err = json.Unmarshal(jsonData, &data)
@@ -106,4 +128,24 @@ func (sensorAdapter *SensorEmulatorAdapter) convertDataToVisFormat(jsonData []by
 	parseNode("Signal.Emulator", data, &visData)
 
 	return visData, nil
+}
+
+func convertVisFormatToData(visData []VisData) (jsonData []byte, err error) {
+	sendData := make(map[string]interface{})
+
+	for _, item := range visData {
+		if strings.HasPrefix(item.Path, "Attribute.Emulator.") {
+			item.Path = strings.TrimPrefix(item.Path, "Attribute.Emulator.")
+			sendData[item.Path] = item.Data
+		} else {
+			log.Warningf("Skip %s item", item.Path)
+		}
+	}
+
+	jsonData, err = json.Marshal(&sendData)
+	if err != nil {
+		return jsonData, err
+	}
+
+	return jsonData, nil
 }
