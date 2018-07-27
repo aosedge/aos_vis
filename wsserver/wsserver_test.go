@@ -16,10 +16,9 @@ import (
 	"gitpct.epam.com/epmd-aepr/aos_vis/wsserver"
 )
 
-var server *wsserver.WsServer
 var addr string = "localhost:8088"
 
-type visResponce struct {
+type visResponse struct {
 	Action         string       `json:"action"`
 	RequestID      string       `json:"requestId"`
 	Value          *interface{} `json:"value"`
@@ -101,51 +100,51 @@ func TestMain(m *testing.M) {
 	}
 
 	server, err := wsserver.New(servConfig.ServerUrl, servConfig.VISCert, servConfig.VISKey)
-
 	if err != nil {
 		log.Fatal("Can't create ws server ", err)
 		return
 	}
 
-	go server.Start()
+	// There is raise condition: after new listen is not started yet
+	// so we need this delay to wait for listen
+	time.Sleep(time.Second)
 
 	ret := m.Run()
 
-	server.Stop()
+	server.Close()
+
 	os.Exit(ret)
 }
 
+func closeConnection(c *websocket.Conn) {
+	c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	c.Close()
+}
+
 func TestGetNoAuth(t *testing.T) {
-	log.Debug("[TEST] TestGet")
-
 	u := url.URL{Scheme: "wss", Host: servConfig.ServerUrl, Path: "/"}
-	log.Debug("[TEST] Connecting to ", u.String())
-
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		t.Fatalf("Can't connect to ws server %v", err)
-		return
 	}
-	defer c.Close()
-	getmessage := `{"action": "get", "path": "Attribute.Vehicle.VehicleIdentification.VIN", "requestId": "8756"}`
+	defer closeConnection(c)
 
+	getmessage := `{"action": "get", "path": "Attribute.Vehicle.VehicleIdentification.VIN", "requestId": "8756"}`
 	err = c.WriteMessage(websocket.TextMessage, []byte(getmessage))
 	if err != nil {
 		t.Fatalf("Can't send message to server %v", err)
-		return
 	}
+
 	_, message, err := c.ReadMessage()
 	if err != nil {
 		t.Fatalf("Can't read message from server %v", err)
-		return
 	}
-	log.Debug("[TEST] read:", string(message))
 
-	var resp visResponce
+	var resp visResponse
+
 	err = json.Unmarshal(message, &resp)
 	if err != nil {
 		t.Fatalf("Error parcing get response: %v", err)
-		return
 	}
 
 	if (resp.Action != "get") || (resp.RequestID != "8756") {
@@ -185,7 +184,7 @@ func TestSet(t *testing.T) {
 	}
 	log.Debug("[TEST] read:", string(message))
 
-	var resp visResponce
+	var resp visResponse
 	err = json.Unmarshal(message, &resp)
 	if err != nil {
 		t.Fatalf("Error parcing set response: %v", err)
@@ -203,7 +202,7 @@ func TestSet(t *testing.T) {
 func TestGetWithAuth(t *testing.T) {
 	log.Debug("[TEST] TestGetWithAuth")
 
-	var resp visResponce
+	var resp visResponse
 
 	u := url.URL{Scheme: "wss", Host: servConfig.ServerUrl, Path: "/"}
 	log.Debug("[TEST] Connecting to ", u.String())
@@ -265,7 +264,7 @@ func TestGetWithAuth(t *testing.T) {
 	}
 	log.Debug("[TEST] read:", string(message))
 
-	var resp2 visResponce
+	var resp2 visResponse
 	err = json.Unmarshal(message, &resp2)
 	if err != nil {
 		t.Fatalf("Error parcing authorization response: %v", err)
@@ -294,7 +293,7 @@ func TestGetWithAuth(t *testing.T) {
 		t.Fatalf("Can't read message from server: %v", err)
 		return
 	}
-	var resp3 visResponce
+	var resp3 visResponse
 	err = json.Unmarshal(message, &resp3)
 	if err != nil {
 		t.Fatalf("Error parcing get response: %v", err)
@@ -339,7 +338,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	}
 	log.Debug("[TEST] read:", string(message))
 
-	var resp visResponce
+	var resp visResponse
 	err = json.Unmarshal(message, &resp)
 	if err != nil {
 		t.Fatalf("Error parcing subscribe response: %v", err)
@@ -370,7 +369,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	}
 	log.Debug("[TEST] read:", string(message2))
 
-	var resp2 visResponce
+	var resp2 visResponse
 	err = json.Unmarshal(message2, &resp2)
 	if err != nil {
 		t.Fatalf("Error parcing unsubscribe response: %v", err)
@@ -396,7 +395,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	}
 	log.Debug("[TEST] read:", string(message3))
 
-	var resp3 visResponce
+	var resp3 visResponse
 	err = json.Unmarshal(message3, &resp3)
 	if err != nil {
 		t.Fatalf("Error parcing unsubscribe response: %v", err)
@@ -422,7 +421,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	}
 	log.Debug("[TEST] read:", string(messageAll))
 
-	var respAll visResponce
+	var respAll visResponse
 	err = json.Unmarshal(messageAll, &respAll)
 	if err != nil {
 		t.Fatalf("Error parcing unsubscribe response: %v", err)

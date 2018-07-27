@@ -63,7 +63,7 @@ func (server *WsServer) Close() {
 	defer server.mutex.Unlock()
 
 	for element := server.clients.Front(); element != nil; element = element.Next() {
-		element.Value.(*WsClientConnection).Close()
+		element.Value.(*wsClient).close()
 	}
 
 	server.clients.Init()
@@ -93,7 +93,7 @@ func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	client, err := NewClientConn(wsConnection)
+	client, err := newClient(wsConnection)
 	if err != nil {
 		log.Error("Can't create websocket client connection: ", err)
 		wsConnection.Close()
@@ -104,13 +104,13 @@ func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request)
 	clientElement := server.clients.PushBack(client)
 	server.mutex.Unlock()
 
-	client.ProcessConnection()
+	client.run()
 
 	server.mutex.Lock()
 	defer server.mutex.Unlock()
 	for element := server.clients.Front(); element != nil; element = element.Next() {
 		if element == clientElement {
-			client.Close()
+			client.close()
 			server.clients.Remove(clientElement)
 		}
 	}
