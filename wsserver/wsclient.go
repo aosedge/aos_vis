@@ -10,8 +10,8 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
+	"gitpct.epam.com/epmd-aepr/aos_vis/dbusclient"
 	"gitpct.epam.com/epmd-aepr/aos_vis/vehicledataprovider"
-	"gitpct.epam.com/epmd-aepr/aos_vis/visdbusclient"
 )
 
 /*******************************************************************************
@@ -127,7 +127,7 @@ type unsubscribeAllSuccessResponse struct {
 	Timestamp int64  `json:"timestamp"`
 }
 
-type sunscribeNotification struct {
+type subscribeNotification struct {
 	Action         string      `json:"action"`
 	SubscriptionID string      `json:"subscriptionId"`
 	Value          interface{} `json:"value"`
@@ -179,7 +179,7 @@ func (client *wsClient) processsubscriptionChannel() {
 	for {
 		data, more := <-client.subscriptionChannel
 		if more {
-			msg := sunscribeNotification{Action: actionSubscription,
+			msg := subscribeNotification{Action: actionSubscription,
 				SubscriptionID: data.ID,
 				Value:          data.OutData,
 				Timestamp:      getCurTime()}
@@ -333,7 +333,7 @@ func (client *wsClient) processAuthRequest(requestJSON []byte) (responseJSON []b
 	if !client.isAuthorized {
 		//TODO: add retry count
 		//data, errInfo := getPermissionListForClient(*request.Tokens.Authorization)
-		data, err := visdbusclient.GetVisPermissionByToken(*rAuth.Tokens.Authorization)
+		data, err := dbusclient.GetVisPermissionByToken(*rAuth.Tokens.Authorization)
 		if err != nil {
 			return createErrorResponse(rAuth.Action, rAuth.RequestID, err)
 		}
