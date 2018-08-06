@@ -5,15 +5,16 @@ type VisData struct {
 	Data interface{}
 }
 
-//VisDataAdapter interface for working with real data
+// DataAdapter interface for working with real data
 type DataAdapter interface {
 	StartGettingData(dataChan chan<- []VisData)
 	SetData([]VisData) error
 	Stop()
 }
 
-//GetVisDataAdapter create necessary adapter
+// GetVisDataAdapter create necessary adapter
 func GetVisDataAdapter() DataAdapter {
-	adapter := NewFakeAdapter()
+	adapter, _ := NewTestAdapter()
+
 	return adapter
 }

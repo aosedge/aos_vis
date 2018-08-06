@@ -7,23 +7,28 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//FakeAdapter adapter for read data from sensorsender
-type FakeAdapter struct {
-	url string
+/*******************************************************************************
+ * Types
+ ******************************************************************************/
+
+// TestAdapter test adapter
+type TestAdapter struct {
 }
 
 /*******************************************************************************
  * Public
  ******************************************************************************/
 
-//NewFakeAdapter Create wFakeAdapter
-func NewFakeAdapter() (sensorAdapter *FakeAdapter) {
-	sensorAdapter = new(FakeAdapter)
-	return sensorAdapter
+// NewTestAdapter creates adapter to be used for tests
+func NewTestAdapter() (adapter *TestAdapter, err error) {
+
+	adapter = new(TestAdapter)
+
+	return adapter, nil
 }
 
 // StartGettingData start getting data with interval
-func (sensorAdapter *FakeAdapter) StartGettingData(dataChan chan<- []VisData) {
+func (adapter *TestAdapter) StartGettingData(dataChan chan<- []VisData) {
 	ticker := time.NewTicker(time.Duration(3) * time.Second)
 	interrupt := make(chan os.Signal, 1) //TODO redo
 	var RPM int
@@ -46,11 +51,11 @@ func (sensorAdapter *FakeAdapter) StartGettingData(dataChan chan<- []VisData) {
 }
 
 // SetData sets data
-func (sensorAdapter *FakeAdapter) SetData([]VisData) error {
+func (adapter *TestAdapter) SetData([]VisData) error {
 	return nil
 }
 
 // Stop stop getting data
-func (sensorAdapter *FakeAdapter) Stop() {
+func (adapter *TestAdapter) Stop() {
 
 }
