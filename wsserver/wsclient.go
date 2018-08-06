@@ -430,7 +430,13 @@ func (client *wsClient) processUnsubscribeAllRequest(requestJSON []byte) (respon
 
 // check permission set or get
 func (client *wsClient) checkPermission(path string, p permission) (err error) {
-	if client.dataProvider.IsPublicPath(path) {
+	result, err := client.dataProvider.IsPathPublic(path)
+	if err != nil {
+		return err
+	}
+
+	// public path no authentication is required
+	if result {
 		return nil
 	}
 

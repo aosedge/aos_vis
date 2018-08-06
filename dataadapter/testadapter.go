@@ -1,8 +1,7 @@
 package dataadapter
 
 import (
-	"os"
-	"time"
+	"fmt"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -13,6 +12,7 @@ import (
 
 // TestAdapter test adapter
 type TestAdapter struct {
+	data map[string]interface{}
 }
 
 /*******************************************************************************
@@ -21,41 +21,61 @@ type TestAdapter struct {
 
 // NewTestAdapter creates adapter to be used for tests
 func NewTestAdapter() (adapter *TestAdapter, err error) {
+	log.Debug("Create test adapter")
 
 	adapter = new(TestAdapter)
+
+	adapter.data = make(map[string]interface{})
+
+	adapter.data["Attribute.Vehicle.VehicleIdentification.VIN"] = "TestVIN"
+	adapter.data["Attribute.Vehicle.UserIdentification.Users"] = []string{"User1", "Provider1"}
+	adapter.data["Sensor.Engine.RPM"] = 1000
 
 	return adapter, nil
 }
 
-// StartGettingData start getting data with interval
-func (adapter *TestAdapter) StartGettingData(dataChan chan<- []VisData) {
-	ticker := time.NewTicker(time.Duration(3) * time.Second)
-	interrupt := make(chan os.Signal, 1) //TODO redo
-	var RPM int
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			dataTosend := []VisData{}
-			RPM += 50
-			oneElement := VisData{Path: "Signal.Drivetrain.InternalCombustionEngine.RPM", Data: RPM}
-			dataTosend = append(dataTosend, oneElement)
-			oneElement = VisData{Path: "Attribute.Vehicle.UserIdentification.Users", Data: []string{"User2"}}
-			dataTosend = append(dataTosend, oneElement)
-			dataChan <- dataTosend
-		case <-interrupt:
-			log.Info("interrupt")
-			break
-		}
+// GetName returns adapter name
+func (adapter *TestAdapter) GetName() (name string) {
+	return "TestAdapter"
+}
+
+// GetPathList returns list of all pathes for this adapter
+func (adapter *TestAdapter) GetPathList() (pathList []string, err error) {
+	pathList = make([]string, 0, len(adapter.data))
+
+	for path := range adapter.data {
+		pathList = append(pathList, path)
 	}
+
+	return pathList, nil
 }
 
-// SetData sets data
-func (adapter *TestAdapter) SetData([]VisData) error {
-	return nil
+// IsPathPublic returns true if requested data accessible without authorization
+func (adapter *TestAdapter) IsPathPublic(path string) (result bool, err error) {
+	if _, ok := adapter.data[path]; !ok {
+		return false, fmt.Errorf("Path %s doesn't exits", path)
+	}
+
+	switch path {
+	case "Attribute.Vehicle.VehicleIdentification.VIN":
+		return true, nil
+
+	case "Attribute.Vehicle.UserIdentification.Users":
+		return true, nil
+
+	case "Sensor.Engine.RPM":
+		return false, nil
+	}
+
+	return false, nil
 }
 
-// Stop stop getting data
-func (adapter *TestAdapter) Stop() {
+// GetData returns data by path
+func (adapter *TestAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
+	return
+}
 
+// SetData sets data by pathes
+func (adapter *TestAdapter) SetData(data map[string]interface{}) (err error) {
+	return
 }

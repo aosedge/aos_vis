@@ -22,24 +22,31 @@ func init() {
 	log.SetOutput(os.Stdout)
 }
 
-func TestDBUS(t *testing.T) {
-	log.Debug("[TEST] TestGet")
+/*******************************************************************************
+ * Tests
+ ******************************************************************************/
 
+func TestPublicPath(t *testing.T) {
 	provider, err := dataprovider.New(&config.Config{})
-
-	dataChannel := make(chan dataprovider.SubscriptionOutputData)
-	idStr, err := provider.Subscribe(dataChannel, "*")
 	if err != nil {
-		t.Error("error subscription")
+		t.Fatalf("Can't create data provider: %s", err)
 	}
 
-	idStr, err = provider.Subscribe(dataChannel, "Signal.*")
+	path := "Attribute.Vehicle.VehicleIdentification.VIN"
+	result, err := provider.IsPathPublic(path)
 	if err != nil {
-		t.Error("error subscription")
+		t.Fatalf("Can't check path publicity: %s", err)
 	}
-	log.Debug("[TEST] Subscription to Signal* OK id=", idStr)
+	if !result {
+		t.Errorf("Path %s should be public", path)
+	}
 
-	incomedata := <-dataChannel
-	log.Debug("[TEST] receive data from channel ", incomedata)
-
+	path = "Sensor.Engine.RPM"
+	result, err = provider.IsPathPublic(path)
+	if err != nil {
+		t.Fatalf("Can't check path publicity: %s", err)
+	}
+	if result {
+		t.Errorf("Path %s should not be public", path)
+	}
 }
