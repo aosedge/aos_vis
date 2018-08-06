@@ -1,6 +1,5 @@
 package dataadapter
 
-//VisData TODO:
 type VisData struct {
 	Path string
 	Data interface{}

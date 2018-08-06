@@ -209,7 +209,7 @@ func (client *wsClient) run() {
 			if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 				log.Errorf("Error reading socket: %s", err)
 			}
-			client.dataProvider.RegestrateUnSubscribAll(client.subscriptionChannel)
+			client.dataProvider.UnsubscribeAll(client.subscriptionChannel)
 			close(client.subscriptionChannel)
 			break
 		}
@@ -274,7 +274,7 @@ func (client *wsClient) processGetRequest(requestJSON []byte) (responseJSON []by
 		return createErrorResponse(rGet.Action, rGet.RequestID, err)
 	}
 
-	vehData, err := client.dataProvider.GetDataByPath(rGet.Path)
+	vehData, err := client.dataProvider.GetData(rGet.Path)
 	if err != nil {
 		return createErrorResponse(rGet.Action, rGet.RequestID, err)
 	}
@@ -304,7 +304,7 @@ func (client *wsClient) processSetRequest(requestJSON []byte) (responseJSON []by
 		return createErrorResponse(rSet.Action, rSet.RequestID, err)
 	}
 
-	if err = client.dataProvider.SetDataByPath(rSet.Path, rSet.Value); err != nil {
+	if err = client.dataProvider.SetData(rSet.Path, rSet.Value); err != nil {
 		return createErrorResponse(rSet.Action, rSet.RequestID, err)
 	}
 
@@ -370,7 +370,7 @@ func (client *wsClient) processSubscribeRequest(requestJSON []byte) (responseJSO
 		return createErrorResponse(rSubs.Action, rSubs.RequestID, err)
 	}
 
-	subscrID, err := client.dataProvider.RegestrateSubscriptionClient(client.subscriptionChannel, rSubs.Path)
+	subscrID, err := client.dataProvider.Subscribe(client.subscriptionChannel, rSubs.Path)
 	if err != nil {
 		return createErrorResponse(rSubs.Action, rSubs.RequestID, err)
 	}
@@ -393,7 +393,7 @@ func (client *wsClient) processUnsubscribeRequest(requestJSON []byte) (responseJ
 		return createErrorResponse(rUnsubs.Action, rUnsubs.RequestID, errors.New("Client is not authorized"))
 	}
 
-	if err = client.dataProvider.RegestrateUnSubscription(client.subscriptionChannel, rUnsubs.SubscriptionID); err != nil {
+	if err = client.dataProvider.Unsubscribe(client.subscriptionChannel, rUnsubs.SubscriptionID); err != nil {
 		return createErrorResponse(rUnsubs.Action, rUnsubs.RequestID, err)
 	}
 
@@ -416,7 +416,7 @@ func (client *wsClient) processUnsubscribeAllRequest(requestJSON []byte) (respon
 		return createErrorResponse(rUnsubsAll.Action, rUnsubsAll.RequestID, errors.New("Client is not authorized"))
 	}
 
-	if err = client.dataProvider.RegestrateUnSubscribAll(client.subscriptionChannel); err != nil {
+	if err = client.dataProvider.UnsubscribeAll(client.subscriptionChannel); err != nil {
 		return createErrorResponse(rUnsubsAll.Action, rUnsubsAll.RequestID, err)
 	}
 

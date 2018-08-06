@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
+	"gitpct.epam.com/epmd-aepr/aos_vis/config"
 	"gitpct.epam.com/epmd-aepr/aos_vis/dataprovider"
 )
 
@@ -24,14 +25,15 @@ func init() {
 func TestDBUS(t *testing.T) {
 	log.Debug("[TEST] TestGet")
 
-	provider := dataprovider.GetInstance()
+	provider, err := dataprovider.New(&config.Config{})
+
 	dataChannel := make(chan dataprovider.SubscriptionOutputData)
-	idStr, err := provider.RegestrateSubscriptionClient(dataChannel, "*")
+	idStr, err := provider.Subscribe(dataChannel, "*")
 	if err != nil {
 		t.Error("error subscription")
 	}
 
-	idStr, err = provider.RegestrateSubscriptionClient(dataChannel, "Signal.*")
+	idStr, err = provider.Subscribe(dataChannel, "Signal.*")
 	if err != nil {
 		t.Error("error subscription")
 	}
