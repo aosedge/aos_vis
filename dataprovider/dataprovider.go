@@ -2,6 +2,7 @@ package dataprovider
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -48,7 +49,8 @@ type DataProvider struct {
 	}
 	visDataStorage map[string]visInternalData
 	currentSubsID  uint64
-	adapter        dataadapter.DataAdapter
+
+	adapterMap map[string]dataadapter.DataAdapter
 }
 
 type notificationData struct {
@@ -68,14 +70,36 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	provider.sensorDataChannel = make(chan []dataadapter.VisData, 100)
 	provider.visDataStorage = createVisDataStorage()
 	go provider.start()
-	provider.adapter, _ = dataadapter.NewTestAdapter()
+
+	provider.adapterMap = make(map[string]dataadapter.DataAdapter)
+
+	adapter, _ := dataadapter.NewTestAdapter()
+
+	pathes, err := adapter.GetPathList()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, path := range pathes {
+		if _, ok := provider.adapterMap[path]; ok {
+			log.WithField("path", path).Warningf("Path already in adapter map")
+		} else {
+			log.WithFields(log.Fields{"path": path, "adaptor": "test"}).Debug("Add path")
+
+			provider.adapterMap[path] = adapter
+		}
+	}
 
 	return provider, nil
 }
 
 // IsPathPublic if path is public no authentication is required
 func (provider *DataProvider) IsPathPublic(path string) (result bool, err error) {
-	result, err = provider.adapter.IsPathPublic(path)
+	if _, ok := provider.adapterMap[path]; !ok {
+		return result, fmt.Errorf("Path %s doesn't exits", path)
+	}
+
+	result, err = provider.adapterMap[path].IsPathPublic(path)
 
 	log.WithFields(log.Fields{"path": path, "result": result}).Debug("Is path public")
 
@@ -153,7 +177,7 @@ func (provider *DataProvider) SetData(path string, inputData interface{}) (err e
 		}
 	}
 
-	return provider.adapter.SetData(nil)
+	return provider.adapterMap[path].SetData(nil)
 }
 
 // Subscribe subscribes for data change
