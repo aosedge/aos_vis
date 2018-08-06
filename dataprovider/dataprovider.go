@@ -1,4 +1,4 @@
-package vehicledataprovider
+package dataprovider
 
 import (
 	"errors"
@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
+	"gitpct.epam.com/epmd-aepr/aos_vis/config"
 	"gitpct.epam.com/epmd-aepr/aos_vis/visdataadapter"
 )
 
@@ -34,8 +35,8 @@ type subscriptionPare struct {
 	value          *regexp.Regexp
 }
 
-// VehicleDataProvider interface for geeting vehicle data
-type VehicleDataProvider struct {
+// DataProvider interface for geeting vehicle data
+type DataProvider struct {
 	sensorDataChannel chan []visdataadapter.VisData
 	subscription      struct {
 		ar    []subscriptionElement
@@ -51,31 +52,26 @@ type notificationData struct {
 	id       uint64
 }
 
-var instance *VehicleDataProvider
-var once sync.Once
+// New returns pointer to DataProvider
+func New(config *config.Config) (provider *DataProvider, err error) {
+	provider = &DataProvider{}
+	provider.sensorDataChannel = make(chan []visdataadapter.VisData, 100)
+	provider.visDataStorage = createVisDataStorage()
+	go provider.start()
+	provider.adapter = visdataadapter.GetVisDataAdapter()
+	go provider.adapter.StartGettingData(provider.sensorDataChannel)
 
-// GetInstance  get pointer to VehicleDataProvider
-func GetInstance() *VehicleDataProvider {
-	once.Do(func() {
-		instance = &VehicleDataProvider{}
-		instance.sensorDataChannel = make(chan []visdataadapter.VisData, 100)
-		instance.visDataStorage = createVisDataStorage()
-		go instance.start()
-		instance.adapter = visdataadapter.GetVisDataAdapter()
-		go instance.adapter.StartGettingData(instance.sensorDataChannel)
-
-	})
-	return instance
+	return provider, nil
 }
 
-func (dataprovider *VehicleDataProvider) start() {
+func (dataprovider *DataProvider) start() {
 	for {
 		incomingData := <-dataprovider.sensorDataChannel
 		dataprovider.processIncomingData(incomingData[:])
 	}
 }
 
-func (dataprovider *VehicleDataProvider) processIncomingData(incomeData []visdataadapter.VisData) {
+func (dataprovider *DataProvider) processIncomingData(incomeData []visdataadapter.VisData) {
 
 	type notificationPair struct {
 		id   uint64
@@ -174,7 +170,7 @@ func (dataprovider *VehicleDataProvider) processIncomingData(incomeData []visdat
 		}
 	}
 }
-func (dataprovider *VehicleDataProvider) getNotificationElementsByPath(path string) (returnData []notificationData) {
+func (dataprovider *DataProvider) getNotificationElementsByPath(path string) (returnData []notificationData) {
 	log.Debug("getNotificationElementsByPath path=", path)
 	wasFound := false
 	for i := range dataprovider.subscription.ar {
@@ -199,7 +195,7 @@ func (dataprovider *VehicleDataProvider) getNotificationElementsByPath(path stri
 //TODO: add parameter to read or write
 
 // IsPublicPath if path is public no authentication is required
-func (dataprovider *VehicleDataProvider) IsPublicPath(path string) bool {
+func (dataprovider *DataProvider) IsPublicPath(path string) bool {
 	if path == "Attribute.Vehicle.VehicleIdentification.VIN" {
 		return true
 	}
@@ -218,7 +214,7 @@ func (dataprovider *VehicleDataProvider) IsPublicPath(path string) bool {
 }
 
 // GetDataByPath get vehicle data by path
-func (dataprovider *VehicleDataProvider) GetDataByPath(path string) (outData interface{}, err error) {
+func (dataprovider *DataProvider) GetDataByPath(path string) (outData interface{}, err error) {
 	var wasFound bool
 	wasFound = false
 	err = nil
@@ -254,7 +250,7 @@ func (dataprovider *VehicleDataProvider) GetDataByPath(path string) (outData int
 }
 
 // SetDataByPath get vehicle data by path
-func (dataprovider *VehicleDataProvider) SetDataByPath(path string, inputData interface{}) (err error) {
+func (dataprovider *DataProvider) SetDataByPath(path string, inputData interface{}) (err error) {
 	//TODO: prepare data and send set to adapter
 
 	validID, err := createRegexpFromPath(path)
@@ -292,7 +288,7 @@ func (dataprovider *VehicleDataProvider) SetDataByPath(path string, inputData in
 }
 
 // RegestrateSubscriptionClient TODO
-func (dataprovider *VehicleDataProvider) RegestrateSubscriptionClient(subsChan chan<- SubscriptionOutputData, path string) (id string, err error) {
+func (dataprovider *DataProvider) RegestrateSubscriptionClient(subsChan chan<- SubscriptionOutputData, path string) (id string, err error) {
 	//TODO: add checking available path
 	var subsElement subscriptionPare
 
@@ -328,7 +324,7 @@ func (dataprovider *VehicleDataProvider) RegestrateSubscriptionClient(subsChan c
 }
 
 // RegestrateUnSubscription TODO
-func (dataprovider *VehicleDataProvider) RegestrateUnSubscription(subsChan chan<- SubscriptionOutputData, subsID string) (err error) {
+func (dataprovider *DataProvider) RegestrateUnSubscription(subsChan chan<- SubscriptionOutputData, subsID string) (err error) {
 	var intSubs uint64
 	intSubs, err = strconv.ParseUint(subsID, 10, 64)
 	if err != nil {
@@ -363,7 +359,7 @@ func (dataprovider *VehicleDataProvider) RegestrateUnSubscription(subsChan chan<
 }
 
 // RegestrateUnSubscribAll TODO
-func (dataprovider *VehicleDataProvider) RegestrateUnSubscribAll(subsChan chan<- SubscriptionOutputData) (err error) {
+func (dataprovider *DataProvider) RegestrateUnSubscribAll(subsChan chan<- SubscriptionOutputData) (err error) {
 	dataprovider.subscription.mutex.Lock()
 	defer dataprovider.subscription.mutex.Unlock()
 
@@ -373,7 +369,8 @@ func (dataprovider *VehicleDataProvider) RegestrateUnSubscribAll(subsChan chan<-
 			return nil
 		}
 	}
-	return errors.New("404 Not found")
+	//return errors.New("404 Not found")
+	return nil
 }
 
 func createVisDataStorage() map[string]visInternalData {

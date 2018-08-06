@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"sync"
 
+	"gitpct.epam.com/epmd-aepr/aos_vis/dataprovider"
+
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"gitpct.epam.com/epmd-aepr/aos_vis/config"
@@ -21,6 +23,8 @@ type WsServer struct {
 	upgrader   websocket.Upgrader
 	mutex      sync.Mutex
 	clients    *list.List
+
+	dataProvider *dataprovider.DataProvider
 }
 
 /*******************************************************************************
@@ -41,6 +45,10 @@ func New(config *config.Config) (server *WsServer, err error) {
 	}
 	localServer.httpServer = &http.Server{Addr: config.ServerURL}
 	localServer.clients = list.New()
+
+	if localServer.dataProvider, err = dataprovider.New(config); err != nil {
+		return server, err
+	}
 
 	http.HandleFunc("/", localServer.handleConnection)
 
@@ -96,7 +104,7 @@ func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	client, err := newClient(wsConnection)
+	client, err := newClient(wsConnection, server.dataProvider)
 	if err != nil {
 		log.Error("Can't create websocket client connection: ", err)
 		wsConnection.Close()

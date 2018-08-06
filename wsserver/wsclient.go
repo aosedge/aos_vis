@@ -10,8 +10,8 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
+	"gitpct.epam.com/epmd-aepr/aos_vis/dataprovider"
 	"gitpct.epam.com/epmd-aepr/aos_vis/dbusclient"
-	"gitpct.epam.com/epmd-aepr/aos_vis/vehicledataprovider"
 )
 
 /*******************************************************************************
@@ -43,8 +43,8 @@ type wsClient struct {
 	wsConnection        *websocket.Conn
 	isAuthorized        bool
 	permissions         map[string]string
-	dataProvider        *vehicledataprovider.VehicleDataProvider
-	subscriptionChannel chan vehicledataprovider.SubscriptionOutputData //TODO: change to struct from dataprovider
+	dataProvider        *dataprovider.DataProvider
+	subscriptionChannel chan dataprovider.SubscriptionOutputData //TODO: change to struct from dataprovider
 }
 
 type requestType struct {
@@ -153,14 +153,14 @@ type errorInfo struct {
  * Private
  ******************************************************************************/
 
-func newClient(wsConnection *websocket.Conn) (client *wsClient, err error) {
+func newClient(wsConnection *websocket.Conn, dataProvider *dataprovider.DataProvider) (client *wsClient, err error) {
 	log.WithField("RemoteAddr", wsConnection.RemoteAddr()).Debug("Create new client")
 
 	var localClient wsClient
 
 	localClient.wsConnection = wsConnection
-	localClient.subscriptionChannel = make(chan vehicledataprovider.SubscriptionOutputData, 100)
-	localClient.dataProvider = vehicledataprovider.GetInstance()
+	localClient.subscriptionChannel = make(chan dataprovider.SubscriptionOutputData, 100)
+	localClient.dataProvider = dataProvider
 
 	client = &localClient
 

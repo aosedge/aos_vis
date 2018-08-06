@@ -1,11 +1,11 @@
-package vehicledataprovider_test
+package dataprovider_test
 
 import (
 	"os"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
-	"gitpct.epam.com/epmd-aepr/aos_vis/vehicledataprovider"
+	"gitpct.epam.com/epmd-aepr/aos_vis/dataprovider"
 )
 
 /*******************************************************************************
@@ -24,14 +24,14 @@ func init() {
 func TestDBUS(t *testing.T) {
 	log.Debug("[TEST] TestGet")
 
-	dataprovider := vehicledataprovider.GetInstance()
-	dataChannel := make(chan vehicledataprovider.SubscriptionOutputData)
-	idStr, err := dataprovider.RegestrateSubscriptionClient(dataChannel, "*")
+	provider := dataprovider.GetInstance()
+	dataChannel := make(chan dataprovider.SubscriptionOutputData)
+	idStr, err := provider.RegestrateSubscriptionClient(dataChannel, "*")
 	if err != nil {
 		t.Error("error subscription")
 	}
 
-	idStr, err = dataprovider.RegestrateSubscriptionClient(dataChannel, "Signal.*")
+	idStr, err = provider.RegestrateSubscriptionClient(dataChannel, "Signal.*")
 	if err != nil {
 		t.Error("error subscription")
 	}
