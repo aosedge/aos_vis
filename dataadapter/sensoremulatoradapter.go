@@ -1,4 +1,4 @@
-package visdataadapter
+package dataadapter
 
 import (
 	"bytes"

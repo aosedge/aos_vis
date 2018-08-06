@@ -1,4 +1,4 @@
-package visdataadapter
+package dataadapter
 
 import (
 	"os"
@@ -43,6 +43,11 @@ func (sensorAdapter *FakeAdapter) StartGettingData(dataChan chan<- []VisData) {
 			break
 		}
 	}
+}
+
+// SetData sets data
+func (sensorAdapter *FakeAdapter) SetData([]VisData) error {
+	return nil
 }
 
 // Stop stop getting data

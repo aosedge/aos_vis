@@ -10,7 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"gitpct.epam.com/epmd-aepr/aos_vis/config"
-	"gitpct.epam.com/epmd-aepr/aos_vis/visdataadapter"
+	"gitpct.epam.com/epmd-aepr/aos_vis/dataadapter"
 )
 
 //SubscriptionOutputData struct to inform aboute data change by subscription
@@ -37,14 +37,14 @@ type subscriptionPare struct {
 
 // DataProvider interface for geeting vehicle data
 type DataProvider struct {
-	sensorDataChannel chan []visdataadapter.VisData
+	sensorDataChannel chan []dataadapter.VisData
 	subscription      struct {
 		ar    []subscriptionElement
 		mutex sync.Mutex
 	}
 	visDataStorage map[string]visInternalData
 	currentSubsID  uint64
-	adapter        visdataadapter.VisDataAdapter //TODO: change to interface
+	adapter        dataadapter.DataAdapter //TODO: change to interface
 }
 
 type notificationData struct {
@@ -55,10 +55,10 @@ type notificationData struct {
 // New returns pointer to DataProvider
 func New(config *config.Config) (provider *DataProvider, err error) {
 	provider = &DataProvider{}
-	provider.sensorDataChannel = make(chan []visdataadapter.VisData, 100)
+	provider.sensorDataChannel = make(chan []dataadapter.VisData, 100)
 	provider.visDataStorage = createVisDataStorage()
 	go provider.start()
-	provider.adapter = visdataadapter.GetVisDataAdapter()
+	provider.adapter = dataadapter.GetVisDataAdapter()
 	go provider.adapter.StartGettingData(provider.sensorDataChannel)
 
 	return provider, nil
@@ -71,7 +71,7 @@ func (dataprovider *DataProvider) start() {
 	}
 }
 
-func (dataprovider *DataProvider) processIncomingData(incomeData []visdataadapter.VisData) {
+func (dataprovider *DataProvider) processIncomingData(incomeData []dataadapter.VisData) {
 
 	type notificationPair struct {
 		id   uint64
@@ -259,7 +259,7 @@ func (dataprovider *DataProvider) SetDataByPath(path string, inputData interface
 		return err
 	}
 
-	var visData []visdataadapter.VisData
+	var visData []dataadapter.VisData
 
 	for path := range dataprovider.visDataStorage {
 		if validID.MatchString(path) == true {
@@ -273,13 +273,13 @@ func (dataprovider *DataProvider) SetDataByPath(path string, inputData interface
 					}
 					for dataPath, data := range itemMap {
 						if strings.HasSuffix(path, dataPath) {
-							visData = append(visData, visdataadapter.VisData{Path: path, Data: data})
+							visData = append(visData, dataadapter.VisData{Path: path, Data: data})
 						}
 					}
 				}
 			} else {
 				// just value - set this for all matched items
-				visData = append(visData, visdataadapter.VisData{Path: path, Data: inputData})
+				visData = append(visData, dataadapter.VisData{Path: path, Data: inputData})
 			}
 		}
 	}

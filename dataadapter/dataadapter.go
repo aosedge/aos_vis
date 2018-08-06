@@ -1,4 +1,4 @@
-package visdataadapter
+package dataadapter
 
 //VisData TODO:
 type VisData struct {
@@ -7,14 +7,14 @@ type VisData struct {
 }
 
 //VisDataAdapter interface for working with real data
-type VisDataAdapter interface {
+type DataAdapter interface {
 	StartGettingData(dataChan chan<- []VisData)
 	SetData([]VisData) error
 	Stop()
 }
 
 //GetVisDataAdapter create necessary adapter
-func GetVisDataAdapter() VisDataAdapter {
-	adapter := NewSensorEmulatorAdapter("http://sensors:8800/stats")
+func GetVisDataAdapter() DataAdapter {
+	adapter := NewFakeAdapter()
 	return adapter
 }
