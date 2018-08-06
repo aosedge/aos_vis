@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"gitpct.epam.com/epmd-aepr/aos_vis/config"
 )
 
 /*******************************************************************************
@@ -27,8 +28,8 @@ type WsServer struct {
  ******************************************************************************/
 
 // New creates new Web socket server
-func New(addr, crt, key string) (server *WsServer, err error) {
-	log.WithField("address", addr).Debug("Create wsserver")
+func New(config *config.Config) (server *WsServer, err error) {
+	log.WithField("address", config.ServerURL).Debug("Create wsserver")
 
 	//TODO: add addr validation
 	var localServer WsServer
@@ -38,17 +39,19 @@ func New(addr, crt, key string) (server *WsServer, err error) {
 		WriteBufferSize: 1024,
 		CheckOrigin:     customCheckOrigin,
 	}
-	localServer.httpServer = &http.Server{Addr: addr}
+	localServer.httpServer = &http.Server{Addr: config.ServerURL}
 	localServer.clients = list.New()
 
 	http.HandleFunc("/", localServer.handleConnection)
 
 	go func(crt, key string) {
+		log.WithFields(log.Fields{"crt": crt, "key": key}).Debug("Listen")
+
 		if err := localServer.httpServer.ListenAndServeTLS(crt, key); err != http.ErrServerClosed {
 			log.Error("Server listening error: ", err)
 			return
 		}
-	}(crt, key)
+	}(config.VISCert, config.VISKey)
 
 	server = &localServer
 

@@ -11,10 +11,11 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
+	"gitpct.epam.com/epmd-aepr/aos_vis/config"
 	"gitpct.epam.com/epmd-aepr/aos_vis/wsserver"
 )
 
-var addr string = "localhost:8088"
+const serverURL = "localhost:8088"
 
 type visResponse struct {
 	Action         string       `json:"action"`
@@ -40,8 +41,6 @@ type configuration struct {
 	VISCert   string
 	VISKey    string
 }
-
-var servConfig configuration
 
 /*******************************************************************************
  * Init
@@ -82,17 +81,9 @@ func TestMain(m *testing.M) {
 	dbusserver := dbusInterface{}
 	conn.Export(dbusserver, "/com/aosservicemanager/vistoken", "com.aosservicemanager.vistoken")
 
-	file, err := os.Open("../visconfig.json")
-	if err != nil {
-		log.Fatal("Error opening visconfig.json: ", err)
-	}
+	config := config.Config{ServerURL: serverURL, VISCert: "../data/wwwivi.crt.pem", VISKey: "../data/wwwivi.key.pem"}
 
-	decoder := json.NewDecoder(file)
-	if err = decoder.Decode(&servConfig); err != nil {
-		log.Fatalf("Error parsing visconfig.json: %s", err)
-	}
-
-	server, err := wsserver.New(servConfig.ServerUrl, servConfig.VISCert, servConfig.VISKey)
+	server, err := wsserver.New(&config)
 	if err != nil {
 		log.Fatalf("Can't create ws server: %s", err)
 	}
@@ -114,7 +105,7 @@ func closeConnection(c *websocket.Conn) {
 }
 
 func TestGetNoAuth(t *testing.T) {
-	u := url.URL{Scheme: "wss", Host: servConfig.ServerUrl, Path: "/"}
+	u := url.URL{Scheme: "wss", Host: serverURL, Path: "/"}
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		t.Fatalf("Can't connect to ws server %s", err)
@@ -146,7 +137,7 @@ func TestGetNoAuth(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	u := url.URL{Scheme: "wss", Host: servConfig.ServerUrl, Path: "/"}
+	u := url.URL{Scheme: "wss", Host: serverURL, Path: "/"}
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		t.Fatalf("Can't connect to ws server %s", err)
@@ -179,7 +170,7 @@ func TestSet(t *testing.T) {
 }
 
 func TestGetWithAuth(t *testing.T) {
-	u := url.URL{Scheme: "wss", Host: servConfig.ServerUrl, Path: "/"}
+	u := url.URL{Scheme: "wss", Host: serverURL, Path: "/"}
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		t.Fatalf("Can't connect to ws server %s", err)
@@ -265,7 +256,7 @@ func TestGetWithAuth(t *testing.T) {
 }
 
 func TestSubscribeUnsubscribe(t *testing.T) {
-	u := url.URL{Scheme: "wss", Host: servConfig.ServerUrl, Path: "/"}
+	u := url.URL{Scheme: "wss", Host: serverURL, Path: "/"}
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		t.Fatalf("Can't connect to ws server: %s", err)
