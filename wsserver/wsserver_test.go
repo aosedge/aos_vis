@@ -132,7 +132,7 @@ func TestGetNoAuth(t *testing.T) {
 		t.Fatalf("Unexpected value")
 	}
 	if resp.Error != nil {
-		t.Fatalf("Error parsing get request:  %s", err)
+		t.Fatalf("Error parsing get request: %s", resp.Error.Message)
 	}
 }
 
@@ -165,7 +165,7 @@ func TestSet(t *testing.T) {
 		t.Fatalf("Unexpected value")
 	}
 	if resp.Error != nil {
-		t.Fatalf("Error parsing get request:  %s", err)
+		t.Fatalf("Error parsing get request: %s", resp.Error.Message)
 	}
 }
 
@@ -334,7 +334,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		t.Fatalf("Unexpected value")
 	}
 	if resp.Error != nil {
-		t.Fatalf("Unexpected error for unsubscribe  %s", resp.Error.Message)
+		t.Fatalf("Unexpected error for unsubscribe: %s", resp.Error.Message)
 	}
 
 	unsubscMessageAll := `{"action": "unsubscribeAll", "requestId": "1004"}`
