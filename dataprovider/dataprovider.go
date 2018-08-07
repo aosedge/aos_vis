@@ -107,39 +107,50 @@ func (provider *DataProvider) IsPathPublic(path string) (result bool, err error)
 }
 
 // GetData returns VIS data
-func (provider *DataProvider) GetData(path string) (outData interface{}, err error) {
-	var wasFound bool
-	wasFound = false
-	err = nil
-	validID, err := createRegexpFromPath(path)
+func (provider *DataProvider) GetData(path string) (data interface{}, err error) {
+	log.WithField("path", path).Debug("Get data")
+
+	filter, err := createRegexpFromPath(path)
 	if err != nil {
-		log.Error("Incorrect path ", err)
-		return outData, errors.New("404 Not found")
+		return data, err
 	}
-	//var outputArray []map[string]interface{}
-	m := make(map[string]interface{})
 
-	for path, data := range provider.visDataStorage {
-		if validID.MatchString(path) == true {
-			wasFound = true
-			if data.isInitialized == false {
-				//TODO: request data from adapter
+	// Create map of pathes grouped by adapter
+	adapterDataMap := make(map[dataadapter.DataAdapter][]string)
+
+	for path, adapter := range provider.adapterMap {
+		if filter.MatchString(path) {
+			if adapterDataMap[adapter] == nil {
+				adapterDataMap[adapter] = make([]string, 0, 10)
 			}
-			//var m map[string]interface{}
 
-			m[path] = data.data
-			//		outputArray = append(outputArray, m)
-
-			log.Debug("data = ", m[path])
+			if adapterDataMap[adapter] == nil {
+				adapterDataMap[adapter] = make([]string, 0, 10)
+			}
+			adapterDataMap[adapter] = append(adapterDataMap[adapter], path)
 		}
 	}
-	if wasFound == false {
-		err = errors.New("404 Not found")
+
+	// Create common data array
+	commonData := make(map[string]interface{})
+
+	for adapter, pathList := range adapterDataMap {
+		result, err := adapter.GetData(pathList)
+		if err != nil {
+			return data, err
+		}
+		for path, value := range result {
+			log.WithFields(log.Fields{"adapter": adapter.GetName(), "value": value, "path": path}).Debug("Data from adapter")
+
+			commonData[path] = value
+		}
 	}
-	//TODO : return one value, or array or object
-	//outData = outputArray
-	outData = m
-	return outData, err
+
+	if len(commonData) == 0 {
+		return data, errors.New("The specified data path does not exist")
+	}
+
+	return convertData(commonData), nil
 }
 
 // SetData sets VIS data
@@ -420,12 +431,16 @@ func createVisDataStorage() map[string]visInternalData {
 	return storage
 }
 
+func getParentPath(path string) (parent string) {
+	return path[:strings.LastIndex(path, ".")]
+}
+
 func createRegexpFromPath(path string) (exp *regexp.Regexp, err error) {
 	regexpStr := strings.Replace(path, ".", "[.]", -1)
 	regexpStr = strings.Replace(regexpStr, "*", ".*?", -1)
 	regexpStr = "^" + regexpStr
-	log.Debug("filter =", regexpStr)
 	exp, err = regexp.Compile(regexpStr)
+
 	return exp, err
 }
 
@@ -448,4 +463,45 @@ func isArraysEqual(arr1, arr2 []interface{}) (result bool) {
 		}
 	}
 	return true
+}
+
+func convertData(data map[string]interface{}) (result interface{}) {
+	// Group by parent map[parent] -> (map[path] -> value)
+	parentDataMap := make(map[string]map[string]interface{})
+
+	for path, value := range data {
+		parent := getParentPath(path)
+		if parentDataMap[parent] == nil {
+			parentDataMap[parent] = make(map[string]interface{})
+		}
+		parentDataMap[parent][path] = value
+	}
+
+	// make array from map
+	dataArray := make([]map[string]interface{}, 0, len(parentDataMap))
+	for _, value := range parentDataMap {
+		dataArray = append(dataArray, value)
+	}
+
+	// VIS defines 3 forms of returning result:
+	// * simple value if it is one signal
+	// * map[path]value if result belongs to same parent
+	// * []map[path]value if result belongs to different parents
+	//
+	// TODO: It is unclear from spec how to combine results in one map.
+	// By which criteria we should put data to one map or to array element.
+	// For now it is combined by parent node.
+
+	if len(dataArray) == 1 {
+		if len(dataArray[0]) == 1 {
+			for _, value := range dataArray[0] {
+				// return simple value
+				return value
+			}
+		}
+		// return map of same parent
+		return dataArray[0]
+	}
+	// return array of different parents
+	return dataArray
 }

@@ -29,7 +29,20 @@ func NewTestAdapter() (adapter *TestAdapter, err error) {
 
 	adapter.data["Attribute.Vehicle.VehicleIdentification.VIN"] = "TestVIN"
 	adapter.data["Attribute.Vehicle.UserIdentification.Users"] = []string{"User1", "Provider1"}
-	adapter.data["Sensor.Engine.RPM"] = 1000
+
+	adapter.data["Signal.Drivetrain.InternalCombustionEngine.RPM"] = 1000
+
+	adapter.data["Signal.Body.Trunk.IsLocked"] = false
+	adapter.data["Signal.Body.Trunk.IsOpen"] = true
+
+	adapter.data["Signal.Cabin.Door.Row1.Right.IsLocked"] = true
+	adapter.data["Signal.Cabin.Door.Row1.Right.Window.Position"] = 50
+	adapter.data["Signal.Cabin.Door.Row1.Left.IsLocked"] = true
+	adapter.data["Signal.Cabin.Door.Row1.Left.Window.Position"] = 23
+	adapter.data["Signal.Cabin.Door.Row2.Right.IsLocked"] = false
+	adapter.data["Signal.Cabin.Door.Row2.Right.Window.Position"] = 100
+	adapter.data["Signal.Cabin.Door.Row2.Left.IsLocked"] = true
+	adapter.data["Signal.Cabin.Door.Row2.Left.Window.Position"] = 0
 
 	return adapter, nil
 }
@@ -72,7 +85,16 @@ func (adapter *TestAdapter) IsPathPublic(path string) (result bool, err error) {
 
 // GetData returns data by path
 func (adapter *TestAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
-	return
+	data = make(map[string]interface{})
+
+	for _, path := range pathList {
+		if _, ok := adapter.data[path]; !ok {
+			return data, fmt.Errorf("Path %s doesn't exits", path)
+		}
+		data[path] = adapter.data[path]
+	}
+
+	return data, nil
 }
 
 // SetData sets data by pathes
