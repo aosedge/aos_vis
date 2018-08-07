@@ -84,7 +84,7 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 		if _, ok := provider.adapterMap[path]; ok {
 			log.WithField("path", path).Warningf("Path already in adapter map")
 		} else {
-			log.WithFields(log.Fields{"path": path, "adaptor": "test"}).Debug("Add path")
+			log.WithFields(log.Fields{"path": path, "adaptor": adapter.GetName()}).Debug("Add path")
 
 			provider.adapterMap[path] = adapter
 		}
@@ -154,41 +154,76 @@ func (provider *DataProvider) GetData(path string) (data interface{}, err error)
 }
 
 // SetData sets VIS data
-func (provider *DataProvider) SetData(path string, inputData interface{}) (err error) {
-	//TODO: prepare data and send set to adapter
+func (provider *DataProvider) SetData(path string, data interface{}) (err error) {
+	log.WithFields(log.Fields{"path": path, "data": data}).Debug("Set data")
 
-	validID, err := createRegexpFromPath(path)
+	filter, err := createRegexpFromPath(path)
 	if err != nil {
-		log.Error("Incorrect path: ", err)
 		return err
 	}
 
-	var visData []dataadapter.VisData
+	// Create map from data. According to VIS spec data could be array of map,
+	// map or simple value. Convert array of map to map and keep map as is.
+	suffixMap := make(map[string]interface{})
 
-	for path := range provider.visDataStorage {
-		if validID.MatchString(path) == true {
-			// array - try to find appropriate item to set
-			arrayData, ok := inputData.([]interface{})
-			if ok {
-				for _, itemData := range arrayData {
-					itemMap, ok := itemData.(map[string]interface{})
-					if !ok {
-						return errors.New("Wrong value format")
-					}
-					for dataPath, data := range itemMap {
-						if strings.HasSuffix(path, dataPath) {
-							visData = append(visData, dataadapter.VisData{Path: path, Data: data})
-						}
+	switch data.(type) {
+	// convert array of map to map
+	case []map[string]interface{}:
+		for _, arrayItem := range data.([]map[string]interface{}) {
+			for path, value := range arrayItem {
+				suffixMap[path] = value
+			}
+		}
+
+	// keep map as is
+	case map[string]interface{}:
+		suffixMap = data.(map[string]interface{})
+	}
+
+	// adapterDataMap contains VIS data grouped by adapters
+	adapterDataMap := make(map[dataadapter.DataAdapter]map[string]interface{})
+
+	for path, adapter := range provider.adapterMap {
+		if filter.MatchString(path) {
+			var value interface{}
+			if len(suffixMap) != 0 {
+				// if there is suffix map, try to find proper path by suffix
+				for suffix, v := range suffixMap {
+					if strings.HasSuffix(path, suffix) {
+						value = v
+						break
 					}
 				}
 			} else {
-				// just value - set this for all matched items
-				visData = append(visData, dataadapter.VisData{Path: path, Data: inputData})
+				// For simple value set data
+				value = data
+			}
+
+			if value != nil {
+				// Set data to adapterDataMap
+				log.WithFields(log.Fields{"adapter": adapter.GetName(), "value": value, "path": path}).Debug("Set data to adapter")
+
+				if adapterDataMap[adapter] == nil {
+					adapterDataMap[adapter] = make(map[string]interface{})
+				}
+				adapterDataMap[adapter][path] = value
 			}
 		}
 	}
 
-	return provider.adapterMap[path].SetData(nil)
+	// If adapterMap is empty: no path found
+	if len(adapterDataMap) == 0 {
+		return errors.New("The server is unable to fulfil the client request because the request is malformed")
+	}
+
+	// Everything ok: try to set to adapter
+	for adapter, visData := range adapterDataMap {
+		if err = adapter.SetData(visData); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Subscribe subscribes for data change

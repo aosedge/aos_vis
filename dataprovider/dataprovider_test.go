@@ -1,6 +1,7 @@
 package dataprovider_test
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -76,7 +77,7 @@ func TestGetData(t *testing.T) {
 
 	data, err := provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM")
 	if err != nil {
-		t.Fatalf("Can't get data: %s", err)
+		t.Errorf("Can't get data: %s", err)
 	}
 	if _, ok := data.(int); !ok {
 		t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
@@ -100,7 +101,7 @@ func TestGetData(t *testing.T) {
 
 	data, err = provider.GetData("Signal.Body.Trunk")
 	if err != nil {
-		t.Fatalf("Can't get data: %s", err)
+		t.Errorf("Can't get data: %s", err)
 	}
 	if value, ok := data.(map[string]interface{}); !ok {
 		t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
@@ -130,7 +131,7 @@ func TestGetData(t *testing.T) {
 
 	data, err = provider.GetData("Signal.Cabin.Door.*.IsLocked")
 	if err != nil {
-		t.Fatalf("Can't get data: %s", err)
+		t.Errorf("Can't get data: %s", err)
 	}
 	if value, ok := data.([]map[string]interface{}); !ok {
 		t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
@@ -170,7 +171,7 @@ func TestGetData(t *testing.T) {
 
 	data, err = provider.GetData("Signal.Cabin.Door.*")
 	if err != nil {
-		t.Fatalf("Can't get data: %s", err)
+		t.Errorf("Can't get data: %s", err)
 	}
 	if value, ok := data.([]map[string]interface{}); !ok {
 		t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
@@ -208,4 +209,139 @@ func TestGetData(t *testing.T) {
 	} else if !strings.Contains(err.Error(), "not exist") {
 		t.Errorf("Wrong error type: %s", err)
 	}
+}
+
+func TestSetData(t *testing.T) {
+	provider, err := dataprovider.New(&config.Config{})
+	if err != nil {
+		t.Fatalf("Can't create data provider: %s", err)
+	}
+
+	// Set by full path
+
+	if err = provider.SetData("Signal.Body.Trunk.IsLocked", true); err != nil {
+		t.Errorf("Can't set data: %s", err)
+	}
+	value, err := provider.GetData("Signal.Body.Trunk.IsLocked")
+	if err != nil {
+		t.Errorf("Can't get data: %s", err)
+	}
+	if value != true {
+		t.Errorf("Data mistmatch: %v", value)
+	}
+
+	/*
+		client -> {
+			"action": "set",
+			"path": "Signal.Cabin.Door.*.IsLocked",
+			"value": [ {"Row1.Right.IsLocked": true },
+			           {"Row1.Left.IsLocked": true },
+			           {"Row2.Right.IsLocked": true },
+			           {"Row2.Left.IsLocked": true } ],
+			"requestId": "5689"
+		}
+
+		receive <- {
+			"action": "set",
+			"requestId": "5689",
+			"timestamp": 1489985044000
+		}
+	*/
+
+	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []map[string]interface{}{
+		{"Row1.Right.IsLocked": true},
+		{"Row1.Left.IsLocked": true},
+		{"Row2.Right.IsLocked": true},
+		{"Row2.Left.IsLocked": true}}); err != nil {
+		t.Errorf("Can't set data: %s", err)
+	}
+	if value, err = provider.GetData("Signal.Cabin.Door.*.IsLocked"); err != nil {
+		t.Errorf("Can't get data: %s", err)
+	}
+	dataMap, err := arrayToMap(value)
+	if err != nil {
+		t.Error(err)
+	}
+	if dataMap["Signal.Cabin.Door.Row1.Right.IsLocked"] != true {
+		t.Errorf("Data mistmatch: %v", value)
+	}
+	if dataMap["Signal.Cabin.Door.Row1.Left.IsLocked"] != true {
+		t.Errorf("Data mistmatch: %v", value)
+	}
+	if dataMap["Signal.Cabin.Door.Row2.Right.IsLocked"] != true {
+		t.Errorf("Data mistmatch: %v", value)
+	}
+	if dataMap["Signal.Cabin.Door.Row2.Left.IsLocked"] != true {
+		t.Errorf("Data mistmatch: %v", value)
+	}
+
+	/*
+		client -> {
+			"action": "set",
+			"path": "Signal.Drivetrain.InternalCombustionEngine.RPM",
+			"value": 2000,
+			"requestId": "8912"
+		}
+
+		receive <- {
+			"action": "set",
+			"requestId": "8912",
+			"error": { "number": 401,
+			"reason": "read_only",
+			"message": "The desired signal cannot be set since it is a read only signal"},
+			"timestamp": 1489985044000
+		}
+	*/
+
+	err = provider.SetData("Signal.Drivetrain.InternalCombustionEngine.RPM", 2000)
+	if err == nil {
+		t.Error("Path should be read only")
+	} else if !strings.Contains(err.Error(), "read only") {
+		t.Errorf("Wrong error type: %s", err)
+	}
+
+	/*
+		client -> {
+			"action": "set",
+			"path": "Signal.Drivetrain.InternalCombustionEngine.RPM",
+			"value": { "locked" : true }
+			"requestId": "2311"
+			}
+
+		receive <- {
+			"action": "set",
+			"requestId": "2311",
+			"error": { "number": 400,
+			"reason": "bad_request" ,
+			"message": "The server is unable to fulfil the client request because the request is malformed."},
+			"timestamp": 1489985044000
+		}
+	*/
+
+	err = provider.SetData("Signal.Drivetrain.InternalCombustionEngine.RPM", map[string]interface{}{"locked": true})
+	if err == nil {
+		t.Error("Path should be read only")
+	} else if !strings.Contains(err.Error(), "malformed") {
+		t.Errorf("Wrong error type: %s", err)
+	}
+}
+
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
+func arrayToMap(data interface{}) (result map[string]interface{}, err error) {
+	// Create map from array
+	array, ok := data.([]map[string]interface{})
+	if !ok {
+		return result, fmt.Errorf("Wrong data type: %s", reflect.TypeOf(data))
+	}
+
+	result = make(map[string]interface{})
+	for _, arrayItem := range array {
+		for path, value := range arrayItem {
+			result[path] = value
+		}
+	}
+
+	return result, nil
 }

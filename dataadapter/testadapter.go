@@ -1,6 +1,7 @@
 package dataadapter
 
 import (
+	"errors"
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
@@ -75,9 +76,6 @@ func (adapter *TestAdapter) IsPathPublic(path string) (result bool, err error) {
 
 	case "Attribute.Vehicle.UserIdentification.Users":
 		return true, nil
-
-	case "Sensor.Engine.RPM":
-		return false, nil
 	}
 
 	return false, nil
@@ -99,5 +97,30 @@ func (adapter *TestAdapter) GetData(pathList []string) (data map[string]interfac
 
 // SetData sets data by pathes
 func (adapter *TestAdapter) SetData(data map[string]interface{}) (err error) {
-	return
+	for path, value := range data {
+		if _, ok := adapter.data[path]; !ok {
+			return fmt.Errorf("Path %s doesn't exits", path)
+		}
+
+		if err = adapter.setData(path, value); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
+
+func (adapter *TestAdapter) setData(path string, value interface{}) (err error) {
+	switch path {
+	case "Signal.Drivetrain.InternalCombustionEngine.RPM":
+		return errors.New("The desired signal cannot be set since it is a read only signal")
+
+	default:
+		adapter.data[path] = value
+		return nil
+	}
 }
