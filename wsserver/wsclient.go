@@ -3,7 +3,6 @@ package wsserver
 import (
 	"encoding/json"
 	"errors"
-	"regexp"
 	"strings"
 	"time"
 
@@ -41,8 +40,7 @@ type permission uint
 
 type wsClient struct {
 	wsConnection        *websocket.Conn
-	isAuthorized        bool
-	permissions         map[string]string
+	authInfo            *dataprovider.AuthInfo
 	dataProvider        *dataprovider.DataProvider
 	subscriptionChannel chan dataprovider.SubscriptionOutputData //TODO: change to struct from dataprovider
 }
@@ -161,6 +159,7 @@ func newClient(wsConnection *websocket.Conn, dataProvider *dataprovider.DataProv
 	localClient.wsConnection = wsConnection
 	localClient.subscriptionChannel = make(chan dataprovider.SubscriptionOutputData, 100)
 	localClient.dataProvider = dataProvider
+	localClient.authInfo = &dataprovider.AuthInfo{}
 
 	client = &localClient
 
@@ -270,11 +269,7 @@ func (client *wsClient) processGetRequest(requestJSON []byte) (responseJSON []by
 		return createErrorResponse(rGet.Action, rGet.RequestID, err)
 	}
 
-	if err = client.checkPermission(rGet.Path, getPermission); err != nil {
-		return createErrorResponse(rGet.Action, rGet.RequestID, err)
-	}
-
-	vehData, err := client.dataProvider.GetData(rGet.Path)
+	vehData, err := client.dataProvider.GetData(rGet.Path, client.authInfo)
 	if err != nil {
 		return createErrorResponse(rGet.Action, rGet.RequestID, err)
 	}
@@ -297,14 +292,7 @@ func (client *wsClient) processSetRequest(requestJSON []byte) (responseJSON []by
 		return createErrorResponse(rSet.Action, rSet.RequestID, err)
 	}
 
-	if err = client.checkPermission(rSet.Path, setPermission); err != nil {
-		if strings.Contains(err.Error(), "not authorized") {
-			return createErrorResponse(rSet.Action, rSet.RequestID, err)
-		}
-		return createErrorResponse(rSet.Action, rSet.RequestID, err)
-	}
-
-	if err = client.dataProvider.SetData(rSet.Path, rSet.Value); err != nil {
+	if err = client.dataProvider.SetData(rSet.Path, rSet.Value, client.authInfo); err != nil {
 		return createErrorResponse(rSet.Action, rSet.RequestID, err)
 	}
 
@@ -330,15 +318,15 @@ func (client *wsClient) processAuthRequest(requestJSON []byte) (responseJSON []b
 		return createErrorResponse(rAuth.Action, rAuth.RequestID, errors.New("Nil token authorization"))
 	}
 
-	if !client.isAuthorized {
+	if !client.authInfo.IsAuthorized {
 		//TODO: add retry count
 		//data, errInfo := getPermissionListForClient(*request.Tokens.Authorization)
 		data, err := dbusclient.GetVisPermissionByToken(*rAuth.Tokens.Authorization)
 		if err != nil {
 			return createErrorResponse(rAuth.Action, rAuth.RequestID, err)
 		}
-		client.permissions = data
-		client.isAuthorized = true
+		client.authInfo.Permissions = data
+		client.authInfo.IsAuthorized = true
 	} else {
 		log.WithField("token", rAuth.Tokens.Authorization).Debug("Token already authorized")
 	}
@@ -363,14 +351,7 @@ func (client *wsClient) processSubscribeRequest(requestJSON []byte) (responseJSO
 		log.Warn("Filter currently not implemented. Filters will be ignored")
 	}
 
-	if err = client.checkPermission(rSubs.Path, getPermission); err != nil {
-		if strings.Contains(err.Error(), "not authorized") {
-			return createErrorResponse(rSubs.Action, rSubs.RequestID, err)
-		}
-		return createErrorResponse(rSubs.Action, rSubs.RequestID, err)
-	}
-
-	subscrID, err := client.dataProvider.Subscribe(client.subscriptionChannel, rSubs.Path)
+	subscrID, err := client.dataProvider.Subscribe(client.subscriptionChannel, rSubs.Path, client.authInfo)
 	if err != nil {
 		return createErrorResponse(rSubs.Action, rSubs.RequestID, err)
 	}
@@ -428,62 +409,17 @@ func (client *wsClient) processUnsubscribeAllRequest(requestJSON []byte) (respon
 	return responseJSON, nil
 }
 
-// check permission set or get
-func (client *wsClient) checkPermission(path string, p permission) (err error) {
-	result, err := client.dataProvider.IsPathPublic(path)
-	if err != nil {
-		return err
-	}
-
-	// public path no authentication is required
-	if result {
-		return nil
-	}
-
-	if !client.isAuthorized {
-		return errors.New("Client is not authorized")
-	}
-
-	regexpStr := strings.Replace(path, ".", "[.]", -1)
-	regexpStr = strings.Replace(regexpStr, "*", ".*?", -1)
-	regexpStr = "^" + regexpStr
-
-	log.WithField("filter", regexpStr).Debug("Check permission")
-
-	id, err := regexp.Compile(regexpStr)
-	if err != nil {
-		return err
-	}
-
-	for k, v := range client.permissions {
-		if id.MatchString(k) == true {
-			switch p {
-			case getPermission:
-				if strings.Contains(v, "r") {
-					log.Info("GET permission present for path ", path)
-					return nil
-				}
-
-			case setPermission:
-				if strings.Contains(v, "w") {
-					log.Info("SET permission present for path ", path)
-					return nil
-				}
-			}
-		}
-	}
-
-	return errors.New("The user is not permitted to access the requested resource")
-}
-
 func createErrorResponse(action string, reqID string, inErr error) (response []byte, outErr error) {
 	code := 400
 
 	switch {
-	case strings.Contains(inErr.Error(), "not found") || strings.Contains(inErr.Error(), "not exist"):
+	case strings.Contains(strings.ToLower(inErr.Error()), "not found") ||
+		strings.Contains(strings.ToLower(inErr.Error()), "not exist"):
 		code = 404
-	case strings.Contains(inErr.Error(), "not authorized"):
+	case strings.Contains(strings.ToLower(inErr.Error()), "not authorized"):
 		code = 401
+	case strings.Contains(strings.ToLower(inErr.Error()), "not have permissions"):
+		code = 403
 	}
 
 	info := errorInfo{Number: code, Message: inErr.Error()}

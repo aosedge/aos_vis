@@ -2,7 +2,6 @@ package dataprovider
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -53,6 +52,12 @@ type DataProvider struct {
 	adapterMap map[string]dataadapter.DataAdapter
 }
 
+// AuthInfo authorization info
+type AuthInfo struct {
+	IsAuthorized bool
+	Permissions  map[string]string
+}
+
 type notificationData struct {
 	subsChan chan<- SubscriptionOutputData
 	id       uint64
@@ -93,21 +98,8 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	return provider, nil
 }
 
-// IsPathPublic if path is public no authentication is required
-func (provider *DataProvider) IsPathPublic(path string) (result bool, err error) {
-	if _, ok := provider.adapterMap[path]; !ok {
-		return result, fmt.Errorf("Path %s doesn't exits", path)
-	}
-
-	result, err = provider.adapterMap[path].IsPathPublic(path)
-
-	log.WithFields(log.Fields{"path": path, "result": result}).Debug("Is path public")
-
-	return result, err
-}
-
 // GetData returns VIS data
-func (provider *DataProvider) GetData(path string) (data interface{}, err error) {
+func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data interface{}, err error) {
 	log.WithField("path", path).Debug("Get data")
 
 	filter, err := createRegexpFromPath(path)
@@ -120,8 +112,8 @@ func (provider *DataProvider) GetData(path string) (data interface{}, err error)
 
 	for path, adapter := range provider.adapterMap {
 		if filter.MatchString(path) {
-			if adapterDataMap[adapter] == nil {
-				adapterDataMap[adapter] = make([]string, 0, 10)
+			if err = checkPermissions(adapter, path, authInfo, "r"); err != nil {
+				return data, err
 			}
 
 			if adapterDataMap[adapter] == nil {
@@ -154,7 +146,7 @@ func (provider *DataProvider) GetData(path string) (data interface{}, err error)
 }
 
 // SetData sets VIS data
-func (provider *DataProvider) SetData(path string, data interface{}) (err error) {
+func (provider *DataProvider) SetData(path string, data interface{}, authInfo *AuthInfo) (err error) {
 	log.WithFields(log.Fields{"path": path, "data": data}).Debug("Set data")
 
 	filter, err := createRegexpFromPath(path)
@@ -203,6 +195,10 @@ func (provider *DataProvider) SetData(path string, data interface{}) (err error)
 				// Set data to adapterDataMap
 				log.WithFields(log.Fields{"adapter": adapter.GetName(), "value": value, "path": path}).Debug("Set data to adapter")
 
+				if err = checkPermissions(adapter, path, authInfo, "w"); err != nil {
+					return err
+				}
+
 				if adapterDataMap[adapter] == nil {
 					adapterDataMap[adapter] = make(map[string]interface{})
 				}
@@ -227,7 +223,7 @@ func (provider *DataProvider) SetData(path string, data interface{}) (err error)
 }
 
 // Subscribe subscribes for data change
-func (provider *DataProvider) Subscribe(subsChan chan<- SubscriptionOutputData, path string) (id string, err error) {
+func (provider *DataProvider) Subscribe(subsChan chan<- SubscriptionOutputData, path string, authInfo *AuthInfo) (id string, err error) {
 	//TODO: add checking available path
 	var subsElement subscriptionPare
 
@@ -498,6 +494,41 @@ func isArraysEqual(arr1, arr2 []interface{}) (result bool) {
 		}
 	}
 	return true
+}
+
+func checkPermissions(adapter dataadapter.DataAdapter, path string, authInfo *AuthInfo, permissions string) (err error) {
+	if authInfo == nil {
+		return nil
+	}
+
+	isPublic, err := adapter.IsPathPublic(path)
+	if err != nil {
+		return err
+	}
+	if !authInfo.IsAuthorized && !isPublic {
+		return errors.New("Client is not authorized")
+	}
+	if isPublic {
+		return nil
+	}
+
+	// Check permission
+	for mask, value := range authInfo.Permissions {
+		filter, err := createRegexpFromPath(mask)
+		if err != nil {
+			return err
+		}
+
+		if filter.MatchString(path) && strings.Contains(strings.ToLower(value), strings.ToLower(permissions)) {
+			log.WithFields(log.Fields{
+				"path":        path,
+				"permissions": value}).Debug("Data permissions")
+
+			return nil
+		}
+	}
+
+	return errors.New("Client does not have permissions")
 }
 
 func convertData(data map[string]interface{}) (result interface{}) {

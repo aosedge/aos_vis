@@ -29,31 +29,6 @@ func init() {
  * Tests
  ******************************************************************************/
 
-func TestPublicPath(t *testing.T) {
-	provider, err := dataprovider.New(&config.Config{})
-	if err != nil {
-		t.Fatalf("Can't create data provider: %s", err)
-	}
-
-	path := "Attribute.Vehicle.VehicleIdentification.VIN"
-	result, err := provider.IsPathPublic(path)
-	if err != nil {
-		t.Fatalf("Can't check path publicity: %s", err)
-	}
-	if !result {
-		t.Errorf("Path %s should be public", path)
-	}
-
-	path = "Signal.Drivetrain.InternalCombustionEngine.RPM"
-	result, err = provider.IsPathPublic(path)
-	if err != nil {
-		t.Fatalf("Can't check path publicity: %s", err)
-	}
-	if result {
-		t.Errorf("Path %s should not be public", path)
-	}
-}
-
 func TestGetData(t *testing.T) {
 	provider, err := dataprovider.New(&config.Config{})
 	if err != nil {
@@ -75,7 +50,7 @@ func TestGetData(t *testing.T) {
 		}
 	*/
 
-	data, err := provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM")
+	data, err := provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}
@@ -99,7 +74,7 @@ func TestGetData(t *testing.T) {
 		}
 	*/
 
-	data, err = provider.GetData("Signal.Body.Trunk")
+	data, err = provider.GetData("Signal.Body.Trunk", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}
@@ -129,7 +104,7 @@ func TestGetData(t *testing.T) {
 		}
 	*/
 
-	data, err = provider.GetData("Signal.Cabin.Door.*.IsLocked")
+	data, err = provider.GetData("Signal.Cabin.Door.*.IsLocked", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}
@@ -169,7 +144,7 @@ func TestGetData(t *testing.T) {
 		how to combine results in one map.
 	*/
 
-	data, err = provider.GetData("Signal.Cabin.Door.*")
+	data, err = provider.GetData("Signal.Cabin.Door.*", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}
@@ -203,7 +178,7 @@ func TestGetData(t *testing.T) {
 		}
 	*/
 
-	data, err = provider.GetData("Body.Flux.Capacitor")
+	data, err = provider.GetData("Body.Flux.Capacitor", nil)
 	if err == nil {
 		t.Error("Path should not exists")
 	} else if !strings.Contains(err.Error(), "not exist") {
@@ -219,10 +194,10 @@ func TestSetData(t *testing.T) {
 
 	// Set by full path
 
-	if err = provider.SetData("Signal.Body.Trunk.IsLocked", true); err != nil {
+	if err = provider.SetData("Signal.Body.Trunk.IsLocked", true, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
-	value, err := provider.GetData("Signal.Body.Trunk.IsLocked")
+	value, err := provider.GetData("Signal.Body.Trunk.IsLocked", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}
@@ -252,10 +227,10 @@ func TestSetData(t *testing.T) {
 		{"Row1.Right.IsLocked": true},
 		{"Row1.Left.IsLocked": true},
 		{"Row2.Right.IsLocked": true},
-		{"Row2.Left.IsLocked": true}}); err != nil {
+		{"Row2.Left.IsLocked": true}}, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
-	if value, err = provider.GetData("Signal.Cabin.Door.*.IsLocked"); err != nil {
+	if value, err = provider.GetData("Signal.Cabin.Door.*.IsLocked", nil); err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}
 	dataMap, err := arrayToMap(value)
@@ -293,7 +268,7 @@ func TestSetData(t *testing.T) {
 		}
 	*/
 
-	err = provider.SetData("Signal.Drivetrain.InternalCombustionEngine.RPM", 2000)
+	err = provider.SetData("Signal.Drivetrain.InternalCombustionEngine.RPM", 2000, nil)
 	if err == nil {
 		t.Error("Path should be read only")
 	} else if !strings.Contains(err.Error(), "read only") {
@@ -318,11 +293,64 @@ func TestSetData(t *testing.T) {
 		}
 	*/
 
-	err = provider.SetData("Signal.Drivetrain.InternalCombustionEngine.RPM", map[string]interface{}{"locked": true})
+	err = provider.SetData("Signal.Drivetrain.InternalCombustionEngine.RPM", map[string]interface{}{"locked": true}, nil)
 	if err == nil {
 		t.Error("Path should be read only")
 	} else if !strings.Contains(err.Error(), "malformed") {
 		t.Errorf("Wrong error type: %s", err)
+	}
+}
+
+func TestPermissions(t *testing.T) {
+	provider, err := dataprovider.New(&config.Config{})
+	if err != nil {
+		t.Fatalf("Can't create data provider: %s", err)
+	}
+
+	// Check public path for not authorized client
+	_, err = provider.GetData("Attribute.Vehicle.VehicleIdentification.VIN", &dataprovider.AuthInfo{})
+	if err != nil {
+		t.Errorf("Can't get data: %s", err)
+	}
+
+	// Check private path for not authorized client
+	_, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM", &dataprovider.AuthInfo{})
+	if err == nil {
+		t.Error("Path should not be accessible")
+	} else if !strings.Contains(err.Error(), "not authorized") {
+		t.Errorf("Wrong error type: %s", err)
+	}
+
+	// Check authorized but not permitted
+	_, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM",
+		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{}})
+	if err == nil {
+		t.Error("Path should not be accessible")
+	} else if !strings.Contains(err.Error(), "not have permissions") {
+		t.Errorf("Wrong error type: %s", err)
+	}
+
+	// Check read permissions
+	_, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM",
+		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Drivetrain.InternalCombustionEngine.RPM": "r"}})
+	if err != nil {
+		t.Errorf("Can't get data: %s", err)
+	}
+
+	// Check no write permissions
+	err = provider.SetData("Signal.Cabin.Door.Row1.Right.Window.Position", 0,
+		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Cabin.Door.*": "r"}})
+	if err == nil {
+		t.Error("Path should not be accessible")
+	} else if !strings.Contains(err.Error(), "not have permissions") {
+		t.Errorf("Wrong error type: %s", err)
+	}
+
+	// Check write permissions
+	err = provider.SetData("Signal.Cabin.Door.Row1.Right.Window.Position", 0,
+		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Cabin.Door.*": "rw"}})
+	if err != nil {
+		t.Errorf("Can't set data: %s", err)
 	}
 }
 
