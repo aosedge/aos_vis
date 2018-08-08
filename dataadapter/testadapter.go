@@ -3,6 +3,7 @@ package dataadapter
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -13,7 +14,8 @@ import (
 
 // TestAdapter test adapter
 type TestAdapter struct {
-	data map[string]interface{}
+	data  map[string]interface{}
+	mutex sync.Mutex
 }
 
 /*******************************************************************************
@@ -55,6 +57,9 @@ func (adapter *TestAdapter) GetName() (name string) {
 
 // GetPathList returns list of all pathes for this adapter
 func (adapter *TestAdapter) GetPathList() (pathList []string, err error) {
+	adapter.mutex.Lock()
+	defer adapter.mutex.Unlock()
+
 	pathList = make([]string, 0, len(adapter.data))
 
 	for path := range adapter.data {
@@ -66,6 +71,9 @@ func (adapter *TestAdapter) GetPathList() (pathList []string, err error) {
 
 // IsPathPublic returns true if requested data accessible without authorization
 func (adapter *TestAdapter) IsPathPublic(path string) (result bool, err error) {
+	adapter.mutex.Lock()
+	defer adapter.mutex.Unlock()
+
 	if _, ok := adapter.data[path]; !ok {
 		return false, fmt.Errorf("Path %s doesn't exits", path)
 	}
@@ -83,6 +91,9 @@ func (adapter *TestAdapter) IsPathPublic(path string) (result bool, err error) {
 
 // GetData returns data by path
 func (adapter *TestAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
+	adapter.mutex.Lock()
+	defer adapter.mutex.Unlock()
+
 	data = make(map[string]interface{})
 
 	for _, path := range pathList {
@@ -97,6 +108,9 @@ func (adapter *TestAdapter) GetData(pathList []string) (data map[string]interfac
 
 // SetData sets data by pathes
 func (adapter *TestAdapter) SetData(data map[string]interface{}) (err error) {
+	adapter.mutex.Lock()
+	defer adapter.mutex.Unlock()
+
 	for path, value := range data {
 		if _, ok := adapter.data[path]; !ok {
 			return fmt.Errorf("Path %s doesn't exits", path)
