@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"gitpct.epam.com/epmd-aepr/aos_vis/config"
@@ -351,6 +352,103 @@ func TestPermissions(t *testing.T) {
 		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Cabin.Door.*": "rw"}})
 	if err != nil {
 		t.Errorf("Can't set data: %s", err)
+	}
+}
+
+func TestSubscribe(t *testing.T) {
+	provider, err := dataprovider.New(&config.Config{})
+	if err != nil {
+		t.Fatalf("Can't create data provider: %s", err)
+	}
+
+	// Clear all locks
+	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []map[string]interface{}{
+		{"Row1.Right.IsLocked": false},
+		{"Row1.Left.IsLocked": false},
+		{"Row2.Right.IsLocked": false},
+		{"Row2.Left.IsLocked": false}}, nil); err != nil {
+		t.Errorf("Can't set data: %s", err)
+	}
+
+	// Subscribes for all door locks
+	_, channel1, err := provider.Subscribe("Signal.Cabin.Door.*", nil)
+	if err != nil {
+		t.Errorf("Can't subscribe: %s", err)
+	}
+
+	// Subscribes for row1 door locks
+	_, channel2, err := provider.Subscribe("Signal.Cabin.Door.Row1.*", nil)
+	if err != nil {
+		t.Errorf("Can't get data: %s", err)
+	}
+
+	if len(provider.GetSubscribeIDs()) != 2 {
+		t.Errorf("Wrong subscribers count: %d", len(provider.GetSubscribeIDs()))
+	}
+
+	// Set all locks
+	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []map[string]interface{}{
+		{"Row1.Right.IsLocked": true},
+		{"Row1.Left.IsLocked": true},
+		{"Row2.Right.IsLocked": true},
+		{"Row2.Left.IsLocked": true}}, nil); err != nil {
+		t.Errorf("Can't set data: %s", err)
+	}
+
+	timeout := false
+	eventChannel1 := false
+	eventChannel2 := false
+
+	for {
+		select {
+		case data := <-channel1:
+			data1, err := arrayToMap(data)
+			if err != nil {
+				t.Error(err)
+			}
+			if len(data1) != 4 {
+				t.Errorf("Wrong data size: %d", len(data1))
+			}
+			if data1["Signal.Cabin.Door.Row1.Right.IsLocked"] != true {
+				t.Errorf("Data mistmatch: %v", false)
+			}
+			if data1["Signal.Cabin.Door.Row1.Left.IsLocked"] != true {
+				t.Errorf("Data mistmatch: %v", false)
+			}
+			if data1["Signal.Cabin.Door.Row2.Right.IsLocked"] != true {
+				t.Errorf("Data mistmatch: %v", false)
+			}
+			if data1["Signal.Cabin.Door.Row2.Left.IsLocked"] != true {
+				t.Errorf("Data mistmatch: %v", false)
+			}
+			eventChannel1 = true
+		case data := <-channel2:
+			data2, err := arrayToMap(data)
+			if err != nil {
+				t.Error(err)
+			}
+			if len(data2) != 2 {
+				t.Errorf("Wrong data size: %d", len(data2))
+			}
+			if data2["Signal.Cabin.Door.Row1.Right.IsLocked"] != true {
+				t.Errorf("Data mistmatch: %v", false)
+			}
+			if data2["Signal.Cabin.Door.Row1.Left.IsLocked"] != true {
+				t.Errorf("Data mistmatch: %v", false)
+			}
+			eventChannel2 = true
+		case <-time.After(100 * time.Millisecond):
+			timeout = true
+		}
+
+		if eventChannel1 && eventChannel2 {
+			break
+		}
+
+		if timeout {
+			t.Error("Waiting for data change timeout")
+			break
+		}
 	}
 }
 

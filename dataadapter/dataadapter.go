@@ -1,11 +1,5 @@
 package dataadapter
 
-// VisData represents single VIS node
-type VisData struct {
-	Path string
-	Data interface{}
-}
-
 // DataAdapter interface for working with real data
 type DataAdapter interface {
 	// GetName returns adapter name
@@ -18,4 +12,12 @@ type DataAdapter interface {
 	GetData(pathList []string) (data map[string]interface{}, err error)
 	// SetData sets data by pathes
 	SetData(data map[string]interface{}) (err error)
+	// GetSubscribeChannel returns channel on which data changes will be sent
+	GetSubscribeChannel() (channel <-chan map[string]interface{})
+	// Subscribe subscribes for data changes
+	Subscribe(pathList []string) (err error)
+	// Unsubscribe unsubscribes from data changes
+	Unsubscribe(pathList []string) (err error)
+	// UnsubscribeAll unsubscribes from all data changes
+	UnsubscribeAll() (err error)
 }

@@ -1,10 +1,9 @@
 package dataprovider
 
 import (
+	"container/list"
 	"errors"
-	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -17,39 +16,12 @@ import (
  * Types
  ******************************************************************************/
 
-//SubscriptionOutputData struct to inform aboute data change by subscription
-type SubscriptionOutputData struct {
-	ID      string
-	OutData interface{}
-}
-
-type visInternalData struct {
-	data          interface{}
-	id            int32
-	isInitialized bool
-}
-
-type subscriptionElement struct {
-	subsChan chan<- SubscriptionOutputData
-	ids      []subscriptionPare
-}
-
-type subscriptionPare struct {
-	subscriptionID uint64
-	value          *regexp.Regexp
-}
-
 // DataProvider interface for geeting vehicle data
 type DataProvider struct {
-	sensorDataChannel chan []dataadapter.VisData
-	subscription      struct {
-		ar    []subscriptionElement
-		mutex sync.Mutex
-	}
-	visDataStorage map[string]visInternalData
-	currentSubsID  uint64
-
-	adapterMap map[string]dataadapter.DataAdapter
+	sensors           map[string]*sensorDescription
+	currentSubsID     uint64
+	subscribeChannels map[uint64]chan<- interface{}
+	mutex             sync.Mutex
 }
 
 // AuthInfo authorization info
@@ -58,9 +30,9 @@ type AuthInfo struct {
 	Permissions  map[string]string
 }
 
-type notificationData struct {
-	subsChan chan<- SubscriptionOutputData
-	id       uint64
+type sensorDescription struct {
+	adapter      dataadapter.DataAdapter
+	subscribeIds *list.List
 }
 
 /*******************************************************************************
@@ -72,28 +44,28 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	log.Debug("Create data provider")
 
 	provider = &DataProvider{}
-	provider.sensorDataChannel = make(chan []dataadapter.VisData, 100)
-	provider.visDataStorage = createVisDataStorage()
-	go provider.start()
 
-	provider.adapterMap = make(map[string]dataadapter.DataAdapter)
+	provider.sensors = make(map[string]*sensorDescription)
+	provider.subscribeChannels = make(map[uint64]chan<- interface{})
 
 	adapter, _ := dataadapter.NewTestAdapter()
 
-	pathes, err := adapter.GetPathList()
+	pathList, err := adapter.GetPathList()
 	if err != nil {
 		return nil, err
 	}
 
-	for _, path := range pathes {
-		if _, ok := provider.adapterMap[path]; ok {
+	for _, path := range pathList {
+		if _, ok := provider.sensors[path]; ok {
 			log.WithField("path", path).Warningf("Path already in adapter map")
 		} else {
 			log.WithFields(log.Fields{"path": path, "adaptor": adapter.GetName()}).Debug("Add path")
 
-			provider.adapterMap[path] = adapter
+			provider.sensors[path] = &sensorDescription{adapter: adapter, subscribeIds: list.New()}
 		}
 	}
+
+	go provider.handleSubscribeChannel(adapter.GetSubscribeChannel())
 
 	return provider, nil
 }
@@ -110,16 +82,16 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 	// Create map of pathes grouped by adapter
 	adapterDataMap := make(map[dataadapter.DataAdapter][]string)
 
-	for path, adapter := range provider.adapterMap {
+	for path, sensor := range provider.sensors {
 		if filter.MatchString(path) {
-			if err = checkPermissions(adapter, path, authInfo, "r"); err != nil {
+			if err = checkPermissions(sensor.adapter, path, authInfo, "r"); err != nil {
 				return data, err
 			}
 
-			if adapterDataMap[adapter] == nil {
-				adapterDataMap[adapter] = make([]string, 0, 10)
+			if adapterDataMap[sensor.adapter] == nil {
+				adapterDataMap[sensor.adapter] = make([]string, 0, 10)
 			}
-			adapterDataMap[adapter] = append(adapterDataMap[adapter], path)
+			adapterDataMap[sensor.adapter] = append(adapterDataMap[sensor.adapter], path)
 		}
 	}
 
@@ -175,7 +147,7 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 	// adapterDataMap contains VIS data grouped by adapters
 	adapterDataMap := make(map[dataadapter.DataAdapter]map[string]interface{})
 
-	for path, adapter := range provider.adapterMap {
+	for path, sensor := range provider.sensors {
 		if filter.MatchString(path) {
 			var value interface{}
 			if len(suffixMap) != 0 {
@@ -193,16 +165,16 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 
 			if value != nil {
 				// Set data to adapterDataMap
-				log.WithFields(log.Fields{"adapter": adapter.GetName(), "value": value, "path": path}).Debug("Set data to adapter")
+				log.WithFields(log.Fields{"adapter": sensor.adapter.GetName(), "value": value, "path": path}).Debug("Set data to adapter")
 
-				if err = checkPermissions(adapter, path, authInfo, "w"); err != nil {
+				if err = checkPermissions(sensor.adapter, path, authInfo, "w"); err != nil {
 					return err
 				}
 
-				if adapterDataMap[adapter] == nil {
-					adapterDataMap[adapter] = make(map[string]interface{})
+				if adapterDataMap[sensor.adapter] == nil {
+					adapterDataMap[sensor.adapter] = make(map[string]interface{})
 				}
-				adapterDataMap[adapter][path] = value
+				adapterDataMap[sensor.adapter][path] = value
 			}
 		}
 	}
@@ -223,243 +195,118 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 }
 
 // Subscribe subscribes for data change
-func (provider *DataProvider) Subscribe(subsChan chan<- SubscriptionOutputData, path string, authInfo *AuthInfo) (id string, err error) {
-	//TODO: add checking available path
-	var subsElement subscriptionPare
+func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uint64, channel <-chan interface{}, err error) {
+	provider.mutex.Lock()
+	defer provider.mutex.Unlock()
 
-	subsElement.value, err = createRegexpFromPath(path)
+	log.WithField("path", path).Debug("Subscribe")
+
+	filter, err := createRegexpFromPath(path)
 	if err != nil {
-		log.Error("incorrect path ", err)
-		return "", errors.New("404 Not found")
+		return id, channel, err
 	}
 
-	provider.subscription.mutex.Lock()
-	defer provider.subscription.mutex.Unlock()
+	// Create map of pathes grouped by adapter
+	subscribeMap := make(map[dataadapter.DataAdapter][]string)
+
+	// Get data from adapter and group it by parent
+	for path, sensor := range provider.sensors {
+		if filter.MatchString(path) {
+			if err = checkPermissions(sensor.adapter, path, authInfo, "r"); err != nil {
+				return id, channel, err
+			}
+
+			// Add subscribe id to subscribe list
+			sensor.subscribeIds.PushBack(provider.currentSubsID)
+
+			// Add path to subscribeMap
+			if subscribeMap[sensor.adapter] == nil {
+				subscribeMap[sensor.adapter] = make([]string, 0, 10)
+			}
+			subscribeMap[sensor.adapter] = append(subscribeMap[sensor.adapter], path)
+		}
+	}
+
+	// Subscribe for adapter data changes
+	for adapter, pathList := range subscribeMap {
+		for _, path := range pathList {
+			log.WithFields(log.Fields{"adapter": adapter.GetName(), "path": path}).Debug("Subscribe for adapter data")
+		}
+
+		if err = adapter.Subscribe(pathList); err != nil {
+			return id, channel, err
+		}
+	}
+
+	id = provider.currentSubsID
+
+	dataChannel := make(chan interface{}, 100)
+	provider.subscribeChannels[id] = dataChannel
 
 	provider.currentSubsID++
 
-	subsElement.subscriptionID = provider.currentSubsID
-	var wasFound bool
-	for i := range provider.subscription.ar {
-		if provider.subscription.ar[i].subsChan == subsChan {
-			wasFound = true
-			provider.subscription.ar[i].ids = append(provider.subscription.ar[i].ids, subsElement)
-			log.Debug("Add subscription to available channel ID", provider.currentSubsID, " path ", path)
-		}
-	}
-
-	if wasFound == false {
-		var subscripRootElement subscriptionElement
-		subscripRootElement.subsChan = subsChan
-		subscripRootElement.ids = append(subscripRootElement.ids, subsElement)
-		provider.subscription.ar = append(provider.subscription.ar, subscripRootElement)
-		log.Debug("Create new subscription ID", provider.currentSubsID, " path ", path)
-	}
-	return strconv.FormatUint(provider.currentSubsID, 10), nil
+	return id, dataChannel, nil
 }
 
 // Unsubscribe unsubscribes from data change
-func (provider *DataProvider) Unsubscribe(subsChan chan<- SubscriptionOutputData, subsID string) (err error) {
-	var intSubs uint64
-	intSubs, err = strconv.ParseUint(subsID, 10, 64)
-	if err != nil {
-		log.Error("Error cant convert subsID to int64")
-		return err
-	}
-	provider.subscription.mutex.Lock()
-	defer provider.subscription.mutex.Unlock()
+func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err error) {
+	provider.mutex.Lock()
+	defer provider.mutex.Unlock()
 
-	for i := range provider.subscription.ar {
-		if provider.subscription.ar[i].subsChan == subsChan {
-			wasFound := false
-			for j, sID := range provider.subscription.ar[i].ids {
-				if intSubs == sID.subscriptionID {
-					provider.subscription.ar[i].ids = append(provider.subscription.ar[i].ids[:j], provider.subscription.ar[i].ids[j+1:]...)
-					wasFound = true
-					break
-				}
-			}
-			if wasFound {
-				if len(provider.subscription.ar[i].ids) == 0 {
-					provider.subscription.ar = append(provider.subscription.ar[:i], provider.subscription.ar[i+1:]...)
-					log.Debug("Remove channel subscription")
-				}
-				return nil
-			}
-			break
-		}
-	}
-
-	return errors.New("404 Not found")
+	return
 }
 
-// UnsubscribeAll unsubscribes from all data changes
-func (provider *DataProvider) UnsubscribeAll(subsChan chan<- SubscriptionOutputData) (err error) {
-	provider.subscription.mutex.Lock()
-	defer provider.subscription.mutex.Unlock()
+// GetSubscribeIDs returns list of active subscribe ID
+func (provider *DataProvider) GetSubscribeIDs() (result []uint64) {
+	provider.mutex.Lock()
+	defer provider.mutex.Unlock()
 
-	for i := range provider.subscription.ar {
-		if provider.subscription.ar[i].subsChan == subsChan {
-			provider.subscription.ar = append(provider.subscription.ar[:i], provider.subscription.ar[i+1:]...)
-			return nil
-		}
+	result = make([]uint64, 0, len(provider.subscribeChannels))
+
+	for id := range provider.subscribeChannels {
+		result = append(result, id)
 	}
-	//return errors.New("404 Not found")
-	return nil
+
+	return result
 }
 
 /*******************************************************************************
  * Private
  ******************************************************************************/
 
-func (provider *DataProvider) start() {
+func (provider *DataProvider) handleSubscribeChannel(channel <-chan map[string]interface{}) {
 	for {
-		incomingData := <-provider.sensorDataChannel
-		provider.processIncomingData(incomingData[:])
-	}
-}
-
-func (provider *DataProvider) processIncomingData(incomeData []dataadapter.VisData) {
-
-	type notificationPair struct {
-		id   uint64
-		data map[string]interface{}
-	}
-
-	type notificationElement struct {
-		subsChan         chan<- SubscriptionOutputData
-		notificationData []notificationPair
-	}
-
-	provider.subscription.mutex.Lock()
-	defer provider.subscription.mutex.Unlock()
-
-	var notificationArray []notificationElement
-	for _, data := range incomeData {
-		//find element which receive in dataStorage
-
-		//		log.Debug("process path = ", data.Path, " data= ", data.Data)
-		wasChanged := false
-
-		if data.Data == nil {
-			continue
+		changes, more := <-channel
+		if !more {
+			return
 		}
 
-		item := provider.visDataStorage[data.Path]
+		// Group data by subscribe ids
+		subscribeDataMap := make(map[uint64]map[string]interface{})
 
-		item.isInitialized = true
-		item.data = data.Data
+		for path, value := range changes {
+			for idElement := provider.sensors[path].subscribeIds.Front(); idElement != nil; idElement = idElement.Next() {
+				id := idElement.Value.(uint64)
 
-		valueType := reflect.TypeOf(data.Data).Kind()
-		//		log.Debug("Value type ", valueType)
-
-		if valueType == reflect.Array || valueType == reflect.Slice {
-			//TODO: add array comeration
-			wasChanged = true
-			provider.visDataStorage[data.Path] = item
-		} else {
-			if provider.visDataStorage[data.Path].data != data.Data {
-				log.Debug("Data for ", data.Path, " was changed from ", provider.visDataStorage[data.Path].data, " to ", data.Data)
-				provider.visDataStorage[data.Path] = item
-				wasChanged = true
-			}
-		}
-
-		//		log.Debug("wasChanged = ", wasChanged)
-		if wasChanged == true {
-			log.Debug("process path = ", data.Path, " data= ", data.Data)
-			// prepare data fro change notification
-			notifyData := provider.getNotificationElementsByPath(data.Path)
-			for _, notifyElement := range notifyData {
-				//go across all channels
-				wasChFound := false
-				for j := range notificationArray {
-					if notificationArray[j].subsChan == notifyElement.subsChan {
-						wasIDFound := false
-						///go across all Id
-						for k := range notificationArray[j].notificationData {
-							if notificationArray[j].notificationData[k].id == notifyElement.id {
-								wasIDFound = true
-								notificationArray[j].notificationData[k].data[data.Path] = data.Data
-								log.Debug("Add notification to abaliable ID ")
-								break
-							}
-						}
-						if wasIDFound == false {
-							//Add noe ID to available channel
-							log.Debug("Create new notification element ID for available channel ")
-							pair := notificationPair{id: notifyElement.id, data: make(map[string]interface{})}
-							pair.data[data.Path] = data.Data
-							notificationArray[j].notificationData = append(notificationArray[j].notificationData, pair)
-						}
-						wasChFound = true
-					}
+				if subscribeDataMap[id] == nil {
+					subscribeDataMap[id] = make(map[string]interface{})
 				}
-				if wasChFound == false {
-					//add new channel
-					log.Debug("Create new channel")
-					pair := notificationPair{id: notifyElement.id, data: make(map[string]interface{})}
-					pair.data[data.Path] = data.Data
-					pairStore := []notificationPair{pair}
 
-					notificationArray = append(notificationArray, notificationElement{subsChan: notifyElement.subsChan, notificationData: pairStore})
-
-				}
+				subscribeDataMap[idElement.Value.(uint64)][path] = value
 			}
 		}
-	}
 
-	for i := range notificationArray {
-		for j := range notificationArray[i].notificationData {
-			dataTosend := &(notificationArray[i].notificationData[j])
-			sendElement := SubscriptionOutputData{ID: strconv.FormatUint(dataTosend.id, 10), OutData: dataTosend.data}
-			log.Debug("Send id ", sendElement.ID, " Data: ", sendElement.OutData)
-			notificationArray[i].subsChan <- sendElement
-		}
-	}
-}
-func (provider *DataProvider) getNotificationElementsByPath(path string) (returnData []notificationData) {
-	log.Debug("getNotificationElementsByPath path=", path)
-	wasFound := false
-	for i := range provider.subscription.ar {
-		for j := range provider.subscription.ar[i].ids {
-			if provider.subscription.ar[i].ids[j].value.MatchString(path) {
-				log.Debug("Find subscription element ID ", provider.subscription.ar[i].ids[j].subscriptionID, " path= ", path)
-				returnData = append(returnData, notificationData{
-					subsChan: provider.subscription.ar[i].subsChan,
-					id:       provider.subscription.ar[i].ids[j].subscriptionID})
-				wasFound = true
-				break
+		// Notify subscribers by id
+		for id, data := range subscribeDataMap {
+			for path, value := range data {
+				log.WithFields(log.Fields{
+					"subscribeID": id,
+					"path":        path,
+					"value":       value}).Debug("Notify subscribers")
 			}
+			provider.subscribeChannels[id] <- convertData(data)
 		}
 	}
-	if wasFound == false {
-		log.Debug("No subscription for ", path)
-	}
-
-	return returnData
-}
-
-func createVisDataStorage() map[string]visInternalData {
-	var storage map[string]visInternalData
-
-	storage = make(map[string]visInternalData)
-
-	storage["Attribute.Vehicle.UserIdentification.Users"] = visInternalData{id: 8888, data: []string{"User1"}, isInitialized: true}
-	storage["Attribute.Vehicle.VehicleIdentification.VIN"] = visInternalData{id: 39, data: "1234567890QWERTYU", isInitialized: true}
-
-	//TODO: addede temporary for test
-	storage["Signal.Drivetrain.InternalCombustionEngine.RPM"] = visInternalData{id: 58, data: 2372, isInitialized: true}
-	storage["Signal.Drivetrain.InternalCombustionEngine.Power"] = visInternalData{id: 65, data: 60, isInitialized: true}
-	storage["Signal.Test.RPM"] = visInternalData{id: 9000, data: 60, isInitialized: true}
-
-	storage["Attribute.Emulator.rectangle_long0"] = visInternalData{id: 9001, isInitialized: false}
-	storage["Attribute.Emulator.rectangle_lat0"] = visInternalData{id: 9002, isInitialized: false}
-	storage["Attribute.Emulator.rectangle_long1"] = visInternalData{id: 9003, isInitialized: false}
-	storage["Attribute.Emulator.rectangle_lat1"] = visInternalData{id: 9004, isInitialized: false}
-	storage["Attribute.Emulator.to_rectangle"] = visInternalData{id: 9005, isInitialized: false}
-
-	return storage
 }
 
 func getParentPath(path string) (parent string) {
@@ -473,27 +320,6 @@ func createRegexpFromPath(path string) (exp *regexp.Regexp, err error) {
 	exp, err = regexp.Compile(regexpStr)
 
 	return exp, err
-}
-
-func isArraysEqual(arr1, arr2 []interface{}) (result bool) {
-	if arr1 == nil && arr2 == nil {
-		return true
-	}
-
-	if arr1 == nil || arr2 == nil {
-		return false
-	}
-
-	if len(arr1) != len(arr2) {
-		return false
-	}
-
-	for i := range arr1 {
-		if arr1[i] != arr2[i] {
-			return false
-		}
-	}
-	return true
 }
 
 func checkPermissions(adapter dataadapter.DataAdapter, path string, authInfo *AuthInfo, permissions string) (err error) {
