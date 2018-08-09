@@ -371,13 +371,13 @@ func TestSubscribe(t *testing.T) {
 	}
 
 	// Subscribes for all door locks
-	_, channel1, err := provider.Subscribe("Signal.Cabin.Door.*", nil)
+	id1, channel1, err := provider.Subscribe("Signal.Cabin.Door.*", nil)
 	if err != nil {
 		t.Errorf("Can't subscribe: %s", err)
 	}
 
 	// Subscribes for row1 door locks
-	_, channel2, err := provider.Subscribe("Signal.Cabin.Door.Row1.*", nil)
+	id2, channel2, err := provider.Subscribe("Signal.Cabin.Door.Row1.*", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}
@@ -447,6 +447,96 @@ func TestSubscribe(t *testing.T) {
 
 		if timeout {
 			t.Error("Waiting for data change timeout")
+			break
+		}
+	}
+
+	// Unsubscribes id1
+	if err = provider.Unsubscribe(id1, nil); err != nil {
+		t.Errorf("Can't unsubscribe: %s", err)
+	}
+
+	if len(provider.GetSubscribeIDs()) != 1 {
+		t.Errorf("Wrong subscribers count: %d", len(provider.GetSubscribeIDs()))
+	}
+
+	// Clear all locks
+	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []map[string]interface{}{
+		{"Row1.Right.IsLocked": false},
+		{"Row1.Left.IsLocked": false},
+		{"Row2.Right.IsLocked": false},
+		{"Row2.Left.IsLocked": false}}, nil); err != nil {
+		t.Errorf("Can't set data: %s", err)
+	}
+
+	timeout, eventChannel1, eventChannel2 = false, false, false
+
+	for {
+		select {
+		case _, ok := <-channel1:
+			if ok {
+				t.Error("Unexpected data received")
+			}
+			eventChannel1 = true
+		case _, ok := <-channel2:
+			if !ok {
+				t.Error("Channel should not be closed")
+			}
+			eventChannel2 = true
+		case <-time.After(100 * time.Millisecond):
+			timeout = true
+		}
+
+		if eventChannel1 && eventChannel2 {
+			break
+		}
+
+		if timeout {
+			break
+		}
+	}
+
+	// Unsubscribes id2
+	if err = provider.Unsubscribe(id2, nil); err != nil {
+		t.Errorf("Can't unsubscribe: %s", err)
+	}
+
+	if len(provider.GetSubscribeIDs()) != 0 {
+		t.Errorf("Wrong subscribers count: %d", len(provider.GetSubscribeIDs()))
+	}
+
+	// Set all locks
+	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []map[string]interface{}{
+		{"Row1.Right.IsLocked": true},
+		{"Row1.Left.IsLocked": true},
+		{"Row2.Right.IsLocked": true},
+		{"Row2.Left.IsLocked": true}}, nil); err != nil {
+		t.Errorf("Can't set data: %s", err)
+	}
+
+	timeout, eventChannel1, eventChannel2 = false, false, false
+
+	for {
+		select {
+		case _, ok := <-channel1:
+			if ok {
+				t.Error("Unexpected data received")
+			}
+			eventChannel1 = true
+		case _, ok := <-channel2:
+			if ok {
+				t.Error("Unexpected data received")
+			}
+			eventChannel2 = true
+		case <-time.After(100 * time.Millisecond):
+			timeout = true
+		}
+
+		if eventChannel1 && eventChannel2 {
+			break
+		}
+
+		if timeout {
 			break
 		}
 	}

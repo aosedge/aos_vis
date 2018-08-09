@@ -3,6 +3,7 @@ package dataprovider
 import (
 	"container/list"
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 	"sync"
@@ -253,7 +254,54 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 	provider.mutex.Lock()
 	defer provider.mutex.Unlock()
 
-	return
+	log.WithField("subscribeID", id).Debug("Unsubscribe")
+
+	channel, ok := provider.subscribeChannels[id]
+	if !ok {
+		return fmt.Errorf("Subscribe id %v not found", id)
+	}
+	close(channel)
+	delete(provider.subscribeChannels, id)
+
+	// Create map of pathes grouped by adapter
+	unsubscribeMap := make(map[dataadapter.DataAdapter][]string)
+
+	// Go through all sensors and remove id
+	for path, sensor := range provider.sensors {
+		if sensor.subscribeIds.Len() == 0 {
+			continue
+		}
+
+		var nextElement *list.Element
+
+		for idElement := sensor.subscribeIds.Front(); idElement != nil; idElement = nextElement {
+			nextElement = idElement.Next()
+			if idElement.Value.(uint64) == id {
+				sensor.subscribeIds.Remove(idElement)
+			}
+		}
+
+		if sensor.subscribeIds.Len() == 0 {
+			// Add path to unsubscribeMap
+			if unsubscribeMap[sensor.adapter] == nil {
+				unsubscribeMap[sensor.adapter] = make([]string, 0, 10)
+			}
+			unsubscribeMap[sensor.adapter] = append(unsubscribeMap[sensor.adapter], path)
+		}
+	}
+
+	// Unsubscribe from adapter data changes
+	for adapter, pathList := range unsubscribeMap {
+		for _, path := range pathList {
+			log.WithFields(log.Fields{"adapter": adapter.GetName(), "path": path}).Debug("Unsubscribe from adapter data")
+		}
+
+		if err = adapter.Unsubscribe(pathList); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // GetSubscribeIDs returns list of active subscribe ID
