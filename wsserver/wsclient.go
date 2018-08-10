@@ -3,6 +3,7 @@ package wsserver
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,10 +40,10 @@ type permission uint
  ******************************************************************************/
 
 type wsClient struct {
-	wsConnection        *websocket.Conn
-	authInfo            *dataprovider.AuthInfo
-	dataProvider        *dataprovider.DataProvider
-	subscriptionChannel chan dataprovider.SubscriptionOutputData //TODO: change to struct from dataprovider
+	wsConnection      *websocket.Conn
+	authInfo          *dataprovider.AuthInfo
+	dataProvider      *dataprovider.DataProvider
+	subscribeChannels map[uint64]<-chan interface{}
 }
 
 type requestType struct {
@@ -132,12 +133,18 @@ type subscribeNotification struct {
 	Timestamp      int64       `json:"timestamp"`
 }
 
-type errorResponse struct {
+type subscribeError struct {
 	Action         string    `json:"action"`
-	RequestID      string    `json:"requestId"`
+	SubscriptionID string    `json:"subscriptionId"`
 	Error          errorInfo `json:"error"`
-	SubscriptionID *string   `json:"subscriptionId"`
 	Timestamp      int64     `json:"timestamp"`
+}
+
+type errorResponse struct {
+	Action    string    `json:"action"`
+	RequestID string    `json:"requestId"`
+	Error     errorInfo `json:"error"`
+	Timestamp int64     `json:"timestamp"`
 }
 
 //TODO: add map error number message
@@ -152,12 +159,12 @@ type errorInfo struct {
  ******************************************************************************/
 
 func newClient(wsConnection *websocket.Conn, dataProvider *dataprovider.DataProvider) (client *wsClient, err error) {
-	log.WithField("RemoteAddr", wsConnection.RemoteAddr()).Debug("Create new client")
+	log.WithField("RemoteAddr", wsConnection.RemoteAddr()).Info("Create new client")
 
 	var localClient wsClient
 
 	localClient.wsConnection = wsConnection
-	localClient.subscriptionChannel = make(chan dataprovider.SubscriptionOutputData, 100)
+	localClient.subscribeChannels = make(map[uint64]<-chan interface{})
 	localClient.dataProvider = dataProvider
 	localClient.authInfo = &dataprovider.AuthInfo{}
 
@@ -174,49 +181,32 @@ func (client *wsClient) close() (err error) {
 	return client.wsConnection.Close()
 }
 
-func (client *wsClient) processsubscriptionChannel() {
-	for {
-		data, more := <-client.subscriptionChannel
-		if more {
-			msg := subscribeNotification{Action: actionSubscription,
-				SubscriptionID: data.ID,
-				Value:          data.OutData,
-				Timestamp:      getCurTime()}
-			resp, err := json.Marshal(msg)
-			if err != nil {
-				log.Warn("Error marshal json: ", err)
-				//TODO: create error subscriptionmsg
-			}
-			err = client.wsConnection.WriteMessage(websocket.TextMessage, resp)
-			if err != nil {
-				log.Errorf("Error writing message: %s", err)
-			}
-		} else {
-			log.Debug("channelClosed")
-			return
-		}
-
-	}
-}
-
 func (client *wsClient) run() {
-	go client.processsubscriptionChannel()
-
 	for {
 		mt, message, err := client.wsConnection.ReadMessage()
 		if err != nil {
 			if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 				log.Errorf("Error reading socket: %s", err)
 			}
-			client.dataProvider.UnsubscribeAll(client.subscriptionChannel)
-			close(client.subscriptionChannel)
+
+			for id := range client.subscribeChannels {
+				if err := client.dataProvider.Unsubscribe(id, client.authInfo); err != nil {
+					log.Errorf("Unsubscribe error: %s", err)
+				}
+			}
+
 			break
 		}
 		if mt == websocket.TextMessage {
+			log.Infof("Receive: %s", string(message))
+
 			response, err := client.processIncomingMessage(message)
 			if err != nil {
 				log.Errorf("Error processing message: %s", err)
 			}
+
+			log.Infof("Send: %s", string(response))
+
 			err = client.wsConnection.WriteMessage(websocket.TextMessage, response)
 			if err != nil {
 				log.Errorf("Error writing message: %s", err)
@@ -228,8 +218,6 @@ func (client *wsClient) run() {
 }
 
 func (client *wsClient) processIncomingMessage(data []byte) (response []byte, err error) {
-	log.Debugf("Receive: %s", string(data))
-
 	var rType requestType
 
 	err = json.Unmarshal(data, &rType)
@@ -274,9 +262,12 @@ func (client *wsClient) processGetRequest(requestJSON []byte) (responseJSON []by
 		return createErrorResponse(rGet.Action, rGet.RequestID, err)
 	}
 
-	log.WithFields(log.Fields{"path": rGet.Path, "value": vehData}).Debug("Get data from dataprovider")
+	response := getSuccessResponse{
+		Action:    rGet.Action,
+		RequestID: rGet.RequestID,
+		Value:     vehData,
+		Timestamp: getCurTime()}
 
-	response := getSuccessResponse{Action: rGet.Action, RequestID: rGet.RequestID, Value: vehData, Timestamp: getCurTime()}
 	if responseJSON, err = json.Marshal(response); err != nil {
 		return createErrorResponse(rGet.Action, rGet.RequestID, err)
 	}
@@ -296,9 +287,11 @@ func (client *wsClient) processSetRequest(requestJSON []byte) (responseJSON []by
 		return createErrorResponse(rSet.Action, rSet.RequestID, err)
 	}
 
-	log.WithFields(log.Fields{"path": rSet.Path, "value": rSet.Value}).Debug("Set data to dataprovider")
+	response := setSuccessResponse{
+		Action:    rSet.Action,
+		RequestID: rSet.RequestID,
+		Timestamp: getCurTime()}
 
-	response := setSuccessResponse{Action: rSet.Action, RequestID: rSet.RequestID, Timestamp: getCurTime()}
 	if responseJSON, err = json.Marshal(response); err != nil {
 		return createErrorResponse(rSet.Action, rSet.RequestID, err)
 	}
@@ -331,7 +324,12 @@ func (client *wsClient) processAuthRequest(requestJSON []byte) (responseJSON []b
 		log.WithField("token", rAuth.Tokens.Authorization).Debug("Token already authorized")
 	}
 
-	response := authSuccessResponse{Action: rAuth.Action, RequestID: rAuth.RequestID, TTL: 10000, Timestamp: getCurTime()}
+	response := authSuccessResponse{
+		Action:    rAuth.Action,
+		RequestID: rAuth.RequestID,
+		TTL:       10000,
+		Timestamp: getCurTime()}
+
 	if responseJSON, err = json.Marshal(response); err != nil {
 		return createErrorResponse(rAuth.Action, rAuth.RequestID, err)
 	}
@@ -351,17 +349,25 @@ func (client *wsClient) processSubscribeRequest(requestJSON []byte) (responseJSO
 		log.Warn("Filter currently not implemented. Filters will be ignored")
 	}
 
-	subscrID, err := client.dataProvider.Subscribe(client.subscriptionChannel, rSubs.Path, client.authInfo)
+	subscribeID, channel, err := client.dataProvider.Subscribe(rSubs.Path, client.authInfo)
 	if err != nil {
 		return createErrorResponse(rSubs.Action, rSubs.RequestID, err)
 	}
 
-	log.WithFields(log.Fields{"path": rSubs.Path, "id": subscrID}).Debug("Register subscription")
+	log.WithFields(log.Fields{"path": rSubs.Path, "id": subscribeID}).Debug("Register subscription")
 
-	response := subscribeUnsubscribeSuccessResponse{Action: actionSubscribe, RequestID: rSubs.RequestID, SubscriptionID: subscrID, Timestamp: getCurTime()}
+	response := subscribeUnsubscribeSuccessResponse{
+		Action:         actionSubscribe,
+		RequestID:      rSubs.RequestID,
+		SubscriptionID: strconv.FormatUint(subscribeID, 10),
+		Timestamp:      getCurTime()}
+
 	if responseJSON, err = json.Marshal(response); err != nil {
 		return createErrorResponse(rSubs.Action, rSubs.RequestID, err)
 	}
+
+	client.subscribeChannels[subscribeID] = channel
+	go client.processSubscribeChannel(subscribeID, channel)
 
 	return responseJSON, nil
 }
@@ -371,16 +377,28 @@ func (client *wsClient) processUnsubscribeRequest(requestJSON []byte) (responseJ
 	var rUnsubs requestUnsubscribe
 
 	if err = json.Unmarshal(requestJSON, &rUnsubs); err != nil {
-		return createErrorResponse(rUnsubs.Action, rUnsubs.RequestID, errors.New("Client is not authorized"))
-	}
-
-	if err = client.dataProvider.Unsubscribe(client.subscriptionChannel, rUnsubs.SubscriptionID); err != nil {
 		return createErrorResponse(rUnsubs.Action, rUnsubs.RequestID, err)
 	}
 
+	subscribeID, err := strconv.ParseUint(rUnsubs.SubscriptionID, 10, 64)
+	if err != nil {
+		return createErrorResponse(rUnsubs.Action, rUnsubs.RequestID, err)
+	}
+
+	if err = client.dataProvider.Unsubscribe(subscribeID, client.authInfo); err != nil {
+		return createErrorResponse(rUnsubs.Action, rUnsubs.RequestID, err)
+	}
+
+	delete(client.subscribeChannels, subscribeID)
+
 	log.WithFields(log.Fields{"id": rUnsubs.SubscriptionID}).Debug("Unregister subscription")
 
-	response := subscribeUnsubscribeSuccessResponse{Action: actionUnsubscribe, SubscriptionID: rUnsubs.SubscriptionID, RequestID: rUnsubs.RequestID, Timestamp: getCurTime()}
+	response := subscribeUnsubscribeSuccessResponse{
+		Action:         actionUnsubscribe,
+		SubscriptionID: rUnsubs.SubscriptionID,
+		RequestID:      rUnsubs.RequestID,
+		Timestamp:      getCurTime()}
+
 	if responseJSON, err = json.Marshal(response); err != nil {
 		return createErrorResponse(rUnsubs.Action, rUnsubs.RequestID, err)
 	}
@@ -394,14 +412,20 @@ func (client *wsClient) processUnsubscribeAllRequest(requestJSON []byte) (respon
 
 	err = json.Unmarshal(requestJSON, &rUnsubsAll)
 	if err != nil {
-		return createErrorResponse(rUnsubsAll.Action, rUnsubsAll.RequestID, errors.New("Client is not authorized"))
-	}
-
-	if err = client.dataProvider.UnsubscribeAll(client.subscriptionChannel); err != nil {
 		return createErrorResponse(rUnsubsAll.Action, rUnsubsAll.RequestID, err)
 	}
 
-	response := unsubscribeAllSuccessResponse{Action: actionUnsubscribeAll, RequestID: rUnsubsAll.RequestID, Timestamp: getCurTime()}
+	for subscribeID := range client.subscribeChannels {
+		if err = client.dataProvider.Unsubscribe(subscribeID, client.authInfo); err != nil {
+			return createErrorResponse(rUnsubsAll.Action, rUnsubsAll.RequestID, err)
+		}
+	}
+
+	response := unsubscribeAllSuccessResponse{
+		Action:    actionUnsubscribeAll,
+		RequestID: rUnsubsAll.RequestID,
+		Timestamp: getCurTime()}
+
 	if responseJSON, err = json.Marshal(response); err != nil {
 		return createErrorResponse(rUnsubsAll.Action, rUnsubsAll.RequestID, err)
 	}
@@ -409,28 +433,86 @@ func (client *wsClient) processUnsubscribeAllRequest(requestJSON []byte) (respon
 	return responseJSON, nil
 }
 
-func createErrorResponse(action string, reqID string, inErr error) (response []byte, outErr error) {
-	code := 400
+func (client *wsClient) processSubscribeChannel(id uint64, channel <-chan interface{}) {
+	for {
+		data, more := <-channel
+		if more {
+			notification := subscribeNotification{
+				Action:         actionSubscription,
+				SubscriptionID: strconv.FormatUint(id, 10),
+				Value:          data,
+				Timestamp:      getCurTime()}
 
+			notificationJSON, err := json.Marshal(notification)
+			if err != nil {
+				notificationJSON, err = createSubscribeError(id, err)
+				if err != nil {
+					log.Errorf("Can't create subscribe error response: %s", err)
+					break
+				}
+			}
+
+			log.Infof("Send: %s", string(notificationJSON))
+
+			err = client.wsConnection.WriteMessage(websocket.TextMessage, notificationJSON)
+			if err != nil {
+				log.Errorf("Error writing message: %s", err)
+			}
+		} else {
+			log.WithField("subscribeID", id).Debug("Subscription closed")
+			return
+		}
+
+	}
+}
+
+func codeFromError(err error) (code int) {
 	switch {
-	case strings.Contains(strings.ToLower(inErr.Error()), "not found") ||
-		strings.Contains(strings.ToLower(inErr.Error()), "not exist"):
+	case strings.Contains(strings.ToLower(err.Error()), "not found") ||
+		strings.Contains(strings.ToLower(err.Error()), "not exist"):
 		code = 404
-	case strings.Contains(strings.ToLower(inErr.Error()), "not authorized"):
+	case strings.Contains(strings.ToLower(err.Error()), "not authorized"):
 		code = 401
-	case strings.Contains(strings.ToLower(inErr.Error()), "not have permissions"):
+	case strings.Contains(strings.ToLower(err.Error()), "not have permissions"):
 		code = 403
+	default:
+		code = 400
 	}
 
-	info := errorInfo{Number: code, Message: inErr.Error()}
-	response, outErr = json.Marshal(errorResponse{Action: action, Timestamp: getCurTime(), Error: info, RequestID: reqID})
+	return code
+}
+
+func createErrorResponse(action string, reqID string, inErr error) (responseJSON []byte, outErr error) {
+	response := errorResponse{
+		Action:    action,
+		Timestamp: getCurTime(),
+		Error:     errorInfo{Number: codeFromError(inErr), Message: inErr.Error()},
+		RequestID: reqID}
+
+	responseJSON, outErr = json.Marshal(response)
 	if outErr != nil {
 		log.Errorf("Error creating error response: %s", outErr)
 	}
 
 	outErr = inErr
 
-	return response, outErr
+	return responseJSON, outErr
+}
+
+func createSubscribeError(id uint64, inErr error) (responseJSON []byte, err error) {
+	response := subscribeError{
+		Action:         actionSubscription,
+		SubscriptionID: strconv.FormatUint(id, 10),
+		Error:          errorInfo{Number: codeFromError(inErr), Message: inErr.Error()},
+		Timestamp:      getCurTime(),
+	}
+
+	responseJSON, err = json.Marshal(response)
+	if err != nil {
+		return responseJSON, err
+	}
+
+	return responseJSON, nil
 }
 
 func getCurTime() int64 {
