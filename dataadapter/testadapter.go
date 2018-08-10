@@ -31,7 +31,7 @@ type testData struct {
 
 // NewTestAdapter creates adapter to be used for tests
 func NewTestAdapter() (adapter *TestAdapter, err error) {
-	log.Debug("Create test adapter")
+	log.Info("Create test adapter")
 
 	adapter = new(TestAdapter)
 

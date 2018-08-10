@@ -224,11 +224,11 @@ func TestSetData(t *testing.T) {
 		}
 	*/
 
-	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []map[string]interface{}{
-		{"Row1.Right.IsLocked": true},
-		{"Row1.Left.IsLocked": true},
-		{"Row2.Right.IsLocked": true},
-		{"Row2.Left.IsLocked": true}}, nil); err != nil {
+	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []interface{}{
+		map[string]interface{}{"Row1.Right.IsLocked": true},
+		map[string]interface{}{"Row1.Left.IsLocked": true},
+		map[string]interface{}{"Row2.Right.IsLocked": true},
+		map[string]interface{}{"Row2.Left.IsLocked": true}}, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
 	if value, err = provider.GetData("Signal.Cabin.Door.*.IsLocked", nil); err != nil {
@@ -362,11 +362,11 @@ func TestSubscribe(t *testing.T) {
 	}
 
 	// Clear all locks
-	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []map[string]interface{}{
-		{"Row1.Right.IsLocked": false},
-		{"Row1.Left.IsLocked": false},
-		{"Row2.Right.IsLocked": false},
-		{"Row2.Left.IsLocked": false}}, nil); err != nil {
+	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []interface{}{
+		map[string]interface{}{"Row1.Right.IsLocked": false},
+		map[string]interface{}{"Row1.Left.IsLocked": false},
+		map[string]interface{}{"Row2.Right.IsLocked": false},
+		map[string]interface{}{"Row2.Left.IsLocked": false}}, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
 
@@ -387,11 +387,11 @@ func TestSubscribe(t *testing.T) {
 	}
 
 	// Set all locks
-	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []map[string]interface{}{
-		{"Row1.Right.IsLocked": true},
-		{"Row1.Left.IsLocked": true},
-		{"Row2.Right.IsLocked": true},
-		{"Row2.Left.IsLocked": true}}, nil); err != nil {
+	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []interface{}{
+		map[string]interface{}{"Row1.Right.IsLocked": true},
+		map[string]interface{}{"Row1.Left.IsLocked": true},
+		map[string]interface{}{"Row2.Right.IsLocked": true},
+		map[string]interface{}{"Row2.Left.IsLocked": true}}, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
 
@@ -461,11 +461,11 @@ func TestSubscribe(t *testing.T) {
 	}
 
 	// Clear all locks
-	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []map[string]interface{}{
-		{"Row1.Right.IsLocked": false},
-		{"Row1.Left.IsLocked": false},
-		{"Row2.Right.IsLocked": false},
-		{"Row2.Left.IsLocked": false}}, nil); err != nil {
+	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []interface{}{
+		map[string]interface{}{"Row1.Right.IsLocked": false},
+		map[string]interface{}{"Row1.Left.IsLocked": false},
+		map[string]interface{}{"Row2.Right.IsLocked": false},
+		map[string]interface{}{"Row2.Left.IsLocked": false}}, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
 
@@ -506,11 +506,11 @@ func TestSubscribe(t *testing.T) {
 	}
 
 	// Set all locks
-	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []map[string]interface{}{
-		{"Row1.Right.IsLocked": true},
-		{"Row1.Left.IsLocked": true},
-		{"Row2.Right.IsLocked": true},
-		{"Row2.Left.IsLocked": true}}, nil); err != nil {
+	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []interface{}{
+		map[string]interface{}{"Row1.Right.IsLocked": true},
+		map[string]interface{}{"Row1.Left.IsLocked": true},
+		map[string]interface{}{"Row2.Right.IsLocked": true},
+		map[string]interface{}{"Row2.Left.IsLocked": true}}, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
 
@@ -545,6 +545,7 @@ func TestSubscribe(t *testing.T) {
 /*******************************************************************************
  * Private
  ******************************************************************************/
+
 func arrayToMap(data interface{}) (result map[string]interface{}, err error) {
 	// Create map from array
 	array, ok := data.([]map[string]interface{})

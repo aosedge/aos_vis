@@ -133,10 +133,13 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 
 	switch data.(type) {
 	// convert array of map to map
-	case []map[string]interface{}:
-		for _, arrayItem := range data.([]map[string]interface{}) {
-			for path, value := range arrayItem {
-				suffixMap[path] = value
+	case []interface{}:
+		for _, arrayItem := range data.([]interface{}) {
+			arrayMap, ok := arrayItem.(map[string]interface{})
+			if ok {
+				for path, value := range arrayMap {
+					suffixMap[path] = value
+				}
 			}
 		}
 
