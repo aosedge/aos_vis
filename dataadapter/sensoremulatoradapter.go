@@ -1,153 +1,260 @@
-// +build ignore
-
 package dataadapter
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
+	"net/url"
 	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
-// SensorEmulatorAdapter adapter for read data from sensorsender
-type SensorEmulatorAdapter struct {
-	url string
-}
+/*******************************************************************************
+ * Types
+ ******************************************************************************/
 
 const (
-	updatePeriod = 500
+	defaultUpdatePeriod = 500
 )
+
+// SensorEmulatorAdapter sensor emulator adapter
+type SensorEmulatorAdapter struct {
+	sensorURL    *url.URL
+	updatePeriod uint64
+
+	baseAdapter *BaseAdapter
+}
+
+type config struct {
+	SensorURL    string
+	UpdatePeriod uint64
+}
 
 /*******************************************************************************
  * Public
  ******************************************************************************/
 
-// NewSensorEmulatorAdapter Create SensorEmulatorAdapter
-func NewSensorEmulatorAdapter(url string) (sensorAdapter *SensorEmulatorAdapter) {
-	sensorAdapter = new(SensorEmulatorAdapter)
-	sensorAdapter.url = url
-	return sensorAdapter
-}
+// NewSensorEmulatorAdapter creates new SensorEmulatorAdapter
+func NewSensorEmulatorAdapter(configJSON []byte) (adapter *SensorEmulatorAdapter, err error) {
+	log.Info("Create sensor emulator adapter")
 
-// StartGettingData start getting data with interval
-func (sensorAdapter *SensorEmulatorAdapter) StartGettingData(dataChan chan<- []VisData) {
-	ticker := time.NewTicker(time.Duration(updatePeriod) * time.Millisecond)
-	interrupt := make(chan os.Signal, 1) //TODO redo
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ticker.C:
-			log.Info("Send GET request")
-			jsonData, err := sensorAdapter.readDataFromSensors()
-			if err != nil {
-				log.Error("Can't read data: ", err)
-				continue
-			}
-			visData, err := convertDataToVisFormat(jsonData)
-			if err != nil {
-				log.Error("Can't convert to vis data: ", err)
-				continue
-			}
-			dataChan <- visData
+	adapter = new(SensorEmulatorAdapter)
 
-		case <-interrupt:
-			log.Info("interrupt")
-			break
-		}
+	cfg := config{UpdatePeriod: defaultUpdatePeriod}
+
+	// Parse config
+	err = json.Unmarshal(configJSON, &cfg)
+	if err != nil {
+		return nil, err
 	}
+
+	if cfg.SensorURL == "" {
+		return nil, errors.New("Sensor URL should be defined")
+	}
+
+	adapter.updatePeriod = cfg.UpdatePeriod
+	adapter.sensorURL, err = url.Parse(cfg.SensorURL)
+
+	if adapter.baseAdapter, err = newBaseAdapter(); err != nil {
+		return nil, err
+	}
+
+	// Create data map
+	data, err := adapter.getDataFromSensorEmulator()
+	if err != nil {
+		return nil, err
+	}
+	for path, value := range data {
+		adapter.baseAdapter.data[path] = &baseData{value: value}
+	}
+
+	// Create attributes
+	adapter.baseAdapter.data["Attribute.Emulator.rectangle_long0"] = &baseData{}
+	adapter.baseAdapter.data["Attribute.Emulator.rectangle_lat0"] = &baseData{}
+	adapter.baseAdapter.data["Attribute.Emulator.rectangle_long1"] = &baseData{}
+	adapter.baseAdapter.data["Attribute.Emulator.rectangle_lat1"] = &baseData{}
+	adapter.baseAdapter.data["Attribute.Emulator.to_rectangle"] = &baseData{}
+	adapter.baseAdapter.data["Attribute.Emulator.stop"] = &baseData{}
+	adapter.baseAdapter.data["Attribute.Emulator.tire_break"] = &baseData{}
+
+	go adapter.processData()
+
+	return adapter, nil
 }
 
-// SetData sets VIS data
-func (sensorAdapter *SensorEmulatorAdapter) SetData(data []VisData) (err error) {
+/*******************************************************************************
+ * Public
+ ******************************************************************************/
+
+// GetName returns adapter name
+func (adapter *SensorEmulatorAdapter) GetName() (name string) {
+	return "SensorEmulatorAdapter"
+}
+
+// GetPathList returns list of all pathes for this adapter
+func (adapter *SensorEmulatorAdapter) GetPathList() (pathList []string, err error) {
+	return adapter.baseAdapter.getPathList()
+}
+
+// IsPathPublic returns true if requested data accessible without authorization
+func (adapter *SensorEmulatorAdapter) IsPathPublic(path string) (result bool, err error) {
+	adapter.baseAdapter.mutex.Lock()
+	defer adapter.baseAdapter.mutex.Unlock()
+
+	// TODO: return false, once authorization is integrated
+
+	return true, nil
+}
+
+// GetData returns data by path
+func (adapter *SensorEmulatorAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
+	return adapter.baseAdapter.getData(pathList)
+}
+
+// SetData sets data by pathes
+func (adapter *SensorEmulatorAdapter) SetData(data map[string]interface{}) (err error) {
 	sendData, err := convertVisFormatToData(data)
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("Send data: %s", string(sendData))
-
-	res, err := http.Post(sensorAdapter.url, "application/json", bytes.NewReader(sendData))
+	path, err := url.Parse("attributes/")
 	if err != nil {
 		return err
 	}
-	if res.StatusCode != 200 {
+
+	address := adapter.sensorURL.ResolveReference(path).String()
+
+	log.WithField("url", address).Debugf("Set data to sensor emulator: %s", string(sendData))
+
+	res, err := http.Post(address, "application/json", bytes.NewReader(sendData))
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != 201 {
 		return errors.New(res.Status)
 	}
 
-	return nil
+	return adapter.baseAdapter.setData(data)
 }
 
-// Stop TODO
-func (sensorAdapter *SensorEmulatorAdapter) Stop() {
+// GetSubscribeChannel returns channel on which data changes will be sent
+func (adapter *SensorEmulatorAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
+	return adapter.baseAdapter.subscribeChannel
+}
+
+// Subscribe subscribes for data changes
+func (adapter *SensorEmulatorAdapter) Subscribe(pathList []string) (err error) {
+	return adapter.baseAdapter.subscribe(pathList)
+}
+
+// Unsubscribe unsubscribes from data changes
+func (adapter *SensorEmulatorAdapter) Unsubscribe(pathList []string) (err error) {
+	return adapter.baseAdapter.unsubscribe(pathList)
+}
+
+// UnsubscribeAll unsubscribes from all data changes
+func (adapter *SensorEmulatorAdapter) UnsubscribeAll() (err error) {
+	return adapter.baseAdapter.unsubscribeAll()
 }
 
 /*******************************************************************************
  * Private
  ******************************************************************************/
 
-func (sensorAdapter *SensorEmulatorAdapter) readDataFromSensors() (data []byte, err error) {
-	res, err := http.Get(sensorAdapter.url)
-	if err != nil {
-		log.Error("Error HTTP GET to ", sensorAdapter.url, err)
-		return data, err
-	}
-	data, err = ioutil.ReadAll(res.Body)
-	res.Body.Close()
-	if err != nil {
-		log.Error("Error read from HTTP body responce ", err)
-		return data, err
-	}
+func parseNode(prefix string, element interface{}) (visData map[string]interface{}) {
+	visData = make(map[string]interface{})
 
-	return data, nil
-}
-
-func parseNode(prefix string, element interface{}, visData *[]VisData) {
 	m, ok := element.(map[string]interface{})
 	if ok {
 		for path, value := range m {
-			parseNode(prefix+"."+path, value, visData)
+			for visPath, visValue := range parseNode(prefix+"."+path, value) {
+				visData[visPath] = visValue
+			}
 		}
 	} else {
-		visElement := VisData{Path: prefix, Data: element}
-		*visData = append(*visData, visElement)
+		visData[prefix] = element
 	}
+
+	return visData
 }
 
-func convertDataToVisFormat(jsonData []byte) (visData []VisData, err error) {
+func convertDataToVisFormat(dataJSON []byte) (visData map[string]interface{}, err error) {
 	var data interface{}
 
-	err = json.Unmarshal(jsonData, &data)
+	err = json.Unmarshal(dataJSON, &data)
 	if err != nil {
 		return visData, err
 	}
 
-	parseNode("Signal.Emulator", data, &visData)
+	visData = parseNode("Signal.Emulator", data)
 
 	return visData, nil
 }
 
-func convertVisFormatToData(visData []VisData) (jsonData []byte, err error) {
+func (adapter *SensorEmulatorAdapter) getDataFromSensorEmulator() (visData map[string]interface{}, err error) {
+	path, err := url.Parse("stats")
+	if err != nil {
+		return visData, err
+	}
+
+	address := adapter.sensorURL.ResolveReference(path).String()
+
+	res, err := http.Get(address)
+	if err != nil {
+		return visData, err
+	}
+
+	data, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		return visData, err
+	}
+
+	log.WithField("url", address).Debugf("Get data from sensor emulator: %s", string(data))
+
+	return convertDataToVisFormat(data)
+}
+
+func (adapter *SensorEmulatorAdapter) processData() {
+	ticker := time.NewTicker(time.Duration(adapter.updatePeriod) * time.Millisecond)
+	for {
+		select {
+		case <-ticker.C:
+			data, err := adapter.getDataFromSensorEmulator()
+			if err != nil {
+				log.Errorf("Can't read data: %s", err)
+				continue
+			}
+			if err = adapter.baseAdapter.setData(data); err != nil {
+				log.Errorf("Can't update data: %s", err)
+				continue
+			}
+		}
+	}
+}
+
+func convertVisFormatToData(visData map[string]interface{}) (dataJSON []byte, err error) {
 	sendData := make(map[string]interface{})
 
-	for _, item := range visData {
-		if strings.HasPrefix(item.Path, "Attribute.Emulator.") {
-			item.Path = strings.TrimPrefix(item.Path, "Attribute.Emulator.")
-			sendData[item.Path] = item.Data
+	for path, value := range visData {
+		if strings.HasPrefix(path, "Attribute.Emulator.") {
+			path = strings.TrimPrefix(path, "Attribute.Emulator.")
+			sendData[path] = value
 		} else {
-			log.Warningf("Skip %s item", item.Path)
+			return dataJSON, fmt.Errorf("Path %s does not exist", path)
 		}
 	}
 
-	jsonData, err = json.Marshal(&sendData)
+	dataJSON, err = json.Marshal(&sendData)
 	if err != nil {
-		return jsonData, err
+		return dataJSON, err
 	}
 
-	return jsonData, nil
+	return dataJSON, nil
 }
