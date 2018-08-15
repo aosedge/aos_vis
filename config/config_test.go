@@ -18,7 +18,14 @@ func createConfigFile() (err error) {
 	configContent := `{
 "ServerUrl": "localhost:8088",
 "VISCert": "wwwivi.crt.pem",
-"VISKey": "wwwivi.key.pem"
+"VISKey": "wwwivi.key.pem",
+"Adapters":[{
+		"Name": "test1"
+	}, {
+		"Name": "test2"
+	}, {
+		"Name": "test3"
+	}]
 }`
 
 	if err := ioutil.WriteFile(path.Join("tmp", "visconfig.json"), []byte(configContent), 0644); err != nil {
@@ -86,5 +93,20 @@ func TestGetCredentials(t *testing.T) {
 
 	if config.VISKey != "wwwivi.key.pem" {
 		t.Errorf("Wrong VISKey value: %s", config.VISKey)
+	}
+}
+
+func TestAdapters(t *testing.T) {
+	config, err := config.New("tmp/visconfig.json")
+	if err != nil {
+		t.Fatalf("Error opening config file: %s", err)
+	}
+
+	if len(config.Adapters) != 3 {
+		t.Errorf("Wrong adapters len: %d", len(config.Adapters))
+	}
+
+	if config.Adapters[0].Name != "test1" || config.Adapters[1].Name != "test2" || config.Adapters[2].Name != "test3" {
+		t.Error("Wrong adapter name")
 	}
 }

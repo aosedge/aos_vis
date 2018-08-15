@@ -15,6 +15,13 @@ type Config struct {
 	ServerURL string
 	VISCert   string
 	VISKey    string
+	Adapters  []AdapterConfig
+}
+
+// AdapterConfig adapter configuration
+type AdapterConfig struct {
+	Name   string
+	Params interface{}
 }
 
 /*******************************************************************************
