@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,14 +17,28 @@ func init() {
 		DisableTimestamp: false,
 		TimestampFormat:  "2006-01-02 15:04:05.000",
 		FullTimestamp:    true})
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.InfoLevel)
 	log.SetOutput(os.Stdout)
 }
 
 func main() {
-	log.Info("VIS Server")
+	// Initialize command line flags
+	configFile := flag.String("c", "visconfig.json", "path to config file")
+	strLogLevel := flag.String("v", "info", `log level: "debug", "info", "warn", "error", "fatal", "panic"`)
 
-	config, err := config.New("visconfig.json")
+	flag.Parse()
+
+	// Set log level
+	logLevel, err := log.ParseLevel(*strLogLevel)
+	if err != nil {
+		log.Fatalf("Error: %s", err)
+	}
+	log.SetLevel(logLevel)
+
+	log.WithField("configFile", *configFile).Info("Start VIS Server")
+
+	// Create config
+	config, err := config.New(*configFile)
 	if err != nil {
 		log.Fatalf("Can' open config file: %s", err)
 	}
