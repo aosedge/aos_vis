@@ -111,6 +111,23 @@ func TestMain(m *testing.M) {
 
 	adaptersInfo = append(adaptersInfo, adapterInfo)
 
+	messageAdapter, err := dataadapter.NewMessageAdapter()
+	if err != nil {
+		log.Fatalf("Can't create message adaptor: %s", err)
+	}
+	adapterInfo = adapterData{
+		name:        "MessageAdapter",
+		pathListLen: 1,
+		adapter:     messageAdapter,
+		setData: map[string]interface{}{
+			"Attribute.Car.Message": "Hello, world!"},
+		subscribeList: []string{
+			"Attribute.Car.Message"},
+		setSubscribeData: map[string]interface{}{
+			"Attribute.Car.Message": "Goodbye, world!"},
+	}
+
+	adaptersInfo = append(adaptersInfo, adapterInfo)
 	ret := m.Run()
 
 	os.Exit(ret)
