@@ -2,6 +2,7 @@ package dataprovider
 
 import (
 	"container/list"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -49,24 +50,19 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	provider.sensors = make(map[string]*sensorDescription)
 	provider.subscribeChannels = make(map[uint64]chan<- interface{})
 
-	adapter, _ := dataadapter.NewTestAdapter()
+	adapterCount := 0
 
-	pathList, err := adapter.GetPathList()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, path := range pathList {
-		if _, ok := provider.sensors[path]; ok {
-			log.WithField("path", path).Warningf("Path already in adapter map")
-		} else {
-			log.WithFields(log.Fields{"path": path, "adaptor": adapter.GetName()}).Debug("Add path")
-
-			provider.sensors[path] = &sensorDescription{adapter: adapter, subscribeIds: list.New()}
+	for _, adapterCfg := range config.Adapters {
+		if err = provider.createAdapter(adapterCfg.Name, adapterCfg.Params); err != nil {
+			return nil, err
 		}
+
+		adapterCount++
 	}
 
-	go provider.handleSubscribeChannel(adapter.GetSubscribeChannel())
+	if adapterCount == 0 {
+		return nil, errors.New("No valid adapter info provided")
+	}
 
 	return provider, nil
 }
@@ -324,6 +320,54 @@ func (provider *DataProvider) GetSubscribeIDs() (result []uint64) {
 /*******************************************************************************
  * Private
  ******************************************************************************/
+
+func (provider *DataProvider) createAdapter(name string, params interface{}) (err error) {
+	var adapter dataadapter.DataAdapter
+
+	paramsJSON, err := json.Marshal(params)
+	if err != nil {
+		return err
+	}
+
+	switch name {
+	case "TestAdapter":
+		if adapter, err = dataadapter.NewTestAdapter(); err != nil {
+			return err
+		}
+
+	case "SensorEmulatorAdapter":
+		if adapter, err = dataadapter.NewSensorEmulatorAdapter(paramsJSON); err != nil {
+			return err
+		}
+
+	case "MessageAdapter":
+		if adapter, err = dataadapter.NewMessageAdapter(); err != nil {
+			return err
+		}
+
+	default:
+		return errors.New("Unknown adapter name: " + name)
+	}
+
+	pathList, err := adapter.GetPathList()
+	if err != nil {
+		return err
+	}
+
+	for _, path := range pathList {
+		if _, ok := provider.sensors[path]; ok {
+			log.WithField("path", path).Warningf("Path already in adapter map")
+		} else {
+			log.WithFields(log.Fields{"path": path, "adaptor": adapter.GetName()}).Debug("Add path")
+
+			provider.sensors[path] = &sensorDescription{adapter: adapter, subscribeIds: list.New()}
+		}
+	}
+
+	go provider.handleSubscribeChannel(adapter.GetSubscribeChannel())
+
+	return nil
+}
 
 func (provider *DataProvider) handleSubscribeChannel(channel <-chan map[string]interface{}) {
 	for {

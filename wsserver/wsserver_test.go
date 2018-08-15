@@ -81,7 +81,11 @@ func TestMain(m *testing.M) {
 	dbusserver := dbusInterface{}
 	conn.Export(dbusserver, "/com/aosservicemanager/vistoken", "com.aosservicemanager.vistoken")
 
-	config := config.Config{ServerURL: serverURL, VISCert: "../data/wwwivi.crt.pem", VISKey: "../data/wwwivi.key.pem"}
+	config := config.Config{
+		ServerURL: serverURL,
+		VISCert:   "../data/wwwivi.crt.pem",
+		VISKey:    "../data/wwwivi.key.pem",
+		Adapters:  []config.AdapterConfig{{Name: "TestAdapter"}}}
 
 	server, err := wsserver.New(&config)
 	if err != nil {

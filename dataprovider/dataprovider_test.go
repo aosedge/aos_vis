@@ -27,11 +27,19 @@ func init() {
 }
 
 /*******************************************************************************
+ * Vars
+ ******************************************************************************/
+
+var cfg = &config.Config{
+	Adapters: []config.AdapterConfig{
+		{Name: "TestAdapter"}}}
+
+/*******************************************************************************
  * Tests
  ******************************************************************************/
 
 func TestGetData(t *testing.T) {
-	provider, err := dataprovider.New(&config.Config{})
+	provider, err := dataprovider.New(cfg)
 	if err != nil {
 		t.Fatalf("Can't create data provider: %s", err)
 	}
@@ -188,7 +196,7 @@ func TestGetData(t *testing.T) {
 }
 
 func TestSetData(t *testing.T) {
-	provider, err := dataprovider.New(&config.Config{})
+	provider, err := dataprovider.New(cfg)
 	if err != nil {
 		t.Fatalf("Can't create data provider: %s", err)
 	}
@@ -303,7 +311,7 @@ func TestSetData(t *testing.T) {
 }
 
 func TestPermissions(t *testing.T) {
-	provider, err := dataprovider.New(&config.Config{})
+	provider, err := dataprovider.New(cfg)
 	if err != nil {
 		t.Fatalf("Can't create data provider: %s", err)
 	}
@@ -356,7 +364,7 @@ func TestPermissions(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-	provider, err := dataprovider.New(&config.Config{})
+	provider, err := dataprovider.New(cfg)
 	if err != nil {
 		t.Fatalf("Can't create data provider: %s", err)
 	}
