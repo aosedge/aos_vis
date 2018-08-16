@@ -178,6 +178,8 @@ func (client *wsClient) close() (err error) {
 
 	client.wsConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 
+	client.unsubscribeAll()
+
 	return client.wsConnection.Close()
 }
 
@@ -189,11 +191,11 @@ func (client *wsClient) run() {
 				log.Errorf("Error reading socket: %s", err)
 			}
 
-			for id := range client.subscribeChannels {
-				if err := client.dataProvider.Unsubscribe(id, client.authInfo); err != nil {
-					log.Errorf("Unsubscribe error: %s", err)
-				}
+			if err := client.unsubscribeAll(); err != nil {
+				log.Errorf("Unsubscribe error: %s", err)
 			}
+
+			log.WithField("RemoteAddr", client.wsConnection.RemoteAddr()).Info("Close client")
 
 			break
 		}
@@ -415,10 +417,8 @@ func (client *wsClient) processUnsubscribeAllRequest(requestJSON []byte) (respon
 		return createErrorResponse(rUnsubsAll.Action, rUnsubsAll.RequestID, err)
 	}
 
-	for subscribeID := range client.subscribeChannels {
-		if err = client.dataProvider.Unsubscribe(subscribeID, client.authInfo); err != nil {
-			return createErrorResponse(rUnsubsAll.Action, rUnsubsAll.RequestID, err)
-		}
+	if err = client.unsubscribeAll(); err != nil {
+		return createErrorResponse(rUnsubsAll.Action, rUnsubsAll.RequestID, err)
 	}
 
 	response := unsubscribeAllSuccessResponse{
@@ -464,6 +464,18 @@ func (client *wsClient) processSubscribeChannel(id uint64, channel <-chan interf
 		}
 
 	}
+}
+
+func (client *wsClient) unsubscribeAll() (err error) {
+	for subscribeID := range client.subscribeChannels {
+		if localErr := client.dataProvider.Unsubscribe(subscribeID, client.authInfo); localErr != nil {
+			err = localErr
+		}
+	}
+
+	client.subscribeChannels = make(map[uint64]<-chan interface{})
+
+	return err
 }
 
 func codeFromError(err error) (code int) {
