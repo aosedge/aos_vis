@@ -20,10 +20,10 @@ import (
 
 // DataProvider interface for geeting vehicle data
 type DataProvider struct {
-	sensors           map[string]*sensorDescription
-	currentSubsID     uint64
-	subscribeChannels map[uint64]chan<- interface{}
-	mutex             sync.Mutex
+	sensors          map[string]*sensorDescription
+	currentSubsID    uint64
+	subscribeInfoMap map[uint64]*subscribeInfo
+	mutex            sync.Mutex
 }
 
 // AuthInfo authorization info
@@ -37,6 +37,11 @@ type sensorDescription struct {
 	subscribeIds *list.List
 }
 
+type subscribeInfo struct {
+	channel chan<- interface{}
+	path    string
+}
+
 /*******************************************************************************
  * Public
  ******************************************************************************/
@@ -48,7 +53,7 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	provider = &DataProvider{}
 
 	provider.sensors = make(map[string]*sensorDescription)
-	provider.subscribeChannels = make(map[uint64]chan<- interface{})
+	provider.subscribeInfoMap = make(map[uint64]*subscribeInfo)
 
 	adapterCount := 0
 
@@ -111,7 +116,7 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 		return data, errors.New("The specified data path does not exist")
 	}
 
-	return convertData(commonData), nil
+	return convertData(path, commonData), nil
 }
 
 // SetData sets VIS data
@@ -241,7 +246,7 @@ func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uin
 	id = provider.currentSubsID
 
 	dataChannel := make(chan interface{}, 100)
-	provider.subscribeChannels[id] = dataChannel
+	provider.subscribeInfoMap[id] = &subscribeInfo{channel: dataChannel, path: path}
 
 	provider.currentSubsID++
 
@@ -255,12 +260,12 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 
 	log.WithField("subscribeID", id).Debug("Unsubscribe")
 
-	channel, ok := provider.subscribeChannels[id]
+	subscribeInfo, ok := provider.subscribeInfoMap[id]
 	if !ok {
 		return fmt.Errorf("Subscribe id %v not found", id)
 	}
-	close(channel)
-	delete(provider.subscribeChannels, id)
+	close(subscribeInfo.channel)
+	delete(provider.subscribeInfoMap, id)
 
 	// Create map of pathes grouped by adapter
 	unsubscribeMap := make(map[dataadapter.DataAdapter][]string)
@@ -308,9 +313,9 @@ func (provider *DataProvider) GetSubscribeIDs() (result []uint64) {
 	provider.mutex.Lock()
 	defer provider.mutex.Unlock()
 
-	result = make([]uint64, 0, len(provider.subscribeChannels))
+	result = make([]uint64, 0, len(provider.subscribeInfoMap))
 
-	for id := range provider.subscribeChannels {
+	for id := range provider.subscribeInfoMap {
 		result = append(result, id)
 	}
 
@@ -399,7 +404,7 @@ func (provider *DataProvider) handleSubscribeChannel(channel <-chan map[string]i
 					"path":        path,
 					"value":       value}).Debug("Notify subscribers")
 			}
-			provider.subscribeChannels[id] <- convertData(data)
+			provider.subscribeInfoMap[id].channel <- convertData(provider.subscribeInfoMap[id].path, data)
 		}
 	}
 }
@@ -452,7 +457,7 @@ func checkPermissions(adapter dataadapter.DataAdapter, path string, authInfo *Au
 	return errors.New("Client does not have permissions")
 }
 
-func convertData(data map[string]interface{}) (result interface{}) {
+func convertData(requestedPath string, data map[string]interface{}) (result interface{}) {
 	// Group by parent map[parent] -> (map[path] -> value)
 	parentDataMap := make(map[string]map[string]interface{})
 
@@ -481,9 +486,11 @@ func convertData(data map[string]interface{}) (result interface{}) {
 
 	if len(dataArray) == 1 {
 		if len(dataArray[0]) == 1 {
-			for _, value := range dataArray[0] {
-				// return simple value
-				return value
+			for path, value := range dataArray[0] {
+				if path == requestedPath {
+					// return simple value
+					return value
+				}
 			}
 		}
 		// return map of same parent

@@ -70,6 +70,35 @@ func TestGetData(t *testing.T) {
 	/*
 		client -> {
 			"action": "get",
+			"path": "Signal.Drivetrain.InternalCombustionEngine.*",
+			"requestId": "8756"
+		}
+
+		receive <- {
+			"action": "get",
+			"requestId": "8756",
+			"value": 2372,
+			"timestamp": 1489985044000
+		}
+	*/
+
+	data, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.*", nil)
+	if err != nil {
+		t.Errorf("Can't get data: %s", err)
+	}
+	if value, ok := data.(map[string]interface{}); !ok {
+		t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
+	} else if len(value) != 1 {
+		t.Errorf("Wrong map size: %d", len(value))
+	} else {
+		if _, ok = value["Signal.Drivetrain.InternalCombustionEngine.RPM"]; !ok {
+			t.Error("Wrong map item")
+		}
+	}
+
+	/*
+		client -> {
+			"action": "get",
 			"path": "Signal.Body.Trunk",
 			"requestId": "9078"
 		}
