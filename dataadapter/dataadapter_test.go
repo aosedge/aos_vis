@@ -1,6 +1,9 @@
 package dataadapter_test
 
 import (
+	"encoding/json"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"reflect"
 	"testing"
@@ -12,6 +15,8 @@ import (
 )
 
 var adaptersInfo []adapterData
+
+var emulatorData map[string]interface{}
 
 type adapterData struct {
 	adapter          dataadapter.DataAdapter
@@ -43,7 +48,9 @@ func TestMain(m *testing.M) {
 
 	// SensorEmulatorAdapter
 
-	sensorEmulatorAdapter, err := dataadapter.NewSensorEmulatorAdapter([]byte(`{"SensorURL":"http://sensors:8800"}`))
+	startHttpServer()
+
+	sensorEmulatorAdapter, err := dataadapter.NewSensorEmulatorAdapter([]byte(`{"SensorURL":"http://localhost:8801"}`))
 	if err != nil {
 		log.Fatalf("Can't create sensor emulator adapter: %s", err)
 	}
@@ -128,6 +135,7 @@ func TestMain(m *testing.M) {
 	}
 
 	adaptersInfo = append(adaptersInfo, adapterInfo)
+
 	ret := m.Run()
 
 	os.Exit(ret)
@@ -151,6 +159,7 @@ func TestGetPathList(t *testing.T) {
 		pathList, err := adapterInfo.adapter.GetPathList()
 		if err != nil {
 			t.Errorf("Can't get adapter %s path list: %s", adapterInfo.name, err)
+			continue
 		}
 		if adapterInfo.pathListLen != 0 && len(pathList) != adapterInfo.pathListLen {
 			t.Errorf("Wrong adapter %s path list len: %d", adapterInfo.name, len(pathList))
@@ -176,6 +185,7 @@ func TestGetSetData(t *testing.T) {
 		err := adapterInfo.adapter.SetData(adapterInfo.setData)
 		if err != nil {
 			t.Errorf("Can't set adapter %s data: %s", adapterInfo.name, err)
+			continue
 		}
 
 		// get data
@@ -186,6 +196,7 @@ func TestGetSetData(t *testing.T) {
 		getData, err := adapterInfo.adapter.GetData(getPathList)
 		if err != nil {
 			t.Errorf("Can't get adapter %s data: %s", adapterInfo.name, err)
+			continue
 		}
 
 		// check data
@@ -202,15 +213,18 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		err := adapterInfo.adapter.SetData(adapterInfo.setData)
 		if err != nil {
 			t.Errorf("Can't set adapter %s data: %s", adapterInfo.name, err)
+			continue
 		}
 
 		// subscribe
 		if err = adapterInfo.adapter.Subscribe(adapterInfo.subscribeList); err != nil {
 			t.Errorf("Can't subscribe adapter %s path: %s", adapterInfo.name, err)
+			continue
 		}
 
 		if err = adapterInfo.adapter.SetData(adapterInfo.setSubscribeData); err != nil {
 			t.Errorf("Can't set adapter %s data: %s", adapterInfo.name, err)
+			continue
 		}
 
 		select {
@@ -230,3 +244,57 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 /*******************************************************************************
  * Private
  ******************************************************************************/
+
+func statsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	dataJSON, err := json.Marshal(emulatorData)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	w.Write(dataJSON)
+}
+
+func attributesHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	dataJSON, err := ioutil.ReadAll(r.Body)
+	r.Body.Close()
+	if err != nil {
+		log.Error(err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	if err = json.Unmarshal(dataJSON, &emulatorData); err != nil {
+		log.Error(err)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func startHttpServer() {
+	emulatorData = map[string]interface{}{
+		"rectangle_lat0":  nil,
+		"rectangle_lat1":  nil,
+		"rectangle_long0": nil,
+		"rectangle_long1": nil,
+		"to_rectangle":    nil}
+
+	http.HandleFunc("/stats/", statsHandler)
+	http.HandleFunc("/attributes/", attributesHandler)
+	go http.ListenAndServe("localhost:8801", nil)
+
+	time.Sleep(1 * time.Second)
+}
