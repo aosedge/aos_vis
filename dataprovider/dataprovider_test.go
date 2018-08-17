@@ -30,20 +30,30 @@ func init() {
  * Vars
  ******************************************************************************/
 
-var cfg = &config.Config{
-	Adapters: []config.AdapterConfig{
-		{Name: "TestAdapter"}}}
+var provider *dataprovider.DataProvider
+
+/*******************************************************************************
+ * Main
+ ******************************************************************************/
+
+func TestMain(m *testing.M) {
+	var err error
+
+	provider, err = dataprovider.New(&config.Config{Adapters: []config.AdapterConfig{{Name: "TestAdapter"}}})
+	if err != nil {
+		log.Fatalf("Can't create data provider: %s", err)
+	}
+
+	ret := m.Run()
+
+	os.Exit(ret)
+}
 
 /*******************************************************************************
  * Tests
  ******************************************************************************/
 
 func TestGetData(t *testing.T) {
-	provider, err := dataprovider.New(cfg)
-	if err != nil {
-		t.Fatalf("Can't create data provider: %s", err)
-	}
-
 	/*
 		client -> {
 			"action": "get",
@@ -225,14 +235,9 @@ func TestGetData(t *testing.T) {
 }
 
 func TestSetData(t *testing.T) {
-	provider, err := dataprovider.New(cfg)
-	if err != nil {
-		t.Fatalf("Can't create data provider: %s", err)
-	}
-
 	// Set by full path
 
-	if err = provider.SetData("Signal.Body.Trunk.IsLocked", true, nil); err != nil {
+	if err := provider.SetData("Signal.Body.Trunk.IsLocked", true, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
 	value, err := provider.GetData("Signal.Body.Trunk.IsLocked", nil)
@@ -340,13 +345,8 @@ func TestSetData(t *testing.T) {
 }
 
 func TestPermissions(t *testing.T) {
-	provider, err := dataprovider.New(cfg)
-	if err != nil {
-		t.Fatalf("Can't create data provider: %s", err)
-	}
-
 	// Check public path for not authorized client
-	_, err = provider.GetData("Attribute.Vehicle.VehicleIdentification.VIN", &dataprovider.AuthInfo{})
+	_, err := provider.GetData("Attribute.Vehicle.VehicleIdentification.VIN", &dataprovider.AuthInfo{})
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}
@@ -393,13 +393,8 @@ func TestPermissions(t *testing.T) {
 }
 
 func TestSubscribe(t *testing.T) {
-	provider, err := dataprovider.New(cfg)
-	if err != nil {
-		t.Fatalf("Can't create data provider: %s", err)
-	}
-
 	// Clear all locks
-	if err = provider.SetData("Signal.Cabin.Door.*.IsLocked", []interface{}{
+	if err := provider.SetData("Signal.Cabin.Door.*.IsLocked", []interface{}{
 		map[string]interface{}{"Row1.Right.IsLocked": false},
 		map[string]interface{}{"Row1.Left.IsLocked": false},
 		map[string]interface{}{"Row2.Right.IsLocked": false},
