@@ -12,14 +12,17 @@ import (
 
 // BaseAdapter test adapter
 type BaseAdapter struct {
+	name             string
 	data             map[string]*baseData
 	mutex            sync.Mutex
 	subscribeChannel chan map[string]interface{}
 }
 
 type baseData struct {
+	Public    bool
+	ReadOnly  bool
 	subscribe bool
-	value     interface{}
+	Value     interface{}
 }
 
 /*******************************************************************************
@@ -36,6 +39,11 @@ func newBaseAdapter() (adapter *BaseAdapter, err error) {
 	return adapter, nil
 }
 
+// GetName returns adapter name
+func (adapter *BaseAdapter) getName() (name string) {
+	return adapter.name
+}
+
 // getPathList returns list of all pathes for this adapter
 func (adapter *BaseAdapter) getPathList() (pathList []string, err error) {
 	adapter.mutex.Lock()
@@ -50,6 +58,17 @@ func (adapter *BaseAdapter) getPathList() (pathList []string, err error) {
 	return pathList, nil
 }
 
+func (adapter *BaseAdapter) isPathPublic(path string) (result bool, err error) {
+	adapter.mutex.Lock()
+	defer adapter.mutex.Unlock()
+
+	if _, ok := adapter.data[path]; !ok {
+		return result, fmt.Errorf("Path %s doesn't exits", path)
+	}
+
+	return adapter.data[path].Public, nil
+}
+
 // getData returns data by path
 func (adapter *BaseAdapter) getData(pathList []string) (data map[string]interface{}, err error) {
 	adapter.mutex.Lock()
@@ -61,7 +80,7 @@ func (adapter *BaseAdapter) getData(pathList []string) (data map[string]interfac
 		if _, ok := adapter.data[path]; !ok {
 			return data, fmt.Errorf("Path %s doesn't exits", path)
 		}
-		data[path] = adapter.data[path].value
+		data[path] = adapter.data[path].Value
 	}
 
 	return data, nil
@@ -79,8 +98,12 @@ func (adapter *BaseAdapter) setData(data map[string]interface{}) (err error) {
 			return fmt.Errorf("Path %s doesn't exits", path)
 		}
 
-		oldValue := adapter.data[path].value
-		adapter.data[path].value = value
+		if adapter.data[path].ReadOnly {
+			return fmt.Errorf("Signal %s cannot be set since it is a read only signal", path)
+		}
+
+		oldValue := adapter.data[path].Value
+		adapter.data[path].Value = value
 
 		if !reflect.DeepEqual(oldValue, value) && adapter.data[path].subscribe {
 			changedData[path] = value

@@ -8,19 +8,24 @@ Specify parameters in visconfig.json file:
 
 ```json
 {
-	"ServerURL": "localhost:8088",
+	"ServerURL": ":8088",
 	"VISCert": "data/wwwivi.crt.pem",
 	"VISKey": "data/wwwivi.key.pem",
 	"Adapters":[
 		{
-			"Name":"MessageAdapter"
-		},{
 			"Name":"SensorEmulatorAdapter",
 			"Params": {
 				"SensorURL":"http://sensors:8800"
 			}
 		},{
-			"Name":"TestAdapter"
+			"Name":"StorageAdapter",
+			"Params": {
+				"Data" : {
+					"Attribute.Vehicle.VehicleIdentification.VIN": {"Value": "TestVIN", "Public": true, "ReadOnly": true},
+					"Attribute.Vehicle.UserIdentification.Users":  {"Value": ["User1", "Provider1"], "Public": true},
+					"Attribute.Car.Message":  {"Public": true}
+				}
+			}
 		}
 	]
 }

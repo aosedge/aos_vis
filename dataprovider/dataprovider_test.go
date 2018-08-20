@@ -1,6 +1,7 @@
 package dataprovider_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -39,7 +40,43 @@ var provider *dataprovider.DataProvider
 func TestMain(m *testing.M) {
 	var err error
 
-	provider, err = dataprovider.New(&config.Config{Adapters: []config.AdapterConfig{{Name: "TestAdapter"}}})
+	configJSON := `{
+	"Adapters":[
+		{
+			"Name":"StorageAdapter",
+			"Params": {
+				"Data" : {
+					"Attribute.Vehicle.VehicleIdentification.VIN":    {"Value": "TestVIN", "Public": true,"ReadOnly": true},
+					"Attribute.Vehicle.UserIdentification.Users":     {"Value": ["User1", "Provider1"], "Public": true},
+	
+					"Signal.Drivetrain.InternalCombustionEngine.RPM": {"Value": 1000, "ReadOnly": true},
+		
+					"Signal.Body.Trunk.IsLocked":                     {"Value": false},
+					"Signal.Body.Trunk.IsOpen":                       {"Value": true},
+		
+					"Signal.Cabin.Door.Row1.Right.IsLocked":          {"Value": true},
+					"Signal.Cabin.Door.Row1.Right.Window.Position":   {"Value": 50},
+					"Signal.Cabin.Door.Row1.Left.IsLocked":           {"Value": true},
+					"Signal.Cabin.Door.Row1.Left.Window.Position":    {"Value": 23},
+					"Signal.Cabin.Door.Row2.Right.IsLocked":          {"Value": false},
+					"Signal.Cabin.Door.Row2.Right.Window.Position":   {"Value": 100},
+					"Signal.Cabin.Door.Row2.Left.IsLocked":           {"Value": true},
+					"Signal.Cabin.Door.Row2.Left.Window.Position":    {"Value": 0}
+				}
+			}
+		}
+	]
+}`
+
+	var cfg config.Config
+
+	decoder := json.NewDecoder(strings.NewReader(configJSON))
+	// Parse config
+	if err = decoder.Decode(&cfg); err != nil {
+		log.Fatalf("Can't parse config: %s", err)
+	}
+
+	provider, err = dataprovider.New(&cfg)
 	if err != nil {
 		log.Fatalf("Can't create data provider: %s", err)
 	}
@@ -72,8 +109,7 @@ func TestGetData(t *testing.T) {
 	data, err := provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
-	}
-	if _, ok := data.(int); !ok {
+	} else if _, ok := data.(json.Number); !ok {
 		t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
 	}
 
@@ -95,8 +131,7 @@ func TestGetData(t *testing.T) {
 	data, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.*", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
-	}
-	if value, ok := data.(map[string]interface{}); !ok {
+	} else if value, ok := data.(map[string]interface{}); !ok {
 		t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
 	} else if len(value) != 1 {
 		t.Errorf("Wrong map size: %d", len(value))
@@ -125,8 +160,7 @@ func TestGetData(t *testing.T) {
 	data, err = provider.GetData("Signal.Body.Trunk", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
-	}
-	if value, ok := data.(map[string]interface{}); !ok {
+	} else if value, ok := data.(map[string]interface{}); !ok {
 		t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
 	} else {
 		if len(value) != 2 {
@@ -155,8 +189,7 @@ func TestGetData(t *testing.T) {
 	data, err = provider.GetData("Signal.Cabin.Door.*.IsLocked", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
-	}
-	if value, ok := data.([]map[string]interface{}); !ok {
+	} else if value, ok := data.([]map[string]interface{}); !ok {
 		t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
 	} else {
 		if len(value) != 4 {
@@ -195,8 +228,7 @@ func TestGetData(t *testing.T) {
 	data, err = provider.GetData("Signal.Cabin.Door.*", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
-	}
-	if value, ok := data.([]map[string]interface{}); !ok {
+	} else if value, ok := data.([]map[string]interface{}); !ok {
 		t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
 	} else {
 		if len(value) != 8 {
@@ -243,8 +275,7 @@ func TestSetData(t *testing.T) {
 	value, err := provider.GetData("Signal.Body.Trunk.IsLocked", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
-	}
-	if value != true {
+	} else if value != true {
 		t.Errorf("Data mistmatch: %v", value)
 	}
 
@@ -272,25 +303,25 @@ func TestSetData(t *testing.T) {
 		map[string]interface{}{"Row2.Right.IsLocked": true},
 		map[string]interface{}{"Row2.Left.IsLocked": true}}, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
-	}
-	if value, err = provider.GetData("Signal.Cabin.Door.*.IsLocked", nil); err != nil {
+	} else if value, err = provider.GetData("Signal.Cabin.Door.*.IsLocked", nil); err != nil {
 		t.Errorf("Can't get data: %s", err)
-	}
-	dataMap, err := arrayToMap(value)
-	if err != nil {
-		t.Error(err)
-	}
-	if dataMap["Signal.Cabin.Door.Row1.Right.IsLocked"] != true {
-		t.Errorf("Data mistmatch: %v", value)
-	}
-	if dataMap["Signal.Cabin.Door.Row1.Left.IsLocked"] != true {
-		t.Errorf("Data mistmatch: %v", value)
-	}
-	if dataMap["Signal.Cabin.Door.Row2.Right.IsLocked"] != true {
-		t.Errorf("Data mistmatch: %v", value)
-	}
-	if dataMap["Signal.Cabin.Door.Row2.Left.IsLocked"] != true {
-		t.Errorf("Data mistmatch: %v", value)
+	} else {
+		dataMap, err := arrayToMap(value)
+		if err != nil {
+			t.Error(err)
+		}
+		if dataMap["Signal.Cabin.Door.Row1.Right.IsLocked"] != true {
+			t.Errorf("Data mistmatch: %v", value)
+		}
+		if dataMap["Signal.Cabin.Door.Row1.Left.IsLocked"] != true {
+			t.Errorf("Data mistmatch: %v", value)
+		}
+		if dataMap["Signal.Cabin.Door.Row2.Right.IsLocked"] != true {
+			t.Errorf("Data mistmatch: %v", value)
+		}
+		if dataMap["Signal.Cabin.Door.Row2.Left.IsLocked"] != true {
+			t.Errorf("Data mistmatch: %v", value)
+		}
 	}
 
 	/*

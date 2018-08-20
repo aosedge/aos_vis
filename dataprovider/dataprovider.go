@@ -106,7 +106,7 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 			return data, err
 		}
 		for path, value := range result {
-			log.WithFields(log.Fields{"adapter": adapter.GetName(), "value": value, "path": path}).Debug("Data from adapter")
+			log.WithFields(log.Fields{"adapter": adapter.GetName(), "path": path, "value": value}).Debug("Data from adapter")
 
 			commonData[path] = value
 		}
@@ -170,8 +170,6 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 
 			if value != nil {
 				// Set data to adapterDataMap
-				log.WithFields(log.Fields{"adapter": sensor.adapter.GetName(), "value": value, "path": path}).Debug("Set data to adapter")
-
 				if err = checkPermissions(sensor.adapter, path, authInfo, "w"); err != nil {
 					return err
 				}
@@ -191,6 +189,10 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 
 	// Everything ok: try to set to adapter
 	for adapter, visData := range adapterDataMap {
+		for path, value := range visData {
+			log.WithFields(log.Fields{"adapter": adapter.GetName(), "path": path, "value": value}).Debug("Set data to adapter")
+		}
+
 		if err = adapter.SetData(visData); err != nil {
 			return err
 		}
@@ -204,7 +206,7 @@ func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uin
 	provider.mutex.Lock()
 	defer provider.mutex.Unlock()
 
-	log.WithField("path", path).Debug("Subscribe")
+	log.WithFields(log.Fields{"subscribeID": provider.currentSubsID, "path": path}).Debug("Subscribe")
 
 	filter, err := createRegexpFromPath(path)
 	if err != nil {
@@ -230,6 +232,10 @@ func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uin
 			}
 			subscribeMap[sensor.adapter] = append(subscribeMap[sensor.adapter], path)
 		}
+	}
+
+	if len(subscribeMap) == 0 {
+		return id, channel, errors.New("The specified data path does not exist")
 	}
 
 	// Subscribe for adapter data changes
@@ -335,18 +341,13 @@ func (provider *DataProvider) createAdapter(name string, params interface{}) (er
 	}
 
 	switch name {
-	case "TestAdapter":
-		if adapter, err = dataadapter.NewTestAdapter(); err != nil {
+	case "StorageAdapter":
+		if adapter, err = dataadapter.NewStorageAdapter(paramsJSON); err != nil {
 			return err
 		}
 
 	case "SensorEmulatorAdapter":
 		if adapter, err = dataadapter.NewSensorEmulatorAdapter(paramsJSON); err != nil {
-			return err
-		}
-
-	case "MessageAdapter":
-		if adapter, err = dataadapter.NewMessageAdapter(); err != nil {
 			return err
 		}
 
@@ -369,16 +370,20 @@ func (provider *DataProvider) createAdapter(name string, params interface{}) (er
 		}
 	}
 
-	go provider.handleSubscribeChannel(adapter.GetSubscribeChannel())
+	go provider.handleSubscribeChannel(adapter)
 
 	return nil
 }
 
-func (provider *DataProvider) handleSubscribeChannel(channel <-chan map[string]interface{}) {
+func (provider *DataProvider) handleSubscribeChannel(adapter dataadapter.DataAdapter) {
 	for {
-		changes, more := <-channel
+		changes, more := <-adapter.GetSubscribeChannel()
 		if !more {
 			return
+		}
+
+		for path, value := range changes {
+			log.WithFields(log.Fields{"adapter": adapter.GetName(), "path": path, "value": value}).Debug("Adapter data changed")
 		}
 
 		// Group data by subscribe ids
@@ -398,12 +403,8 @@ func (provider *DataProvider) handleSubscribeChannel(channel <-chan map[string]i
 
 		// Notify subscribers by id
 		for id, data := range subscribeDataMap {
-			for path, value := range data {
-				log.WithFields(log.Fields{
-					"subscribeID": id,
-					"path":        path,
-					"value":       value}).Debug("Notify subscribers")
-			}
+			log.WithFields(log.Fields{"subscriberID": id, "data": data}).Debug("Notify subscribers")
+
 			provider.subscribeInfoMap[id].channel <- convertData(provider.subscribeInfoMap[id].path, data)
 		}
 	}

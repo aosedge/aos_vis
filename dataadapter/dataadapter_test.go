@@ -79,14 +79,35 @@ func TestMain(m *testing.M) {
 
 	adaptersInfo = append(adaptersInfo, adapterInfo)
 
-	testAdapter, err := dataadapter.NewTestAdapter()
+	// StorageAdapter
+
+	configJSON := `{"Data": {
+		"Attribute.Vehicle.VehicleIdentification.VIN":    {"Value": "TestVIN", "Public": true,"ReadOnly": true},
+		"Attribute.Vehicle.UserIdentification.Users":     {"Value": ["User1", "Provider1"], "Public": true},
+
+		"Signal.Drivetrain.InternalCombustionEngine.RPM": {"Value": 1000, "ReadOnly": true},
+
+		"Signal.Body.Trunk.IsLocked":                     {"Value": false},
+		"Signal.Body.Trunk.IsOpen":                       {"Value": true},
+
+		"Signal.Cabin.Door.Row1.Right.IsLocked":          {"Value": true},
+		"Signal.Cabin.Door.Row1.Right.Window.Position":   {"Value": 50},
+		"Signal.Cabin.Door.Row1.Left.IsLocked":           {"Value": true},
+		"Signal.Cabin.Door.Row1.Left.Window.Position":    {"Value": 23},
+		"Signal.Cabin.Door.Row2.Right.IsLocked":          {"Value": false},
+		"Signal.Cabin.Door.Row2.Right.Window.Position":   {"Value": 100},
+		"Signal.Cabin.Door.Row2.Left.IsLocked":           {"Value": true},
+		"Signal.Cabin.Door.Row2.Left.Window.Position":    {"Value": 0}
+	}}`
+
+	storageAdapter, err := dataadapter.NewStorageAdapter([]byte(configJSON))
 	if err != nil {
 		log.Fatalf("Can't create sensor emulator adapter: %s", err)
 	}
 	adapterInfo = adapterData{
-		name:        "TestAdapter",
+		name:        "StorageAdapter",
 		pathListLen: 13,
-		adapter:     testAdapter,
+		adapter:     storageAdapter,
 		setData: map[string]interface{}{
 			"Signal.Cabin.Door.Row1.Right.IsLocked":        true,
 			"Signal.Cabin.Door.Row1.Right.Window.Position": 200,
@@ -114,24 +135,6 @@ func TestMain(m *testing.M) {
 			"Signal.Cabin.Door.Row2.Right.Window.Position": 60,
 			"Signal.Cabin.Door.Row2.Left.IsLocked":         true,
 			"Signal.Cabin.Door.Row2.Left.Window.Position":  70},
-	}
-
-	adaptersInfo = append(adaptersInfo, adapterInfo)
-
-	messageAdapter, err := dataadapter.NewMessageAdapter()
-	if err != nil {
-		log.Fatalf("Can't create message adaptor: %s", err)
-	}
-	adapterInfo = adapterData{
-		name:        "MessageAdapter",
-		pathListLen: 1,
-		adapter:     messageAdapter,
-		setData: map[string]interface{}{
-			"Attribute.Car.Message": "Hello, world!"},
-		subscribeList: []string{
-			"Attribute.Car.Message"},
-		setSubscribeData: map[string]interface{}{
-			"Attribute.Car.Message": "Goodbye, world!"},
 	}
 
 	adaptersInfo = append(adaptersInfo, adapterInfo)
@@ -181,6 +184,10 @@ func TestPublicPath(t *testing.T) {
 
 func TestGetSetData(t *testing.T) {
 	for _, adapterInfo := range adaptersInfo {
+		if adapterInfo.setData == nil {
+			continue
+		}
+
 		// set data
 		err := adapterInfo.adapter.SetData(adapterInfo.setData)
 		if err != nil {
@@ -210,6 +217,10 @@ func TestGetSetData(t *testing.T) {
 
 func TestSubscribeUnsubscribe(t *testing.T) {
 	for _, adapterInfo := range adaptersInfo {
+		if adapterInfo.setData == nil {
+			continue
+		}
+
 		err := adapterInfo.adapter.SetData(adapterInfo.setData)
 		if err != nil {
 			t.Errorf("Can't set adapter %s data: %s", adapterInfo.name, err)

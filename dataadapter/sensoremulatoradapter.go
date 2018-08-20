@@ -64,13 +64,15 @@ func NewSensorEmulatorAdapter(configJSON []byte) (adapter *SensorEmulatorAdapter
 		return nil, err
 	}
 
+	adapter.baseAdapter.name = "SensorEmulatorAdapter"
+
 	// Create data map
 	data, err := adapter.getDataFromSensorEmulator()
 	if err != nil {
 		return nil, err
 	}
 	for path, value := range data {
-		adapter.baseAdapter.data[path] = &baseData{value: value}
+		adapter.baseAdapter.data[path] = &baseData{Value: value}
 	}
 
 	// Create attributes
@@ -93,7 +95,7 @@ func NewSensorEmulatorAdapter(configJSON []byte) (adapter *SensorEmulatorAdapter
 
 // GetName returns adapter name
 func (adapter *SensorEmulatorAdapter) GetName() (name string) {
-	return "SensorEmulatorAdapter"
+	return adapter.baseAdapter.getName()
 }
 
 // GetPathList returns list of all pathes for this adapter
