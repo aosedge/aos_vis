@@ -10,18 +10,19 @@ import (
  * Types
  ******************************************************************************/
 
-// BaseAdapter test adapter
+// BaseAdapter base adapter
 type BaseAdapter struct {
-	name             string
-	data             map[string]*baseData
-	mutex            sync.Mutex
-	subscribeChannel chan map[string]interface{}
+	Name             string
+	Data             map[string]*BaseData
+	Mutex            sync.Mutex
+	SubscribeChannel chan map[string]interface{}
 }
 
-type baseData struct {
+// BaseData base data type
+type BaseData struct {
 	Public    bool
 	ReadOnly  bool
-	subscribe bool
+	Subscribe bool
 	Value     interface{}
 }
 
@@ -29,133 +30,134 @@ type baseData struct {
  * Private
  ******************************************************************************/
 
-// newBaseAdapter creates base adapter
-func newBaseAdapter() (adapter *BaseAdapter, err error) {
+// NewBaseAdapter creates base adapter
+func NewBaseAdapter() (adapter *BaseAdapter, err error) {
 	adapter = new(BaseAdapter)
 
-	adapter.data = make(map[string]*baseData)
-	adapter.subscribeChannel = make(chan map[string]interface{}, 100)
+	adapter.Data = make(map[string]*BaseData)
+	adapter.SubscribeChannel = make(chan map[string]interface{}, 100)
 
 	return adapter, nil
 }
 
 // GetName returns adapter name
-func (adapter *BaseAdapter) getName() (name string) {
-	return adapter.name
+func (adapter *BaseAdapter) GetName() (name string) {
+	return adapter.Name
 }
 
-// getPathList returns list of all pathes for this adapter
-func (adapter *BaseAdapter) getPathList() (pathList []string, err error) {
-	adapter.mutex.Lock()
-	defer adapter.mutex.Unlock()
+// GetPathList returns list of all pathes for this adapter
+func (adapter *BaseAdapter) GetPathList() (pathList []string, err error) {
+	adapter.Mutex.Lock()
+	defer adapter.Mutex.Unlock()
 
-	pathList = make([]string, 0, len(adapter.data))
+	pathList = make([]string, 0, len(adapter.Data))
 
-	for path := range adapter.data {
+	for path := range adapter.Data {
 		pathList = append(pathList, path)
 	}
 
 	return pathList, nil
 }
 
-func (adapter *BaseAdapter) isPathPublic(path string) (result bool, err error) {
-	adapter.mutex.Lock()
-	defer adapter.mutex.Unlock()
+// IsPathPublic returns true if requested data accessible without authorization
+func (adapter *BaseAdapter) IsPathPublic(path string) (result bool, err error) {
+	adapter.Mutex.Lock()
+	defer adapter.Mutex.Unlock()
 
-	if _, ok := adapter.data[path]; !ok {
+	if _, ok := adapter.Data[path]; !ok {
 		return result, fmt.Errorf("Path %s doesn't exits", path)
 	}
 
-	return adapter.data[path].Public, nil
+	return adapter.Data[path].Public, nil
 }
 
-// getData returns data by path
-func (adapter *BaseAdapter) getData(pathList []string) (data map[string]interface{}, err error) {
-	adapter.mutex.Lock()
-	defer adapter.mutex.Unlock()
+// GetData returns data by path
+func (adapter *BaseAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
+	adapter.Mutex.Lock()
+	defer adapter.Mutex.Unlock()
 
 	data = make(map[string]interface{})
 
 	for _, path := range pathList {
-		if _, ok := adapter.data[path]; !ok {
+		if _, ok := adapter.Data[path]; !ok {
 			return data, fmt.Errorf("Path %s doesn't exits", path)
 		}
-		data[path] = adapter.data[path].Value
+		data[path] = adapter.Data[path].Value
 	}
 
 	return data, nil
 }
 
-// setData sets data by pathes
-func (adapter *BaseAdapter) setData(data map[string]interface{}) (err error) {
-	adapter.mutex.Lock()
-	defer adapter.mutex.Unlock()
+// SetData sets data by pathes
+func (adapter *BaseAdapter) SetData(data map[string]interface{}) (err error) {
+	adapter.Mutex.Lock()
+	defer adapter.Mutex.Unlock()
 
 	changedData := make(map[string]interface{})
 
 	for path, value := range data {
-		if _, ok := adapter.data[path]; !ok {
+		if _, ok := adapter.Data[path]; !ok {
 			return fmt.Errorf("Path %s doesn't exits", path)
 		}
 
-		if adapter.data[path].ReadOnly {
+		if adapter.Data[path].ReadOnly {
 			return fmt.Errorf("Signal %s cannot be set since it is a read only signal", path)
 		}
 
-		oldValue := adapter.data[path].Value
-		adapter.data[path].Value = value
+		oldValue := adapter.Data[path].Value
+		adapter.Data[path].Value = value
 
-		if !reflect.DeepEqual(oldValue, value) && adapter.data[path].subscribe {
+		if !reflect.DeepEqual(oldValue, value) && adapter.Data[path].Subscribe {
 			changedData[path] = value
 		}
 	}
 
 	if len(changedData) > 0 {
-		adapter.subscribeChannel <- changedData
+		adapter.SubscribeChannel <- changedData
 	}
 
 	return nil
 }
 
-// subscribe subscribes for data changes
-func (adapter *BaseAdapter) subscribe(pathList []string) (err error) {
-	adapter.mutex.Lock()
-	defer adapter.mutex.Unlock()
+// Subscribe subscribes for data changes
+func (adapter *BaseAdapter) Subscribe(pathList []string) (err error) {
+	adapter.Mutex.Lock()
+	defer adapter.Mutex.Unlock()
 
 	for _, path := range pathList {
-		if _, ok := adapter.data[path]; !ok {
+		if _, ok := adapter.Data[path]; !ok {
 			return fmt.Errorf("Path %s doesn't exits", path)
 		}
 
-		adapter.data[path].subscribe = true
+		adapter.Data[path].Subscribe = true
 	}
 
 	return nil
 }
 
-// unsubscribe unsubscribes from data changes
-func (adapter *BaseAdapter) unsubscribe(pathList []string) (err error) {
-	adapter.mutex.Lock()
-	defer adapter.mutex.Unlock()
+// Unsubscribe unsubscribes from data changes
+func (adapter *BaseAdapter) Unsubscribe(pathList []string) (err error) {
+	adapter.Mutex.Lock()
+	defer adapter.Mutex.Unlock()
 
 	for _, path := range pathList {
-		if _, ok := adapter.data[path]; !ok {
+		if _, ok := adapter.Data[path]; !ok {
 			return fmt.Errorf("Path %s doesn't exits", path)
 		}
 
-		adapter.data[path].subscribe = false
+		adapter.Data[path].Subscribe = false
 	}
 
 	return nil
 }
 
-// unsubscribeAll unsubscribes from all data changes
-func (adapter *BaseAdapter) unsubscribeAll() (err error) {
-	adapter.mutex.Lock()
-	defer adapter.mutex.Unlock()
+// UnsubscribeAll unsubscribes from all data changes
+func (adapter *BaseAdapter) UnsubscribeAll() (err error) {
+	adapter.Mutex.Lock()
+	defer adapter.Mutex.Unlock()
 
-	for _, data := range adapter.data {
-		data.subscribe = false
+	for _, data := range adapter.Data {
+		data.Subscribe = false
 	}
 
 	return nil

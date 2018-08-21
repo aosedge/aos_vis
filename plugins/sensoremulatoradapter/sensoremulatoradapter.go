@@ -1,4 +1,4 @@
-package dataadapter
+package main
 
 import (
 	"bytes"
@@ -12,6 +12,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"gitpct.epam.com/epmd-aepr/aos_vis/dataadapter"
 )
 
 /*******************************************************************************
@@ -27,7 +28,7 @@ type SensorEmulatorAdapter struct {
 	sensorURL    *url.URL
 	updatePeriod uint64
 
-	baseAdapter *BaseAdapter
+	baseAdapter *dataadapter.BaseAdapter
 }
 
 type config struct {
@@ -39,11 +40,11 @@ type config struct {
  * Public
  ******************************************************************************/
 
-// NewSensorEmulatorAdapter creates new SensorEmulatorAdapter
-func NewSensorEmulatorAdapter(configJSON []byte) (adapter *SensorEmulatorAdapter, err error) {
+// NewAdapter creates adapter instance
+func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) {
 	log.Info("Create sensor emulator adapter")
 
-	adapter = new(SensorEmulatorAdapter)
+	localAdapter := new(SensorEmulatorAdapter)
 
 	cfg := config{UpdatePeriod: defaultUpdatePeriod}
 
@@ -57,36 +58,36 @@ func NewSensorEmulatorAdapter(configJSON []byte) (adapter *SensorEmulatorAdapter
 		return nil, errors.New("Sensor URL should be defined")
 	}
 
-	adapter.updatePeriod = cfg.UpdatePeriod
-	adapter.sensorURL, err = url.Parse(cfg.SensorURL)
+	localAdapter.updatePeriod = cfg.UpdatePeriod
+	localAdapter.sensorURL, err = url.Parse(cfg.SensorURL)
 
-	if adapter.baseAdapter, err = newBaseAdapter(); err != nil {
+	if localAdapter.baseAdapter, err = dataadapter.NewBaseAdapter(); err != nil {
 		return nil, err
 	}
 
-	adapter.baseAdapter.name = "SensorEmulatorAdapter"
+	localAdapter.baseAdapter.Name = "SensorEmulatorAdapter"
 
 	// Create data map
-	data, err := adapter.getDataFromSensorEmulator()
+	data, err := localAdapter.getDataFromSensorEmulator()
 	if err != nil {
 		return nil, err
 	}
 	for path, value := range data {
-		adapter.baseAdapter.data[path] = &baseData{Value: value}
+		localAdapter.baseAdapter.Data[path] = &dataadapter.BaseData{Value: value}
 	}
 
 	// Create attributes
-	adapter.baseAdapter.data["Attribute.Emulator.rectangle_long0"] = &baseData{}
-	adapter.baseAdapter.data["Attribute.Emulator.rectangle_lat0"] = &baseData{}
-	adapter.baseAdapter.data["Attribute.Emulator.rectangle_long1"] = &baseData{}
-	adapter.baseAdapter.data["Attribute.Emulator.rectangle_lat1"] = &baseData{}
-	adapter.baseAdapter.data["Attribute.Emulator.to_rectangle"] = &baseData{}
-	adapter.baseAdapter.data["Attribute.Emulator.stop"] = &baseData{}
-	adapter.baseAdapter.data["Attribute.Emulator.tire_break"] = &baseData{}
+	localAdapter.baseAdapter.Data["Attribute.Emulator.rectangle_long0"] = &dataadapter.BaseData{}
+	localAdapter.baseAdapter.Data["Attribute.Emulator.rectangle_lat0"] = &dataadapter.BaseData{}
+	localAdapter.baseAdapter.Data["Attribute.Emulator.rectangle_long1"] = &dataadapter.BaseData{}
+	localAdapter.baseAdapter.Data["Attribute.Emulator.rectangle_lat1"] = &dataadapter.BaseData{}
+	localAdapter.baseAdapter.Data["Attribute.Emulator.to_rectangle"] = &dataadapter.BaseData{}
+	localAdapter.baseAdapter.Data["Attribute.Emulator.stop"] = &dataadapter.BaseData{}
+	localAdapter.baseAdapter.Data["Attribute.Emulator.tire_break"] = &dataadapter.BaseData{}
 
-	go adapter.processData()
+	go localAdapter.processData()
 
-	return adapter, nil
+	return localAdapter, nil
 }
 
 /*******************************************************************************
@@ -95,18 +96,18 @@ func NewSensorEmulatorAdapter(configJSON []byte) (adapter *SensorEmulatorAdapter
 
 // GetName returns adapter name
 func (adapter *SensorEmulatorAdapter) GetName() (name string) {
-	return adapter.baseAdapter.getName()
+	return adapter.baseAdapter.GetName()
 }
 
 // GetPathList returns list of all pathes for this adapter
 func (adapter *SensorEmulatorAdapter) GetPathList() (pathList []string, err error) {
-	return adapter.baseAdapter.getPathList()
+	return adapter.baseAdapter.GetPathList()
 }
 
 // IsPathPublic returns true if requested data accessible without authorization
 func (adapter *SensorEmulatorAdapter) IsPathPublic(path string) (result bool, err error) {
-	adapter.baseAdapter.mutex.Lock()
-	defer adapter.baseAdapter.mutex.Unlock()
+	adapter.baseAdapter.Mutex.Lock()
+	defer adapter.baseAdapter.Mutex.Unlock()
 
 	// TODO: return false, once authorization is integrated
 
@@ -115,7 +116,7 @@ func (adapter *SensorEmulatorAdapter) IsPathPublic(path string) (result bool, er
 
 // GetData returns data by path
 func (adapter *SensorEmulatorAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
-	return adapter.baseAdapter.getData(pathList)
+	return adapter.baseAdapter.GetData(pathList)
 }
 
 // SetData sets data by pathes
@@ -142,27 +143,27 @@ func (adapter *SensorEmulatorAdapter) SetData(data map[string]interface{}) (err 
 		return errors.New(res.Status)
 	}
 
-	return adapter.baseAdapter.setData(data)
+	return adapter.baseAdapter.SetData(data)
 }
 
 // GetSubscribeChannel returns channel on which data changes will be sent
 func (adapter *SensorEmulatorAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
-	return adapter.baseAdapter.subscribeChannel
+	return adapter.baseAdapter.SubscribeChannel
 }
 
 // Subscribe subscribes for data changes
 func (adapter *SensorEmulatorAdapter) Subscribe(pathList []string) (err error) {
-	return adapter.baseAdapter.subscribe(pathList)
+	return adapter.baseAdapter.Subscribe(pathList)
 }
 
 // Unsubscribe unsubscribes from data changes
 func (adapter *SensorEmulatorAdapter) Unsubscribe(pathList []string) (err error) {
-	return adapter.baseAdapter.unsubscribe(pathList)
+	return adapter.baseAdapter.Unsubscribe(pathList)
 }
 
 // UnsubscribeAll unsubscribes from all data changes
 func (adapter *SensorEmulatorAdapter) UnsubscribeAll() (err error) {
-	return adapter.baseAdapter.unsubscribeAll()
+	return adapter.baseAdapter.UnsubscribeAll()
 }
 
 /*******************************************************************************
@@ -233,7 +234,7 @@ func (adapter *SensorEmulatorAdapter) processData() {
 				log.Errorf("Can't read data: %s", err)
 				continue
 			}
-			if err = adapter.baseAdapter.setData(data); err != nil {
+			if err = adapter.baseAdapter.SetData(data); err != nil {
 				log.Errorf("Can't update data: %s", err)
 				continue
 			}

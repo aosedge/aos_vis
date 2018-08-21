@@ -43,7 +43,7 @@ func TestMain(m *testing.M) {
 	configJSON := `{
 	"Adapters":[
 		{
-			"Name":"StorageAdapter",
+			"Plugin":"../storageadapter.so",
 			"Params": {
 				"Data" : {
 					"Attribute.Vehicle.VehicleIdentification.VIN":    {"Value": "TestVIN", "Public": true,"ReadOnly": true},

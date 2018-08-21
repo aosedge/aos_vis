@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 
 	startHttpServer()
 
-	sensorEmulatorAdapter, err := dataadapter.NewSensorEmulatorAdapter([]byte(`{"SensorURL":"http://localhost:8801"}`))
+	sensorEmulatorAdapter, err := dataadapter.NewAdapter("../sensoremulatoradapter.so", []byte(`{"SensorURL":"http://localhost:8801"}`))
 	if err != nil {
 		log.Fatalf("Can't create sensor emulator adapter: %s", err)
 	}
@@ -100,10 +100,11 @@ func TestMain(m *testing.M) {
 		"Signal.Cabin.Door.Row2.Left.Window.Position":    {"Value": 0}
 	}}`
 
-	storageAdapter, err := dataadapter.NewStorageAdapter([]byte(configJSON))
+	storageAdapter, err := dataadapter.NewAdapter("../storageadapter.so", []byte(configJSON))
 	if err != nil {
-		log.Fatalf("Can't create sensor emulator adapter: %s", err)
+		log.Fatalf("Can't create storage adapter: %s", err)
 	}
+
 	adapterInfo = adapterData{
 		name:        "StorageAdapter",
 		pathListLen: 13,
