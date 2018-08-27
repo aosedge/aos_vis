@@ -4,13 +4,30 @@ aos_vis is web socket server which provides vehicle information data using W3C p
 
 https://www.w3.org/TR/vehicle-information-service/
 
-Specify path to certificates in visconfig.json file.  example is located in config/visconfig.json
+Specify parameters in visconfig.json file:
 
 ```json
 {
-	"ServerUrl": "localhost:8088",
-	"VISCert": "src/gitpct.epam.com/epmd-aepr/aos_vis/data/wwwivi.crt.pem",
-	"VISKey": "src/gitpct.epam.com/epmd-aepr/aos_vis/data/wwwivi.key.pem"
+	"ServerURL": ":8088",
+	"VISCert": "data/wwwivi.crt.pem",
+	"VISKey": "data/wwwivi.key.pem",
+	"Adapters":[
+		{
+			"Name":"SensorEmulatorAdapter",
+			"Params": {
+				"SensorURL":"http://sensors:8800"
+			}
+		},{
+			"Name":"StorageAdapter",
+			"Params": {
+				"Data" : {
+					"Attribute.Vehicle.VehicleIdentification.VIN": {"Value": "TestVIN", "Public": true, "ReadOnly": true},
+					"Attribute.Vehicle.UserIdentification.Users":  {"Value": ["User1", "Provider1"], "Public": true},
+					"Attribute.Car.Message":  {"Public": true}
+				}
+			}
+		}
+	]
 }
 ```
 

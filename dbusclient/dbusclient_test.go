@@ -1,4 +1,4 @@
-package visdbusclient_test
+package dbusclient_test
 
 import (
 	"os"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/godbus/dbus"
 	log "github.com/sirupsen/logrus"
-	dbusclient "gitpct.epam.com/epmd-aepr/aos_vis/visdbusclient"
+	"gitpct.epam.com/epmd-aepr/aos_vis/dbusclient"
 )
 
 /*******************************************************************************
@@ -26,8 +26,6 @@ type dbusInterface struct {
 }
 
 func (GetPermission dbusInterface) GetPermission(token string) (string, string, *dbus.Error) {
-	log.Info("[TEST] GetPermission token: ", token)
-	//return `[{"*":"rw"}]`, "OK", nil
 	return `{"*": "rw", "123": "rw"}`, "OK", nil
 }
 
@@ -38,19 +36,17 @@ func (GetPermission dbusInterface) GetPermission(token string) (string, string, 
 func TestMain(m *testing.M) {
 	conn, err := dbus.SessionBus()
 	if err != nil {
-		log.Errorf("Can't create session connection: %s", err)
-		os.Exit(1)
+		log.Fatalf("Can't create session connection: %v", err)
 	}
-	reply, err := conn.RequestName("com.aosservicemanager.vistoken",
-		dbus.NameFlagDoNotQueue)
+
+	reply, err := conn.RequestName("com.aosservicemanager.vistoken", dbus.NameFlagDoNotQueue)
 	if err != nil {
-		log.Error("can't RequestName")
-		os.Exit(1)
+		log.Fatal("Can't request name")
 	}
 	if reply != dbus.RequestNameReplyPrimaryOwner {
-		log.Error("name already taken")
-		os.Exit(1)
+		log.Fatal("Name already taken")
 	}
+
 	server := dbusInterface{}
 	conn.Export(server, "/com/aosservicemanager/vistoken", "com.aosservicemanager.vistoken")
 
@@ -60,18 +56,16 @@ func TestMain(m *testing.M) {
 }
 
 func TestDBUS(t *testing.T) {
-	log.Debug("[TEST] TestGet")
-
 	permission, err := dbusclient.GetVisPermissionByToken("APPID")
 	if err != nil {
-		t.Fatalf("Can't make d-bus call %v", err)
+		t.Fatalf("Can't make D-Bus call: %s", err)
 	}
 
 	if len(permission) != 2 {
-		t.Fatalf("Permission list length !=2 ")
+		t.Fatal("Permission list length !=2")
 	}
 
 	if permission["*"] != "rw" {
-		t.Fatalf("Incorrect permissions")
+		t.Fatal("Incorrect permissions")
 	}
 }

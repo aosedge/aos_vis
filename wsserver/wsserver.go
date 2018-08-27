@@ -1,11 +1,16 @@
 package wsserver
 
 import (
+	"container/list"
 	"context"
 	"net/http"
+	"sync"
+
+	"gitpct.epam.com/epmd-aepr/aos_vis/dataprovider"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"gitpct.epam.com/epmd-aepr/aos_vis/config"
 )
 
 /*******************************************************************************
@@ -14,12 +19,12 @@ import (
 
 // WsServer websocket server structure
 type WsServer struct {
-	addr       string
 	httpServer *http.Server
 	upgrader   websocket.Upgrader
-	crt        string
-	key        string
-	//TODO: add list with client connections
+	mutex      sync.Mutex
+	clients    *list.List
+
+	dataProvider *dataprovider.DataProvider
 }
 
 /*******************************************************************************
@@ -27,42 +32,54 @@ type WsServer struct {
  ******************************************************************************/
 
 // New creates new Web socket server
-func New(addr, crt, key string) (server *WsServer, err error) {
-	log.WithField("address", addr).Debug("Create wsserver")
+func New(config *config.Config) (server *WsServer, err error) {
+	log.WithField("address", config.ServerURL).Debug("Create wsserver")
 
 	//TODO: add addr validation
 	var localServer WsServer
-	localServer.addr = addr
+
 	localServer.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		CheckOrigin:     customCheckOrigin,
 	}
+	localServer.httpServer = &http.Server{Addr: config.ServerURL}
+	localServer.clients = list.New()
 
-	localServer.crt = crt
-	localServer.key = key
-	localServer.httpServer = &http.Server{Addr: addr}
+	if localServer.dataProvider, err = dataprovider.New(config); err != nil {
+		return server, err
+	}
+
+	http.HandleFunc("/", localServer.handleConnection)
+
+	go func(crt, key string) {
+		log.WithFields(log.Fields{"crt": crt, "key": key}).Debug("Listen")
+
+		if err := localServer.httpServer.ListenAndServeTLS(crt, key); err != http.ErrServerClosed {
+			log.Error("Server listening error: ", err)
+			return
+		}
+	}(config.VISCert, config.VISKey)
 
 	server = &localServer
+
 	return server, nil
 }
 
-// Start start web socket server
-func (server *WsServer) Start() {
-	log.Info("Start server")
-	http.HandleFunc("/", server.handleConnection)
+// Close closes web socket server and all connections
+func (server *WsServer) Close() {
+	log.Debug("Stop server")
 
-	if err := server.httpServer.ListenAndServeTLS(server.crt, server.key); err != http.ErrServerClosed {
-		log.Debug("Httpserver: ListenAndServe() error: ", err)
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
+
+	for element := server.clients.Front(); element != nil; element = element.Next() {
+		element.Value.(*wsClient).close()
 	}
-}
 
-// Stop web socket server
-func (server *WsServer) Stop() {
-	log.Info("Stop server!!")
-	//TODO: close all connections
+	server.clients.Init()
+
 	server.httpServer.Shutdown(context.Background())
-	//server.httpServer.Close()
 }
 
 /*******************************************************************************
@@ -74,28 +91,38 @@ func customCheckOrigin(r *http.Request) bool {
 }
 
 func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request) {
-	log.Debug("New connection")
+	log.WithField("RemoteAddr", r.RemoteAddr).Debug("New connection request")
 
 	if websocket.IsWebSocketUpgrade(r) != true {
-		log.Warning("New connection is not websocket")
+		log.Error("New connection is not websocket")
 		return
 	}
 
-	c, err := server.upgrader.Upgrade(w, r, nil)
+	wsConnection, err := server.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Error("Can't make websocket connection :", err)
+		log.Error("Can't make websocket connection: ", err)
 		return
 	}
 
-	defer c.Close()
-
-	wsClientCon, err := NewClientConn(c)
+	client, err := newClient(wsConnection, server.dataProvider)
 	if err != nil {
-		log.Error("Can't create ws client connection :", err)
+		log.Error("Can't create websocket client connection: ", err)
+		wsConnection.Close()
 		return
 	}
 
-	wsClientCon.ProcessConnection()
+	server.mutex.Lock()
+	clientElement := server.clients.PushBack(client)
+	server.mutex.Unlock()
 
-	log.Debug("Stop connection handling")
+	client.run()
+
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
+	for element := server.clients.Front(); element != nil; element = element.Next() {
+		if element == clientElement {
+			client.close()
+			server.clients.Remove(clientElement)
+		}
+	}
 }
