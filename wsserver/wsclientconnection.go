@@ -164,6 +164,18 @@ func NewClientConn(wsConn *websocket.Conn) (wsClientCon *WsClientConnection, err
 	return wsClientCon, nil
 }
 
+//Close closes client connection
+func (client *WsClientConnection) Close() (err error) {
+	log.WithField("RemoteAddr", client.wsConn.RemoteAddr()).Debug("Close client")
+
+	err = client.wsConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+	if err != nil {
+		log.Errorf("Error sending close request: %s", err)
+	}
+
+	return client.wsConn.Close()
+}
+
 func (client *WsClientConnection) processSubscriptionChannel() {
 	for {
 		data, more := <-client.subscriptionCh

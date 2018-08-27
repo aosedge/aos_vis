@@ -1,8 +1,10 @@
 package wsserver
 
 import (
+	"container/list"
 	"context"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -14,12 +16,10 @@ import (
 
 // WsServer websocket server structure
 type WsServer struct {
-	addr       string
 	httpServer *http.Server
 	upgrader   websocket.Upgrader
-	crt        string
-	key        string
-	//TODO: add list with client connections
+	mutex      sync.Mutex
+	clients    *list.List
 }
 
 /*******************************************************************************
@@ -32,37 +32,42 @@ func New(addr, crt, key string) (server *WsServer, err error) {
 
 	//TODO: add addr validation
 	var localServer WsServer
-	localServer.addr = addr
+
 	localServer.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 		CheckOrigin:     customCheckOrigin,
 	}
-
-	localServer.crt = crt
-	localServer.key = key
 	localServer.httpServer = &http.Server{Addr: addr}
+	localServer.clients = list.New()
+
+	http.HandleFunc("/", localServer.handleConnection)
+
+	go func(crt, key string) {
+		if err := localServer.httpServer.ListenAndServeTLS(crt, key); err != http.ErrServerClosed {
+			log.Error("Server listening error: ", err)
+			return
+		}
+	}(crt, key)
 
 	server = &localServer
 
 	return server, nil
 }
 
-// Start start web socket server
-func (server *WsServer) Start() {
-	log.Info("Start server")
-	http.HandleFunc("/", server.handleConnection)
-
-	if err := server.httpServer.ListenAndServeTLS(server.crt, server.key); err != http.ErrServerClosed {
-		log.Error("Server listening error: ", err)
-	}
-}
-
-// Stop web socket server
+// Close closes web socket server and all connections
 func (server *WsServer) Close() {
 	log.Debug("Stop server")
 
-	//TODO: close all connections
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
+
+	for element := server.clients.Front(); element != nil; element = element.Next() {
+		element.Value.(*WsClientConnection).Close()
+	}
+
+	server.clients.Init()
+
 	server.httpServer.Shutdown(context.Background())
 }
 
@@ -87,13 +92,26 @@ func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request)
 		log.Error("Can't make websocket connection: ", err)
 		return
 	}
-	defer wsConnection.Close()
 
 	client, err := NewClientConn(wsConnection)
 	if err != nil {
 		log.Error("Can't create websocket client connection: ", err)
+		wsConnection.Close()
 		return
 	}
 
+	server.mutex.Lock()
+	clientElement := server.clients.PushBack(client)
+	server.mutex.Unlock()
+
 	client.ProcessConnection()
+
+	server.mutex.Lock()
+	defer server.mutex.Unlock()
+	for element := server.clients.Front(); element != nil; element = element.Next() {
+		if element == clientElement {
+			client.Close()
+			server.clients.Remove(clientElement)
+		}
+	}
 }
