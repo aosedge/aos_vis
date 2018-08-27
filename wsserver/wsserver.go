@@ -44,6 +44,7 @@ func New(addr, crt, key string) (server *WsServer, err error) {
 	localServer.httpServer = &http.Server{Addr: addr}
 
 	server = &localServer
+
 	return server, nil
 }
 
@@ -53,16 +54,16 @@ func (server *WsServer) Start() {
 	http.HandleFunc("/", server.handleConnection)
 
 	if err := server.httpServer.ListenAndServeTLS(server.crt, server.key); err != http.ErrServerClosed {
-		log.Debug("Httpserver: ListenAndServe() error: ", err)
+		log.Error("Server listening error: ", err)
 	}
 }
 
 // Stop web socket server
-func (server *WsServer) Stop() {
-	log.Info("Stop server!!")
+func (server *WsServer) Close() {
+	log.Debug("Stop server")
+
 	//TODO: close all connections
 	server.httpServer.Shutdown(context.Background())
-	//server.httpServer.Close()
 }
 
 /*******************************************************************************
@@ -74,28 +75,25 @@ func customCheckOrigin(r *http.Request) bool {
 }
 
 func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request) {
-	log.Debug("New connection")
+	log.WithField("RemoteAddr", r.RemoteAddr).Debug("New connection request")
 
 	if websocket.IsWebSocketUpgrade(r) != true {
-		log.Warning("New connection is not websocket")
+		log.Error("New connection is not websocket")
 		return
 	}
 
-	c, err := server.upgrader.Upgrade(w, r, nil)
+	wsConnection, err := server.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Error("Can't make websocket connection :", err)
+		log.Error("Can't make websocket connection: ", err)
 		return
 	}
+	defer wsConnection.Close()
 
-	defer c.Close()
-
-	wsClientCon, err := NewClientConn(c)
+	client, err := NewClientConn(wsConnection)
 	if err != nil {
-		log.Error("Can't create ws client connection :", err)
+		log.Error("Can't create websocket client connection: ", err)
 		return
 	}
 
-	wsClientCon.ProcessConnection()
-
-	log.Debug("Stop connection handling")
+	client.ProcessConnection()
 }
