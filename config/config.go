@@ -20,8 +20,9 @@ type Config struct {
 
 // AdapterConfig adapter configuration
 type AdapterConfig struct {
-	Plugin string
-	Params interface{}
+	Plugin   string
+	Disabled bool
+	Params   interface{}
 }
 
 /*******************************************************************************

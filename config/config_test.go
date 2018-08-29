@@ -20,7 +20,8 @@ func createConfigFile() (err error) {
 "VISCert": "wwwivi.crt.pem",
 "VISKey": "wwwivi.key.pem",
 "Adapters":[{
-		"Plugin": "test1"
+		"Plugin": "test1",
+		"Disabled": true
 	}, {
 		"Plugin": "test2"
 	}, {
@@ -98,6 +99,7 @@ func TestGetCredentials(t *testing.T) {
 
 func TestAdapters(t *testing.T) {
 	config, err := config.New("tmp/visconfig.json")
+
 	if err != nil {
 		t.Fatalf("Error opening config file: %s", err)
 	}
@@ -108,5 +110,9 @@ func TestAdapters(t *testing.T) {
 
 	if config.Adapters[0].Plugin != "test1" || config.Adapters[1].Plugin != "test2" || config.Adapters[2].Plugin != "test3" {
 		t.Error("Wrong adapter name")
+	}
+
+	if config.Adapters[0].Disabled != true || config.Adapters[1].Disabled != false || config.Adapters[2].Disabled != false {
+		t.Error("Wrong disable value")
 	}
 }

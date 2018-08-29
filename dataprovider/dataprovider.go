@@ -58,6 +58,11 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	adapterCount := 0
 
 	for _, adapterCfg := range config.Adapters {
+		if adapterCfg.Disabled {
+			log.WithField("plugin", adapterCfg.Plugin).Debug("Skip disabled adapter")
+			continue
+		}
+
 		if err = provider.createAdapter(adapterCfg.Plugin, adapterCfg.Params); err != nil {
 			return nil, err
 		}
