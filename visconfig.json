@@ -1,0 +1,23 @@
+{
+	"ServerURL": ":8088",
+	"VISCert": "data/wwwivi.crt.pem",
+	"VISKey": "data/wwwivi.key.pem",
+	"Adapters": [
+		{
+			"Plugin": "sensoremulatoradapter.so",
+			"Disabled": true,
+			"Params": {
+				"SensorURL": "http://sensors:8800"
+			}
+		},{
+			"Plugin": "storageadapter.so",
+			"Params": {
+				"Data" : {
+					"Attribute.Vehicle.VehicleIdentification.VIN": {"Value": "TestVIN", "Public": true, "ReadOnly": true},
+					"Attribute.Vehicle.UserIdentification.Users":  {"Value": ["User1", "Provider1"], "Public": true},
+					"Attribute.Car.Message":  {"Public": true}
+				}
+			}
+		}
+	]
+}
