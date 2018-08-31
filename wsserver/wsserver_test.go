@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -81,13 +82,47 @@ func TestMain(m *testing.M) {
 	dbusserver := dbusInterface{}
 	conn.Export(dbusserver, "/com/aosservicemanager/vistoken", "com.aosservicemanager.vistoken")
 
-	config := config.Config{
-		ServerURL: serverURL,
-		VISCert:   "../data/wwwivi.crt.pem",
-		VISKey:    "../data/wwwivi.key.pem",
-		Adapters:  []config.AdapterConfig{{Name: "TestAdapter"}}}
+	configJSON := `{
+		"VISCert": "../data/wwwivi.crt.pem",
+		"VISKey":  "../data/wwwivi.key.pem",
+		"Adapters":[
+			{
+				"Plugin":"../storageadapter.so",
+				"Params": {
+					"Data" : {
+						"Attribute.Vehicle.VehicleIdentification.VIN":    {"Value": "TestVIN", "Public": true,"ReadOnly": true},
+						"Attribute.Vehicle.UserIdentification.Users":     {"Value": ["User1", "Provider1"], "Public": true},
+		
+						"Signal.Drivetrain.InternalCombustionEngine.RPM": {"Value": 1000, "ReadOnly": true},
+			
+						"Signal.Body.Trunk.IsLocked":                     {"Value": false},
+						"Signal.Body.Trunk.IsOpen":                       {"Value": true},
+			
+						"Signal.Cabin.Door.Row1.Right.IsLocked":          {"Value": true},
+						"Signal.Cabin.Door.Row1.Right.Window.Position":   {"Value": 50},
+						"Signal.Cabin.Door.Row1.Left.IsLocked":           {"Value": true},
+						"Signal.Cabin.Door.Row1.Left.Window.Position":    {"Value": 23},
+						"Signal.Cabin.Door.Row2.Right.IsLocked":          {"Value": false},
+						"Signal.Cabin.Door.Row2.Right.Window.Position":   {"Value": 100},
+						"Signal.Cabin.Door.Row2.Left.IsLocked":           {"Value": true},
+						"Signal.Cabin.Door.Row2.Left.Window.Position":    {"Value": 0}
+					}
+				}
+			}
+		]
+	}`
 
-	server, err := wsserver.New(&config)
+	var cfg config.Config
+
+	decoder := json.NewDecoder(strings.NewReader(configJSON))
+	// Parse config
+	if err = decoder.Decode(&cfg); err != nil {
+		log.Fatalf("Can't parse config: %s", err)
+	}
+
+	cfg.ServerURL = serverURL
+
+	server, err := wsserver.New(&cfg)
 	if err != nil {
 		log.Fatalf("Can't create ws server: %s", err)
 	}

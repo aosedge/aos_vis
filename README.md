@@ -4,6 +4,23 @@ aos_vis is web socket server which provides vehicle information data using W3C p
 
 https://www.w3.org/TR/vehicle-information-service/
 
+### Build
+
+Build plugins:
+
+```
+go build -buildmode=plugin plugins/sensoremulatoradapter/sensoremulatoradapter.go
+go build -buildmode=plugin plugins/storageadapter/storageadapter.go
+```
+
+Build main program:
+
+```
+go build
+```
+
+### Configure
+
 Specify parameters in visconfig.json file:
 
 ```json
@@ -13,12 +30,12 @@ Specify parameters in visconfig.json file:
 	"VISKey": "data/wwwivi.key.pem",
 	"Adapters":[
 		{
-			"Name":"SensorEmulatorAdapter",
+			"Plugin":"sensoremulatoradapter.so",
 			"Params": {
 				"SensorURL":"http://sensors:8800"
 			}
 		},{
-			"Name":"StorageAdapter",
+			"Plugin":"storageadapter.so",
 			"Params": {
 				"Data" : {
 					"Attribute.Vehicle.VehicleIdentification.VIN": {"Value": "TestVIN", "Public": true, "ReadOnly": true},

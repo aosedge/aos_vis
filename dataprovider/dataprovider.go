@@ -58,7 +58,12 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	adapterCount := 0
 
 	for _, adapterCfg := range config.Adapters {
-		if err = provider.createAdapter(adapterCfg.Name, adapterCfg.Params); err != nil {
+		if adapterCfg.Disabled {
+			log.WithField("plugin", adapterCfg.Plugin).Debug("Skip disabled adapter")
+			continue
+		}
+
+		if err = provider.createAdapter(adapterCfg.Plugin, adapterCfg.Params); err != nil {
 			return nil, err
 		}
 
@@ -332,27 +337,15 @@ func (provider *DataProvider) GetSubscribeIDs() (result []uint64) {
  * Private
  ******************************************************************************/
 
-func (provider *DataProvider) createAdapter(name string, params interface{}) (err error) {
-	var adapter dataadapter.DataAdapter
-
+func (provider *DataProvider) createAdapter(pluginPath string, params interface{}) (err error) {
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
 		return err
 	}
 
-	switch name {
-	case "StorageAdapter":
-		if adapter, err = dataadapter.NewStorageAdapter(paramsJSON); err != nil {
-			return err
-		}
-
-	case "SensorEmulatorAdapter":
-		if adapter, err = dataadapter.NewSensorEmulatorAdapter(paramsJSON); err != nil {
-			return err
-		}
-
-	default:
-		return errors.New("Unknown adapter name: " + name)
+	adapter, err := dataadapter.NewAdapter(pluginPath, paramsJSON)
+	if err != nil {
+		return err
 	}
 
 	pathList, err := adapter.GetPathList()

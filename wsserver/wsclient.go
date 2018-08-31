@@ -174,7 +174,7 @@ func newClient(wsConnection *websocket.Conn, dataProvider *dataprovider.DataProv
 }
 
 func (client *wsClient) close() (err error) {
-	log.WithField("RemoteAddr", client.wsConnection.RemoteAddr()).Debug("Close client")
+	log.WithField("RemoteAddr", client.wsConnection.RemoteAddr()).Info("Close client")
 
 	client.wsConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 
@@ -190,12 +190,6 @@ func (client *wsClient) run() {
 			if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 				log.Errorf("Error reading socket: %s", err)
 			}
-
-			if err := client.unsubscribeAll(); err != nil {
-				log.Errorf("Unsubscribe error: %s", err)
-			}
-
-			log.WithField("RemoteAddr", client.wsConnection.RemoteAddr()).Info("Close client")
 
 			break
 		}

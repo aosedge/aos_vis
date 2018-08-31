@@ -1,5 +1,10 @@
 package dataadapter
 
+import (
+	"errors"
+	"plugin"
+)
+
 // DataAdapter interface for working with real data
 type DataAdapter interface {
 	// GetName returns adapter name
@@ -20,4 +25,24 @@ type DataAdapter interface {
 	Unsubscribe(pathList []string) (err error)
 	// UnsubscribeAll unsubscribes from all data changes
 	UnsubscribeAll() (err error)
+}
+
+// NewAdapter creates new adapter instance
+func NewAdapter(pluginPath string, configJSON []byte) (adapter DataAdapter, err error) {
+	plugin, err := plugin.Open(pluginPath)
+	if err != nil {
+		return adapter, err
+	}
+
+	newAdapterSymbol, err := plugin.Lookup("NewAdapter")
+	if err != nil {
+		return adapter, err
+	}
+
+	newAdapterFunction, ok := newAdapterSymbol.(func(configJSON []byte) (DataAdapter, error))
+	if !ok {
+		return adapter, errors.New("Unexpected function type")
+	}
+
+	return newAdapterFunction(configJSON)
 }
