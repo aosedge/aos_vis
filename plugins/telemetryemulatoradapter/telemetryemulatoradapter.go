@@ -23,8 +23,8 @@ const (
 	defaultUpdatePeriod = 500
 )
 
-// SensorEmulatorAdapter sensor emulator adapter
-type SensorEmulatorAdapter struct {
+// TelemetryEmulatorAdapter sensor emulator adapter
+type TelemetryEmulatorAdapter struct {
 	sensorURL    *url.URL
 	updatePeriod uint64
 
@@ -44,7 +44,7 @@ type config struct {
 func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) {
 	log.Info("Create sensor emulator adapter")
 
-	localAdapter := new(SensorEmulatorAdapter)
+	localAdapter := new(TelemetryEmulatorAdapter)
 
 	cfg := config{UpdatePeriod: defaultUpdatePeriod}
 
@@ -65,10 +65,10 @@ func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) 
 		return nil, err
 	}
 
-	localAdapter.baseAdapter.Name = "SensorEmulatorAdapter"
+	localAdapter.baseAdapter.Name = "TelemetryEmulatorAdapter"
 
 	// Create data map
-	data, err := localAdapter.getDataFromSensorEmulator()
+	data, err := localAdapter.getDataFromTelemetryEmulator()
 	if err != nil {
 		return nil, err
 	}
@@ -95,17 +95,17 @@ func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) 
  ******************************************************************************/
 
 // GetName returns adapter name
-func (adapter *SensorEmulatorAdapter) GetName() (name string) {
+func (adapter *TelemetryEmulatorAdapter) GetName() (name string) {
 	return adapter.baseAdapter.GetName()
 }
 
 // GetPathList returns list of all pathes for this adapter
-func (adapter *SensorEmulatorAdapter) GetPathList() (pathList []string, err error) {
+func (adapter *TelemetryEmulatorAdapter) GetPathList() (pathList []string, err error) {
 	return adapter.baseAdapter.GetPathList()
 }
 
 // IsPathPublic returns true if requested data accessible without authorization
-func (adapter *SensorEmulatorAdapter) IsPathPublic(path string) (result bool, err error) {
+func (adapter *TelemetryEmulatorAdapter) IsPathPublic(path string) (result bool, err error) {
 	adapter.baseAdapter.Mutex.Lock()
 	defer adapter.baseAdapter.Mutex.Unlock()
 
@@ -115,12 +115,12 @@ func (adapter *SensorEmulatorAdapter) IsPathPublic(path string) (result bool, er
 }
 
 // GetData returns data by path
-func (adapter *SensorEmulatorAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
+func (adapter *TelemetryEmulatorAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
 	return adapter.baseAdapter.GetData(pathList)
 }
 
 // SetData sets data by pathes
-func (adapter *SensorEmulatorAdapter) SetData(data map[string]interface{}) (err error) {
+func (adapter *TelemetryEmulatorAdapter) SetData(data map[string]interface{}) (err error) {
 	sendData, err := convertVisFormatToData(data)
 	if err != nil {
 		return err
@@ -147,22 +147,22 @@ func (adapter *SensorEmulatorAdapter) SetData(data map[string]interface{}) (err 
 }
 
 // GetSubscribeChannel returns channel on which data changes will be sent
-func (adapter *SensorEmulatorAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
+func (adapter *TelemetryEmulatorAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
 	return adapter.baseAdapter.SubscribeChannel
 }
 
 // Subscribe subscribes for data changes
-func (adapter *SensorEmulatorAdapter) Subscribe(pathList []string) (err error) {
+func (adapter *TelemetryEmulatorAdapter) Subscribe(pathList []string) (err error) {
 	return adapter.baseAdapter.Subscribe(pathList)
 }
 
 // Unsubscribe unsubscribes from data changes
-func (adapter *SensorEmulatorAdapter) Unsubscribe(pathList []string) (err error) {
+func (adapter *TelemetryEmulatorAdapter) Unsubscribe(pathList []string) (err error) {
 	return adapter.baseAdapter.Unsubscribe(pathList)
 }
 
 // UnsubscribeAll unsubscribes from all data changes
-func (adapter *SensorEmulatorAdapter) UnsubscribeAll() (err error) {
+func (adapter *TelemetryEmulatorAdapter) UnsubscribeAll() (err error) {
 	return adapter.baseAdapter.UnsubscribeAll()
 }
 
@@ -200,7 +200,7 @@ func convertDataToVisFormat(dataJSON []byte) (visData map[string]interface{}, er
 	return visData, nil
 }
 
-func (adapter *SensorEmulatorAdapter) getDataFromSensorEmulator() (visData map[string]interface{}, err error) {
+func (adapter *TelemetryEmulatorAdapter) getDataFromTelemetryEmulator() (visData map[string]interface{}, err error) {
 	path, err := url.Parse("stats")
 	if err != nil {
 		return visData, err
@@ -224,12 +224,12 @@ func (adapter *SensorEmulatorAdapter) getDataFromSensorEmulator() (visData map[s
 	return convertDataToVisFormat(data)
 }
 
-func (adapter *SensorEmulatorAdapter) processData() {
+func (adapter *TelemetryEmulatorAdapter) processData() {
 	ticker := time.NewTicker(time.Duration(adapter.updatePeriod) * time.Millisecond)
 	for {
 		select {
 		case <-ticker.C:
-			data, err := adapter.getDataFromSensorEmulator()
+			data, err := adapter.getDataFromTelemetryEmulator()
 			if err != nil {
 				log.Errorf("Can't read data: %s", err)
 				continue

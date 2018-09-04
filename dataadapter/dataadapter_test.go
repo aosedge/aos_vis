@@ -46,18 +46,18 @@ func init() {
 
 func TestMain(m *testing.M) {
 
-	// SensorEmulatorAdapter
+	// TelemetryEmulatorAdapter
 
 	startHttpServer()
 
-	sensorEmulatorAdapter, err := dataadapter.NewAdapter("../sensoremulatoradapter.so", []byte(`{"SensorURL":"http://localhost:8801"}`))
+	telemetryEmulatorAdapter, err := dataadapter.NewAdapter("../telemetryemulatoradapter.so", []byte(`{"SensorURL":"http://localhost:8801"}`))
 	if err != nil {
 		log.Fatalf("Can't create sensor emulator adapter: %s", err)
 	}
 
 	adapterInfo := adapterData{
-		name:    "SensorEmulatorAdapter",
-		adapter: sensorEmulatorAdapter,
+		name:    "TelemetryEmulatorAdapter",
+		adapter: telemetryEmulatorAdapter,
 		setData: map[string]interface{}{
 			"Attribute.Emulator.rectangle_long0": 23.56,
 			"Attribute.Emulator.rectangle_lat0":  34.12,

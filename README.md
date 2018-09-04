@@ -9,7 +9,7 @@ https://www.w3.org/TR/vehicle-information-service/
 Build plugins:
 
 ```
-go build -buildmode=plugin plugins/sensoremulatoradapter/sensoremulatoradapter.go
+go build -buildmode=plugin plugins/telemetryemulatoradapter/telemetryemulatoradapter.go
 go build -buildmode=plugin plugins/storageadapter/storageadapter.go
 ```
 
@@ -30,7 +30,7 @@ Specify parameters in visconfig.json file:
 	"VISKey": "data/wwwivi.key.pem",
 	"Adapters":[
 		{
-			"Plugin":"sensoremulatoradapter.so",
+			"Plugin":"telemetryemulatoradapter.so",
 			"Params": {
 				"SensorURL":"http://sensors:8800"
 			}
