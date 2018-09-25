@@ -42,7 +42,7 @@ type config struct {
 
 // NewAdapter creates adapter instance
 func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) {
-	log.Info("Create sensor emulator adapter")
+	log.Info("Create telemetry emulator adapter")
 
 	localAdapter := new(TelemetryEmulatorAdapter)
 
