@@ -119,6 +119,11 @@ func (adapter *BaseAdapter) SetData(data map[string]interface{}) (err error) {
 	return nil
 }
 
+// GetSubscribeChannel returns channel on which data changes will be sent
+func (adapter *BaseAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
+	return adapter.SubscribeChannel
+}
+
 // Subscribe subscribes for data changes
 func (adapter *BaseAdapter) Subscribe(pathList []string) (err error) {
 	adapter.Mutex.Lock()
