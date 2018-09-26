@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -87,7 +86,7 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data interface{}, err error) {
 	log.WithField("path", path).Debug("Get data")
 
-	filter, err := createRegexpFromPath(path)
+	filter, err := createPathFilter(path)
 	if err != nil {
 		return data, err
 	}
@@ -96,7 +95,7 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 	adapterDataMap := make(map[dataadapter.DataAdapter][]string)
 
 	for path, sensor := range provider.sensors {
-		if filter.MatchString(path) {
+		if filter.match(path) {
 			if err = checkPermissions(sensor.adapter, path, authInfo, "r"); err != nil {
 				return data, err
 			}
@@ -134,7 +133,7 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 func (provider *DataProvider) SetData(path string, data interface{}, authInfo *AuthInfo) (err error) {
 	log.WithFields(log.Fields{"path": path, "data": data}).Debug("Set data")
 
-	filter, err := createRegexpFromPath(path)
+	filter, err := createPathFilter(path)
 	if err != nil {
 		return err
 	}
@@ -164,7 +163,7 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 	adapterDataMap := make(map[dataadapter.DataAdapter]map[string]interface{})
 
 	for path, sensor := range provider.sensors {
-		if filter.MatchString(path) {
+		if filter.match(path) {
 			var value interface{}
 			if len(suffixMap) != 0 {
 				// if there is suffix map, try to find proper path by suffix
@@ -219,7 +218,7 @@ func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uin
 
 	log.WithFields(log.Fields{"subscribeID": provider.currentSubsID, "path": path}).Debug("Subscribe")
 
-	filter, err := createRegexpFromPath(path)
+	filter, err := createPathFilter(path)
 	if err != nil {
 		return id, channel, err
 	}
@@ -229,7 +228,7 @@ func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uin
 
 	// Get data from adapter and group it by parent
 	for path, sensor := range provider.sensors {
-		if filter.MatchString(path) {
+		if filter.match(path) {
 			if err = checkPermissions(sensor.adapter, path, authInfo, "r"); err != nil {
 				return id, channel, err
 			}
@@ -417,15 +416,6 @@ func getParentPath(path string) (parent string) {
 	return path[:strings.LastIndex(path, ".")]
 }
 
-func createRegexpFromPath(path string) (exp *regexp.Regexp, err error) {
-	regexpStr := strings.Replace(path, ".", "[.]", -1)
-	regexpStr = strings.Replace(regexpStr, "*", ".*?", -1)
-	regexpStr = "^" + regexpStr
-	exp, err = regexp.Compile(regexpStr)
-
-	return exp, err
-}
-
 func checkPermissions(adapter dataadapter.DataAdapter, path string, authInfo *AuthInfo, permissions string) (err error) {
 	if authInfo == nil {
 		return nil
@@ -444,12 +434,12 @@ func checkPermissions(adapter dataadapter.DataAdapter, path string, authInfo *Au
 
 	// Check permission
 	for mask, value := range authInfo.Permissions {
-		filter, err := createRegexpFromPath(mask)
+		filter, err := createPathFilter(mask)
 		if err != nil {
 			return err
 		}
 
-		if filter.MatchString(path) && strings.Contains(strings.ToLower(value), strings.ToLower(permissions)) {
+		if filter.match(path) && strings.Contains(strings.ToLower(value), strings.ToLower(permissions)) {
 			log.WithFields(log.Fields{
 				"path":        path,
 				"permissions": value}).Debug("Data permissions")
