@@ -1,4 +1,4 @@
-package dataprovider_test
+package dataprovider
 
 import (
 	"encoding/json"
@@ -11,7 +11,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"gitpct.epam.com/epmd-aepr/aos_vis/config"
-	"gitpct.epam.com/epmd-aepr/aos_vis/dataprovider"
 )
 
 /*******************************************************************************
@@ -31,7 +30,7 @@ func init() {
  * Vars
  ******************************************************************************/
 
-var provider *dataprovider.DataProvider
+var provider *DataProvider
 
 /*******************************************************************************
  * Main
@@ -48,12 +47,12 @@ func TestMain(m *testing.M) {
 				"Data" : {
 					"Attribute.Vehicle.VehicleIdentification.VIN":    {"Value": "TestVIN", "Public": true,"ReadOnly": true},
 					"Attribute.Vehicle.UserIdentification.Users":     {"Value": ["User1", "Provider1"], "Public": true},
-	
+
 					"Signal.Drivetrain.InternalCombustionEngine.RPM": {"Value": 1000, "ReadOnly": true},
-		
+
 					"Signal.Body.Trunk.IsLocked":                     {"Value": false},
 					"Signal.Body.Trunk.IsOpen":                       {"Value": true},
-		
+
 					"Signal.Cabin.Door.Row1.Right.IsLocked":          {"Value": true},
 					"Signal.Cabin.Door.Row1.Right.Window.Position":   {"Value": 50},
 					"Signal.Cabin.Door.Row1.Left.IsLocked":           {"Value": true},
@@ -76,7 +75,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Can't parse config: %s", err)
 	}
 
-	provider, err = dataprovider.New(&cfg)
+	provider, err = New(&cfg)
 	if err != nil {
 		log.Fatalf("Can't create data provider: %s", err)
 	}
@@ -377,13 +376,13 @@ func TestSetData(t *testing.T) {
 
 func TestPermissions(t *testing.T) {
 	// Check public path for not authorized client
-	_, err := provider.GetData("Attribute.Vehicle.VehicleIdentification.VIN", &dataprovider.AuthInfo{})
+	_, err := provider.GetData("Attribute.Vehicle.VehicleIdentification.VIN", &AuthInfo{})
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}
 
 	// Check private path for not authorized client
-	_, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM", &dataprovider.AuthInfo{})
+	_, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM", &AuthInfo{})
 	if err == nil {
 		t.Error("Path should not be accessible")
 	} else if !strings.Contains(err.Error(), "not authorized") {
@@ -392,7 +391,7 @@ func TestPermissions(t *testing.T) {
 
 	// Check authorized but not permitted
 	_, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM",
-		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{}})
+		&AuthInfo{IsAuthorized: true, Permissions: map[string]string{}})
 	if err == nil {
 		t.Error("Path should not be accessible")
 	} else if !strings.Contains(err.Error(), "not have permissions") {
@@ -401,14 +400,14 @@ func TestPermissions(t *testing.T) {
 
 	// Check read permissions
 	_, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM",
-		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Drivetrain.InternalCombustionEngine.RPM": "r"}})
+		&AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Drivetrain.InternalCombustionEngine.RPM": "r"}})
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}
 
 	// Check no write permissions
 	err = provider.SetData("Signal.Cabin.Door.Row1.Right.Window.Position", 0,
-		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Cabin.Door.*": "r"}})
+		&AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Cabin.Door.*": "r"}})
 	if err == nil {
 		t.Error("Path should not be accessible")
 	} else if !strings.Contains(err.Error(), "not have permissions") {
@@ -417,7 +416,7 @@ func TestPermissions(t *testing.T) {
 
 	// Check write permissions
 	err = provider.SetData("Signal.Cabin.Door.Row1.Right.Window.Position", 0,
-		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Cabin.Door.*": "rw"}})
+		&AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Cabin.Door.*": "rw"}})
 	if err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
@@ -601,6 +600,77 @@ func TestSubscribe(t *testing.T) {
 
 		if timeout {
 			break
+		}
+	}
+}
+
+func TestPathFilter(t *testing.T) {
+	type resultDesc struct {
+		path  string
+		match bool
+	}
+
+	type testDesc struct {
+		filter string
+		result []resultDesc
+	}
+
+	testData := []testDesc{
+		{
+			filter: "Sensors.Vehicle.Door",
+			result: []resultDesc{
+				{"Sensors.Vehicle.Door", true},
+				{"Sensors.Vehicle.DoorFront", false},
+				{"Sensors.Vehicle.DoorRear", false},
+			},
+		},
+		{
+			filter: "Sensors.Vehicle.Door",
+			result: []resultDesc{
+				{"Sensors.Vehicle.Door.Front", true},
+				{"Sensors.Vehicle.Door.Rear", true},
+			},
+		},
+		{
+			filter: "Sensors.Vehicle.*",
+			result: []resultDesc{
+				{"Sensors.Vehicles", false},
+				{"Sensors.Vehicle.Door.Front", true},
+				{"Sensors.Vehicle.Door.Rear", true},
+				{"Sensors.Vehicle.Engine", true},
+				{"Sensors.Vehicle.Window.Front.Position", true},
+				{"Sensors.Vehicle.Window.Rear.Position", true},
+				{"Sensors.Engine.Temp", false},
+				{"Sensors.Engine.RPM", false},
+			},
+		},
+		{
+			filter: "Sensors.Vehicle.*.Front",
+			result: []resultDesc{
+				{"Sensors.Vehicle.Door.Front", true},
+				{"Sensors.Vehicle.Door.Rear", false},
+				{"Sensors.Vehicle.Engine", false},
+				{"Sensors.Vehicle.Window.Front.Position", true},
+				{"Sensors.Vehicle.Window.Rear.Position", false},
+			},
+		},
+	}
+
+	for _, testItem := range testData {
+		regexp, err := createPathFilter(testItem.filter)
+		if err != nil {
+			t.Errorf("Can't create regexp from path: %s", err)
+			continue
+		}
+
+		for _, result := range testItem.result {
+			if regexp.match(result.path) != result.match {
+				if result.match {
+					t.Errorf("Path %s doesn't match filter %s", result.path, testItem.filter)
+				} else {
+					t.Errorf("Path %s shouldn't match filter %s", result.path, testItem.filter)
+				}
+			}
 		}
 	}
 }
