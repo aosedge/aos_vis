@@ -15,6 +15,12 @@ import (
 )
 
 /*******************************************************************************
+ * Consts
+ ******************************************************************************/
+
+const subscribeChannelSize = 32
+
+/*******************************************************************************
  * Types
  ******************************************************************************/
 
@@ -256,7 +262,7 @@ func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uin
 
 	id = provider.currentSubsID
 
-	dataChannel := make(chan interface{}, 100)
+	dataChannel := make(chan interface{}, subscribeChannelSize)
 	provider.subscribeInfoMap[id] = &subscribeInfo{channel: dataChannel, path: path}
 
 	provider.currentSubsID++
