@@ -7,6 +7,12 @@ import (
 )
 
 /*******************************************************************************
+ * Consts
+ ******************************************************************************/
+
+const subscribeChannelSize = 32
+
+/*******************************************************************************
  * Types
  ******************************************************************************/
 
@@ -35,7 +41,7 @@ func NewBaseAdapter() (adapter *BaseAdapter, err error) {
 	adapter = new(BaseAdapter)
 
 	adapter.Data = make(map[string]*BaseData)
-	adapter.SubscribeChannel = make(chan map[string]interface{}, 100)
+	adapter.SubscribeChannel = make(chan map[string]interface{}, subscribeChannelSize)
 
 	return adapter, nil
 }
