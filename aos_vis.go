@@ -12,6 +12,9 @@ import (
 	"gitpct.epam.com/epmd-aepr/aos_vis/wsserver"
 )
 
+// GitSummary provided by govvv at compile-time
+var GitSummary string
+
 func init() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableTimestamp: false,
@@ -35,7 +38,7 @@ func main() {
 	}
 	log.SetLevel(logLevel)
 
-	log.WithField("configFile", *configFile).Info("Start VIS Server")
+	log.WithFields(log.Fields{"configFile": *configFile, "version": GitSummary}).Info("Start VIS Server")
 
 	// Create config
 	config, err := config.New(*configFile)
