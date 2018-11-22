@@ -385,6 +385,8 @@ func (provider *DataProvider) handleSubscribeChannel(adapter dataadapter.DataAda
 			log.WithFields(log.Fields{"adapter": adapter.GetName(), "path": path, "value": value}).Debug("Adapter data changed")
 		}
 
+		provider.mutex.Lock()
+
 		// Group data by subscribe ids
 		subscribeDataMap := make(map[uint64]map[string]interface{})
 
@@ -406,6 +408,8 @@ func (provider *DataProvider) handleSubscribeChannel(adapter dataadapter.DataAda
 
 			provider.subscribeInfoMap[id].channel <- convertData(provider.subscribeInfoMap[id].path, data)
 		}
+
+		provider.mutex.Unlock()
 	}
 }
 
