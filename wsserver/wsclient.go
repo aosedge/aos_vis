@@ -45,7 +45,6 @@ type wsClient struct {
 	authInfo          *dataprovider.AuthInfo
 	dataProvider      *dataprovider.DataProvider
 	subscribeChannels map[uint64]<-chan interface{}
-	mutex             sync.Mutex
 }
 
 type requestType struct {
@@ -157,6 +156,12 @@ type errorInfo struct {
 }
 
 /*******************************************************************************
+ * Variables
+ ******************************************************************************/
+
+var mutex sync.Mutex
+
+/*******************************************************************************
  * Private
  ******************************************************************************/
 
@@ -178,9 +183,9 @@ func newClient(wsConnection *websocket.Conn, dataProvider *dataprovider.DataProv
 func (client *wsClient) close() (err error) {
 	log.WithField("RemoteAddr", client.wsConnection.RemoteAddr()).Info("Close client")
 
-	client.mutex.Lock()
+	mutex.Lock()
 	client.wsConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-	client.mutex.Unlock()
+	mutex.Unlock()
 
 	client.unsubscribeAll()
 
@@ -207,9 +212,9 @@ func (client *wsClient) run() {
 
 			log.Infof("Send: %s", string(response))
 
-			client.mutex.Lock()
+			mutex.Lock()
 			err = client.wsConnection.WriteMessage(websocket.TextMessage, response)
-			client.mutex.Unlock()
+			mutex.Unlock()
 			if err != nil {
 				log.Errorf("Error writing message: %s", err)
 			}
@@ -454,9 +459,9 @@ func (client *wsClient) processSubscribeChannel(id uint64, channel <-chan interf
 
 			log.Infof("Send: %s", string(notificationJSON))
 
-			client.mutex.Lock()
+			mutex.Lock()
 			err = client.wsConnection.WriteMessage(websocket.TextMessage, notificationJSON)
-			client.mutex.Unlock()
+			mutex.Unlock()
 			if err != nil {
 				log.Errorf("Error writing message: %s", err)
 			}
