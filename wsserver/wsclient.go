@@ -203,14 +203,14 @@ func (client *wsClient) run() {
 			break
 		}
 		if mt == websocket.TextMessage {
-			log.Infof("Receive: %s", string(message))
+			log.Debugf("Receive: %s", string(message))
 
 			response, err := client.processIncomingMessage(message)
 			if err != nil {
 				log.Errorf("Error processing message: %s", err)
 			}
 
-			log.Infof("Send: %s", string(response))
+			log.Debugf("Send: %s", string(response))
 
 			mutex.Lock()
 			err = client.wsConnection.WriteMessage(websocket.TextMessage, response)
@@ -457,7 +457,7 @@ func (client *wsClient) processSubscribeChannel(id uint64, channel <-chan interf
 				}
 			}
 
-			log.Infof("Send: %s", string(notificationJSON))
+			log.Debugf("Send: %s", string(notificationJSON))
 
 			mutex.Lock()
 			err = client.wsConnection.WriteMessage(websocket.TextMessage, notificationJSON)
