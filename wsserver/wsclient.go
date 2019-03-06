@@ -353,7 +353,7 @@ func (client *wsClient) processSubscribeRequest(requestJSON []byte) (responseJSO
 		return createErrorResponse(rSubs.Action, rSubs.RequestID, err)
 	}
 
-	if rSubs.Filters != nil {
+	if rSubs.Filters != nil && *rSubs.Filters != "" {
 		log.Warn("Filter currently not implemented. Filters will be ignored")
 	}
 
