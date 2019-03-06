@@ -29,6 +29,7 @@ type DataProvider struct {
 	currentSubsID    uint64
 	subscribeInfoMap map[uint64]*subscribeInfo
 	mutex            sync.Mutex
+	adapters         []dataadapter.DataAdapter
 }
 
 // AuthInfo authorization info
@@ -60,7 +61,7 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	provider.sensors = make(map[string]*sensorDescription)
 	provider.subscribeInfoMap = make(map[uint64]*subscribeInfo)
 
-	adapterCount := 0
+	provider.adapters = make([]dataadapter.DataAdapter, 0, 8)
 
 	for _, adapterCfg := range config.Adapters {
 		if adapterCfg.Disabled {
@@ -68,18 +69,26 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 			continue
 		}
 
-		if err = provider.createAdapter(adapterCfg.Plugin, adapterCfg.Params); err != nil {
+		adapter, err := provider.createAdapter(adapterCfg.Plugin, adapterCfg.Params)
+		if err != nil {
 			return nil, err
 		}
 
-		adapterCount++
+		provider.adapters = append(provider.adapters, adapter)
 	}
 
-	if adapterCount == 0 {
+	if len(provider.adapters) == 0 {
 		return nil, errors.New("No valid adapter info provided")
 	}
 
 	return provider, nil
+}
+
+// Close closes data provider
+func (provider *DataProvider) Close() {
+	for _, adapter := range provider.adapters {
+		adapter.Close()
+	}
 }
 
 // GetData returns VIS data
@@ -342,20 +351,20 @@ func (provider *DataProvider) GetSubscribeIDs() (result []uint64) {
  * Private
  ******************************************************************************/
 
-func (provider *DataProvider) createAdapter(pluginPath string, params interface{}) (err error) {
+func (provider *DataProvider) createAdapter(pluginPath string, params interface{}) (adapter dataadapter.DataAdapter, err error) {
 	paramsJSON, err := json.Marshal(params)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	adapter, err := dataadapter.NewAdapter(pluginPath, paramsJSON)
+	adapter, err = dataadapter.NewAdapter(pluginPath, paramsJSON)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	pathList, err := adapter.GetPathList()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, path := range pathList {
@@ -370,7 +379,7 @@ func (provider *DataProvider) createAdapter(pluginPath string, params interface{
 
 	go provider.handleSubscribeChannel(adapter)
 
-	return nil
+	return adapter, nil
 }
 
 func (provider *DataProvider) handleSubscribeChannel(adapter dataadapter.DataAdapter) {

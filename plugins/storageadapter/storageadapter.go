@@ -50,6 +50,13 @@ func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) 
 	return localAdapter, nil
 }
 
+// Close closes adapter
+func (adapter *StorageAdapter) Close() {
+	log.Info("Close storage adapter")
+
+	adapter.baseAdapter.Close()
+}
+
 // GetName returns adapter name
 func (adapter *StorageAdapter) GetName() (name string) {
 	return adapter.baseAdapter.GetName()

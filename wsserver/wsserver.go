@@ -77,9 +77,9 @@ func (server *WsServer) Close() {
 		element.Value.(*wsClient).close()
 	}
 
-	server.clients.Init()
-
 	server.httpServer.Shutdown(context.Background())
+
+	server.dataProvider.Close()
 }
 
 /*******************************************************************************

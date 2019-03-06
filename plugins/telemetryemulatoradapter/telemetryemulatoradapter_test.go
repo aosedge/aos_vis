@@ -46,6 +46,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Can't create sensor emulator adapter: %s", err)
 	}
+	defer telemetryEmulatorAdapter.Close()
 
 	adapterInfo = dataadaptertest.TestAdapterInfo{
 		Name:    "TelemetryEmulatorAdapter",

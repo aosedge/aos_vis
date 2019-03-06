@@ -7,6 +7,8 @@ import (
 
 // DataAdapter interface for working with real data
 type DataAdapter interface {
+	// Close closes adapter
+	Close()
 	// GetName returns adapter name
 	GetName() (name string)
 	// GetPathList returns list of all pathes for this adapter

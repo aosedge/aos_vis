@@ -90,9 +90,12 @@ func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) 
 	return localAdapter, nil
 }
 
-/*******************************************************************************
- * Public
- ******************************************************************************/
+// Close closes adapter
+func (adapter *TelemetryEmulatorAdapter) Close() {
+	log.Info("Close telemetry emulator adapter")
+
+	adapter.baseAdapter.Close()
+}
 
 // GetName returns adapter name
 func (adapter *TelemetryEmulatorAdapter) GetName() (name string) {

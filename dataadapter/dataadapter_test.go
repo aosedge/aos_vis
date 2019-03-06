@@ -40,6 +40,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Can't create base adapter: %s", err)
 	}
+	defer adapter.Close()
 
 	adapter.Name = "BaseAdapter"
 

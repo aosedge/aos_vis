@@ -46,6 +46,10 @@ func NewBaseAdapter() (adapter *BaseAdapter, err error) {
 	return adapter, nil
 }
 
+// Close closes adapter
+func (adapter *BaseAdapter) Close() {
+}
+
 // GetName returns adapter name
 func (adapter *BaseAdapter) GetName() (name string) {
 	return adapter.Name

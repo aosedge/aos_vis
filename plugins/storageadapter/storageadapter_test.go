@@ -58,6 +58,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Can't create storage adapter: %s", err)
 	}
+	defer storageAdapter.Close()
 
 	adapterInfo = dataadaptertest.TestAdapterInfo{
 		Name:        "StorageAdapter",
