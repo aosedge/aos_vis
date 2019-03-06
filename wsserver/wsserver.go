@@ -33,7 +33,7 @@ type WsServer struct {
 
 // New creates new Web socket server
 func New(config *config.Config) (server *WsServer, err error) {
-	log.WithField("address", config.ServerURL).Debug("Create wsserver")
+	log.Debug("Create wsserver")
 
 	//TODO: add addr validation
 	var localServer WsServer
@@ -41,19 +41,20 @@ func New(config *config.Config) (server *WsServer, err error) {
 	localServer.upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
-		CheckOrigin:     customCheckOrigin,
 	}
-	localServer.httpServer = &http.Server{Addr: config.ServerURL}
-	localServer.clients = list.New()
 
 	if localServer.dataProvider, err = dataprovider.New(config); err != nil {
 		return server, err
 	}
 
-	http.HandleFunc("/", localServer.handleConnection)
+	serveMux := http.NewServeMux()
+	serveMux.HandleFunc("/", localServer.handleConnection)
+
+	localServer.httpServer = &http.Server{Addr: config.ServerURL, Handler: serveMux}
+	localServer.clients = list.New()
 
 	go func(crt, key string) {
-		log.WithFields(log.Fields{"crt": crt, "key": key}).Debug("Listen")
+		log.WithFields(log.Fields{"address": config.ServerURL, "crt": crt, "key": key}).Debug("Listen for VIS clients")
 
 		if err := localServer.httpServer.ListenAndServeTLS(crt, key); err != http.ErrServerClosed {
 			log.Error("Server listening error: ", err)
@@ -85,10 +86,6 @@ func (server *WsServer) Close() {
 /*******************************************************************************
  * Private
  ******************************************************************************/
-
-func customCheckOrigin(r *http.Request) bool {
-	return true
-}
 
 func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request) {
 	log.WithField("RemoteAddr", r.RemoteAddr).Debug("New connection request")
