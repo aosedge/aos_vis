@@ -196,7 +196,8 @@ func (client *wsClient) run() {
 	for {
 		mt, message, err := client.wsConnection.ReadMessage()
 		if err != nil {
-			if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+			if !websocket.IsCloseError(err, websocket.CloseNormalClosure) &&
+				!strings.Contains(err.Error(), "use of closed network connection") {
 				log.Errorf("Error reading socket: %s", err)
 			}
 
