@@ -9,8 +9,9 @@ https://www.w3.org/TR/vehicle-information-service/
 Build plugins:
 
 ```
-go build -buildmode=plugin plugins/telemetryemulatoradapter/telemetryemulatoradapter.go
 go build -buildmode=plugin plugins/storageadapter/storageadapter.go
+go build -buildmode=plugin plugins/telemetryemulatoradapter/telemetryemulatoradapter.go
+go build -buildmode=plugin plugins/renesassimulatoradapter/renesassimulatoradapter.go
 ```
 
 Build main program:
