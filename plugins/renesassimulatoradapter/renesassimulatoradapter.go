@@ -108,8 +108,8 @@ func (adapter *RenesasSimulatorAdapter) GetPathList() (pathList []string, err er
 
 // IsPathPublic returns true if requested data accessible without authorization
 func (adapter *RenesasSimulatorAdapter) IsPathPublic(path string) (result bool, err error) {
-	adapter.baseAdapter.Mutex.Lock()
-	defer adapter.baseAdapter.Mutex.Unlock()
+	adapter.baseAdapter.Lock()
+	defer adapter.baseAdapter.Unlock()
 
 	// TODO: return false, once authorization is integrated
 

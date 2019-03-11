@@ -28,8 +28,8 @@ type DataProvider struct {
 	sensors          map[string]*sensorDescription
 	currentSubsID    uint64
 	subscribeInfoMap map[uint64]*subscribeInfo
-	mutex            sync.Mutex
-	adapters         []dataadapter.DataAdapter
+	sync.Mutex
+	adapters []dataadapter.DataAdapter
 }
 
 // AuthInfo authorization info
@@ -222,8 +222,8 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 
 // Subscribe subscribes for data change
 func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uint64, channel <-chan interface{}, err error) {
-	provider.mutex.Lock()
-	defer provider.mutex.Unlock()
+	provider.Lock()
+	defer provider.Unlock()
 
 	log.WithFields(log.Fields{"subscribeID": provider.currentSubsID, "path": path}).Debug("Subscribe")
 
@@ -280,8 +280,8 @@ func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uin
 
 // Unsubscribe unsubscribes from data change
 func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err error) {
-	provider.mutex.Lock()
-	defer provider.mutex.Unlock()
+	provider.Lock()
+	defer provider.Unlock()
 
 	log.WithField("subscribeID", id).Debug("Unsubscribe")
 
@@ -335,8 +335,8 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 
 // GetSubscribeIDs returns list of active subscribe ID
 func (provider *DataProvider) GetSubscribeIDs() (result []uint64) {
-	provider.mutex.Lock()
-	defer provider.mutex.Unlock()
+	provider.Lock()
+	defer provider.Unlock()
 
 	result = make([]uint64, 0, len(provider.subscribeInfoMap))
 
@@ -393,7 +393,7 @@ func (provider *DataProvider) handleSubscribeChannel(adapter dataadapter.DataAda
 			log.WithFields(log.Fields{"adapter": adapter.GetName(), "path": path, "value": value}).Debug("Adapter data changed")
 		}
 
-		provider.mutex.Lock()
+		provider.Lock()
 
 		// Group data by subscribe ids
 		subscribeDataMap := make(map[uint64]map[string]interface{})
@@ -417,7 +417,7 @@ func (provider *DataProvider) handleSubscribeChannel(adapter dataadapter.DataAda
 			provider.subscribeInfoMap[id].channel <- convertData(provider.subscribeInfoMap[id].path, data)
 		}
 
-		provider.mutex.Unlock()
+		provider.Unlock()
 	}
 }
 

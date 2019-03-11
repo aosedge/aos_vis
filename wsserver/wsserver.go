@@ -21,8 +21,8 @@ import (
 type WsServer struct {
 	httpServer *http.Server
 	upgrader   websocket.Upgrader
-	mutex      sync.Mutex
-	clients    *list.List
+	sync.Mutex
+	clients *list.List
 
 	dataProvider *dataprovider.DataProvider
 }
@@ -71,8 +71,8 @@ func New(config *config.Config) (server *WsServer, err error) {
 func (server *WsServer) Close() {
 	log.Debug("Stop server")
 
-	server.mutex.Lock()
-	defer server.mutex.Unlock()
+	server.Lock()
+	defer server.Unlock()
 
 	for element := server.clients.Front(); element != nil; element = element.Next() {
 		element.Value.(*wsClient).close()
@@ -108,14 +108,14 @@ func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	server.mutex.Lock()
+	server.Lock()
 	clientElement := server.clients.PushBack(client)
-	server.mutex.Unlock()
+	server.Unlock()
 
 	client.run()
 
-	server.mutex.Lock()
-	defer server.mutex.Unlock()
+	server.Lock()
+	defer server.Unlock()
 	for element := server.clients.Front(); element != nil; element = element.Next() {
 		if element == clientElement {
 			client.close()

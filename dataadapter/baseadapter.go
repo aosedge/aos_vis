@@ -18,9 +18,9 @@ const subscribeChannelSize = 32
 
 // BaseAdapter base adapter
 type BaseAdapter struct {
-	Name             string
-	Data             map[string]*BaseData
-	Mutex            sync.Mutex
+	Name string
+	Data map[string]*BaseData
+	sync.Mutex
 	SubscribeChannel chan map[string]interface{}
 }
 
@@ -57,8 +57,8 @@ func (adapter *BaseAdapter) GetName() (name string) {
 
 // GetPathList returns list of all pathes for this adapter
 func (adapter *BaseAdapter) GetPathList() (pathList []string, err error) {
-	adapter.Mutex.Lock()
-	defer adapter.Mutex.Unlock()
+	adapter.Lock()
+	defer adapter.Unlock()
 
 	pathList = make([]string, 0, len(adapter.Data))
 
@@ -71,8 +71,8 @@ func (adapter *BaseAdapter) GetPathList() (pathList []string, err error) {
 
 // IsPathPublic returns true if requested data accessible without authorization
 func (adapter *BaseAdapter) IsPathPublic(path string) (result bool, err error) {
-	adapter.Mutex.Lock()
-	defer adapter.Mutex.Unlock()
+	adapter.Lock()
+	defer adapter.Unlock()
 
 	if _, ok := adapter.Data[path]; !ok {
 		return result, fmt.Errorf("Path %s doesn't exits", path)
@@ -83,8 +83,8 @@ func (adapter *BaseAdapter) IsPathPublic(path string) (result bool, err error) {
 
 // GetData returns data by path
 func (adapter *BaseAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
-	adapter.Mutex.Lock()
-	defer adapter.Mutex.Unlock()
+	adapter.Lock()
+	defer adapter.Unlock()
 
 	data = make(map[string]interface{})
 
@@ -100,8 +100,8 @@ func (adapter *BaseAdapter) GetData(pathList []string) (data map[string]interfac
 
 // SetData sets data by pathes
 func (adapter *BaseAdapter) SetData(data map[string]interface{}) (err error) {
-	adapter.Mutex.Lock()
-	defer adapter.Mutex.Unlock()
+	adapter.Lock()
+	defer adapter.Unlock()
 
 	changedData := make(map[string]interface{})
 
@@ -136,8 +136,8 @@ func (adapter *BaseAdapter) GetSubscribeChannel() (channel <-chan map[string]int
 
 // Subscribe subscribes for data changes
 func (adapter *BaseAdapter) Subscribe(pathList []string) (err error) {
-	adapter.Mutex.Lock()
-	defer adapter.Mutex.Unlock()
+	adapter.Lock()
+	defer adapter.Unlock()
 
 	for _, path := range pathList {
 		if _, ok := adapter.Data[path]; !ok {
@@ -152,8 +152,8 @@ func (adapter *BaseAdapter) Subscribe(pathList []string) (err error) {
 
 // Unsubscribe unsubscribes from data changes
 func (adapter *BaseAdapter) Unsubscribe(pathList []string) (err error) {
-	adapter.Mutex.Lock()
-	defer adapter.Mutex.Unlock()
+	adapter.Lock()
+	defer adapter.Unlock()
 
 	for _, path := range pathList {
 		if _, ok := adapter.Data[path]; !ok {
@@ -168,8 +168,8 @@ func (adapter *BaseAdapter) Unsubscribe(pathList []string) (err error) {
 
 // UnsubscribeAll unsubscribes from all data changes
 func (adapter *BaseAdapter) UnsubscribeAll() (err error) {
-	adapter.Mutex.Lock()
-	defer adapter.Mutex.Unlock()
+	adapter.Lock()
+	defer adapter.Unlock()
 
 	for _, data := range adapter.Data {
 		data.Subscribe = false
