@@ -209,6 +209,11 @@ func (adapter *RenesasSimulatorAdapter) handleConnection(w http.ResponseWriter, 
 
 func (adapter *RenesasSimulatorAdapter) handleSimulatorData(prefix string, data interface{},
 	result map[string]interface{}) (err error) {
+	if data == nil {
+		log.Error("Nil data received")
+		return nil
+	}
+
 	keyMap, ok := data.(map[string]interface{})
 	if !ok {
 		signal, ok := adapter.signalMap[prefix]
