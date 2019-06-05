@@ -75,7 +75,7 @@ func (server *WsServer) Close() {
 	defer server.Unlock()
 
 	for element := server.clients.Front(); element != nil; element = element.Next() {
-		element.Value.(*wsClient).close()
+		element.Value.(*wsClient).close(true)
 	}
 
 	server.httpServer.Shutdown(context.Background())
@@ -118,7 +118,7 @@ func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request)
 	defer server.Unlock()
 	for element := server.clients.Front(); element != nil; element = element.Next() {
 		if element == clientElement {
-			client.close()
+			client.close(false)
 			server.clients.Remove(clientElement)
 		}
 	}
