@@ -116,6 +116,9 @@ func (server *WsServer) handleConnection(w http.ResponseWriter, r *http.Request)
 
 	server.Lock()
 	defer server.Unlock()
+
+	client.close(false)
+
 	for element := server.clients.Front(); element != nil; element = element.Next() {
 		if element == clientElement {
 			client.close(false)

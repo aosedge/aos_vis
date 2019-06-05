@@ -34,6 +34,10 @@ const (
 	setPermission
 )
 
+const (
+	writeSocketTimeout = 10 * time.Second
+)
+
 type permission uint
 
 /*******************************************************************************
@@ -45,6 +49,7 @@ type wsClient struct {
 	authInfo          *dataprovider.AuthInfo
 	dataProvider      *dataprovider.DataProvider
 	subscribeChannels map[uint64]<-chan interface{}
+	sync.Mutex
 }
 
 type requestType struct {
@@ -159,8 +164,6 @@ type errorInfo struct {
  * Variables
  ******************************************************************************/
 
-var mutex sync.Mutex
-
 /*******************************************************************************
  * Private
  ******************************************************************************/
@@ -183,9 +186,7 @@ func (client *wsClient) close(sendCloseMessage bool) (err error) {
 	client.unsubscribeAll()
 
 	if sendCloseMessage {
-		mutex.Lock()
-		client.wsConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-		mutex.Unlock()
+		client.sendMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	}
 
 	return client.wsConnection.Close()
@@ -211,14 +212,7 @@ func (client *wsClient) run() {
 				log.Errorf("Error processing message: %s", err)
 			}
 
-			log.Debugf("Send: %s", string(response))
-
-			mutex.Lock()
-			err = client.wsConnection.WriteMessage(websocket.TextMessage, response)
-			mutex.Unlock()
-			if err != nil {
-				log.Errorf("Error writing message: %s", err)
-			}
+			client.sendMessage(websocket.TextMessage, response)
 		} else {
 			log.WithField("format", mt).Warning("Incoming message in unsupported format")
 		}
@@ -458,19 +452,11 @@ func (client *wsClient) processSubscribeChannel(id uint64, channel <-chan interf
 				}
 			}
 
-			log.Debugf("Send: %s", string(notificationJSON))
-
-			mutex.Lock()
-			err = client.wsConnection.WriteMessage(websocket.TextMessage, notificationJSON)
-			mutex.Unlock()
-			if err != nil {
-				log.Errorf("Error writing message: %s", err)
-			}
+			client.sendMessage(websocket.TextMessage, notificationJSON)
 		} else {
 			log.WithField("subscribeID", id).Debug("Subscription closed")
 			return
 		}
-
 	}
 }
 
@@ -537,4 +523,25 @@ func createSubscribeError(id uint64, inErr error) (responseJSON []byte, err erro
 
 func getCurTime() int64 {
 	return time.Now().UnixNano() / 1000000
+}
+
+func (client *wsClient) sendMessage(messageType int, data []byte) (err error) {
+	client.Lock()
+	defer client.Unlock()
+
+	log.Debugf("Send: %s", string(data))
+
+	if writeSocketTimeout != 0 {
+		client.wsConnection.SetWriteDeadline(time.Now().Add(writeSocketTimeout))
+	}
+
+	if err = client.wsConnection.WriteMessage(messageType, data); err != nil {
+		log.Errorf("Can't write message: %s", err)
+
+		client.wsConnection.Close()
+
+		return err
+	}
+
+	return nil
 }
