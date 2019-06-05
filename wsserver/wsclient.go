@@ -168,14 +168,11 @@ var mutex sync.Mutex
 func newClient(wsConnection *websocket.Conn, dataProvider *dataprovider.DataProvider) (client *wsClient, err error) {
 	log.WithField("RemoteAddr", wsConnection.RemoteAddr()).Info("Create new client")
 
-	var localClient wsClient
-
-	localClient.wsConnection = wsConnection
-	localClient.subscribeChannels = make(map[uint64]<-chan interface{})
-	localClient.dataProvider = dataProvider
-	localClient.authInfo = &dataprovider.AuthInfo{}
-
-	client = &localClient
+	client = &wsClient{
+		wsConnection:      wsConnection,
+		subscribeChannels: make(map[uint64]<-chan interface{}),
+		dataProvider:      dataProvider,
+		authInfo:          &dataprovider.AuthInfo{}}
 
 	return client, nil
 }
