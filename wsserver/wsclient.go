@@ -203,6 +203,7 @@ func (client *wsClient) run() {
 
 			break
 		}
+
 		if mt == websocket.TextMessage {
 			log.Debugf("Receive: %s", string(message))
 
