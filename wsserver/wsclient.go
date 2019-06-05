@@ -183,11 +183,11 @@ func newClient(wsConnection *websocket.Conn, dataProvider *dataprovider.DataProv
 func (client *wsClient) close() (err error) {
 	log.WithField("RemoteAddr", client.wsConnection.RemoteAddr()).Info("Close client")
 
+	client.unsubscribeAll()
+
 	mutex.Lock()
 	client.wsConnection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	mutex.Unlock()
-
-	client.unsubscribeAll()
 
 	return client.wsConnection.Close()
 }
