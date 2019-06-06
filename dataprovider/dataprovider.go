@@ -414,7 +414,11 @@ func (provider *DataProvider) handleSubscribeChannel(adapter dataadapter.DataAda
 		for id, data := range subscribeDataMap {
 			log.WithFields(log.Fields{"subscriberID": id, "data": data}).Debug("Notify subscribers")
 
-			provider.subscribeInfoMap[id].channel <- convertData(provider.subscribeInfoMap[id].path, data)
+			if len(provider.subscribeInfoMap[id].channel) < cap(provider.subscribeInfoMap[id].channel) {
+				provider.subscribeInfoMap[id].channel <- convertData(provider.subscribeInfoMap[id].path, data)
+			} else {
+				log.WithField("id", id).Warn("No more space in subscribe channel")
+			}
 		}
 
 		provider.Unlock()
