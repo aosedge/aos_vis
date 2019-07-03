@@ -3,6 +3,7 @@ package wsserver
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,26 +20,20 @@ import (
  * Consts
  ******************************************************************************/
 
+// VIS actions
 const (
-	actionGet            = "get"
-	actionSet            = "set"
-	actionAuth           = "authorize"
-	actionSubscribe      = "subscribe"
-	actionUnsubscribe    = "unsubscribe"
-	actionUnsubscribeAll = "unsubscribeAll"
-	actionSubscription   = "subscription"
-)
-
-const (
-	getPermission = iota
-	setPermission
+	ActionGet            = "get"
+	ActionSet            = "set"
+	ActionAuth           = "authorize"
+	ActionSubscribe      = "subscribe"
+	ActionUnsubscribe    = "unsubscribe"
+	ActionUnsubscribeAll = "unsubscribeAll"
+	ActionSubscription   = "subscription"
 )
 
 const (
 	writeSocketTimeout = 10 * time.Second
 )
-
-type permission uint
 
 /*******************************************************************************
  * Types
@@ -52,112 +47,114 @@ type wsClient struct {
 	sync.Mutex
 }
 
-type requestType struct {
+// MessageHeader VIS message header
+type MessageHeader struct {
 	Action    string `json:"action"`
 	RequestID string `json:"requestId"`
 }
 
-type requestGet struct {
-	Action    string `json:"action"`
-	Path      string `json:"path"`
-	RequestID string `json:"requestId"`
+// ErrorInfo VIS error info
+type ErrorInfo struct {
+	Number  int    `json:"number"`
+	Reason  string `json:"reason"`
+	Message string `json:"message"`
 }
 
-type requestSet struct {
-	Action    string      `json:"action"`
-	Path      string      `json:"path"`
-	Value     interface{} `json:"value"`
-	RequestID string      `json:"requestId"`
+// Tokens VIS authorize tokens
+type Tokens struct {
+	Authorization    string `json:"authorization,omitempty"`
+	WwwVehicleDevice string `json:"www-vehicle-device,omitempty"`
 }
 
-type requestAuth struct {
-	Action    string       `json:"action"`
-	Tokens    tokensStruct `json:"tokens"`
-	RequestID string       `json:"requestId"`
+// AuthRequest VIS authorize request
+type AuthRequest struct {
+	MessageHeader
+	Tokens Tokens `json:"tokens"`
 }
 
-type requestSubscribe struct {
-	Action    string  `json:"action"`
-	Path      string  `json:"path"`
-	Filters   *string `json:"filters"` //TODO: will be implemented later
-	RequestID string  `json:"requestId"`
+// AuthResponse VIS authorize success response
+type AuthResponse struct {
+	MessageHeader
+	Error *ErrorInfo `json:"error,omitempty"`
+	TTL   int64      `json:"TTL,omitempty"`
 }
 
-type requestUnsubscribe struct {
-	Action         string `json:"action"`
-	SubscriptionID string `json:"subscriptionId"`
-	RequestID      string `json:"requestId"`
+// GetRequest VIS get request
+type GetRequest struct {
+	MessageHeader
+	Path string `json:"path"`
 }
 
-type requestUnsubscribeAll struct {
-	Action    string `json:"action"`
-	RequestID string `json:"requestId"`
-}
-
-type tokensStruct struct {
-	Authorization    *string `json:"authorization"`
-	WwwVehicleDevice *string `json:"www-vehicle-device"`
-}
-
-type getSuccessResponse struct {
-	Action    string      `json:"action"`
-	RequestID string      `json:"requestId"`
-	Value     interface{} `json:"value"`
+// GetResponse VIS get success response
+type GetResponse struct {
+	MessageHeader
+	Error     *ErrorInfo  `json:"error,omitempty"`
+	Value     interface{} `json:"value,omitempty"`
 	Timestamp int64       `json:"timestamp"`
 }
 
-type setSuccessResponse struct {
-	Action    string `json:"action"`
-	RequestID string `json:"requestId"`
-	Timestamp int64  `json:"timestamp"`
+// SetRequest VIS set request
+type SetRequest struct {
+	MessageHeader
+	Path  string      `json:"path"`
+	Value interface{} `json:"value"`
 }
 
-type authSuccessResponse struct {
-	Action    string `json:"action"`
-	RequestID string `json:"requestId"`
-	TTL       int64  `json:"TTL"`
-	Timestamp int64  `json:"timestamp"`
+// SetResponse VIS set success response
+type SetResponse struct {
+	MessageHeader
+	Error     *ErrorInfo `json:"error,omitempty"`
+	Timestamp int64      `json:"timestamp,omitempty"`
 }
 
-type subscribeUnsubscribeSuccessResponse struct {
-	Action         string `json:"action"`
-	SubscriptionID string `json:"subscriptionId"`
-	RequestID      string `json:"requestId"`
-	Timestamp      int64  `json:"timestamp"`
+// SubscribeRequest VIS subscribe request
+type SubscribeRequest struct {
+	MessageHeader
+	Path    string `json:"path"`
+	Filters string `json:"filters,omitempty"` //TODO: will be implemented later
 }
 
-type unsubscribeAllSuccessResponse struct {
-	Action    string `json:"action"`
-	RequestID string `json:"requestId"`
-	Timestamp int64  `json:"timestamp"`
+// SubscribeResponse VIS subscribe success response
+type SubscribeResponse struct {
+	MessageHeader
+	Error          *ErrorInfo `json:"error,omitempty"`
+	SubscriptionID string     `json:"subscriptionId,omitempty"`
+	Timestamp      int64      `json:"timestamp"`
 }
 
-type subscribeNotification struct {
+// SubscriptionNotification VIS subscription notification
+type SubscriptionNotification struct {
+	Error          *ErrorInfo  `json:"error,omitempty"`
 	Action         string      `json:"action"`
 	SubscriptionID string      `json:"subscriptionId"`
-	Value          interface{} `json:"value"`
+	Value          interface{} `json:"value,omitempty"`
 	Timestamp      int64       `json:"timestamp"`
 }
 
-type subscribeError struct {
-	Action         string    `json:"action"`
-	SubscriptionID string    `json:"subscriptionId"`
-	Error          errorInfo `json:"error"`
-	Timestamp      int64     `json:"timestamp"`
+// UnsubscribeRequest VIS unsubscribe request
+type UnsubscribeRequest struct {
+	MessageHeader
+	SubscriptionID string `json:"subscriptionId"`
 }
 
-type errorResponse struct {
-	Action    string    `json:"action"`
-	RequestID string    `json:"requestId"`
-	Error     errorInfo `json:"error"`
-	Timestamp int64     `json:"timestamp"`
+// UnsubscribeResponse VIS unsubscribe success response
+type UnsubscribeResponse struct {
+	MessageHeader
+	Error          *ErrorInfo `json:"error,omitempty"`
+	SubscriptionID string     `json:"subscriptionId"`
+	Timestamp      int64      `json:"timestamp"`
 }
 
-//TODO: add map error number message
-type errorInfo struct {
-	Number  int
-	Reason  string
-	Message string
+// UnsubscribeAllRequest VIS unsubscribe all request
+type UnsubscribeAllRequest struct {
+	MessageHeader
+}
+
+// UnsubscribeAllResponse VIS unsubscribe all success response
+type UnsubscribeAllResponse struct {
+	MessageHeader
+	Error     *ErrorInfo `json:"error,omitempty"`
+	Timestamp int64      `json:"timestamp"`
 }
 
 /*******************************************************************************
@@ -212,247 +209,231 @@ func (client *wsClient) run() {
 				log.Errorf("Error processing message: %s", err)
 			}
 
-			client.sendMessage(websocket.TextMessage, response)
+			if response != nil {
+				client.sendMessage(websocket.TextMessage, response)
+			}
 		} else {
 			log.WithField("format", mt).Warning("Incoming message in unsupported format")
 		}
 	}
 }
 
-func (client *wsClient) processIncomingMessage(data []byte) (response []byte, err error) {
-	var rType requestType
+func (client *wsClient) processIncomingMessage(data []byte) (responseJSON []byte, err error) {
+	var header MessageHeader
 
-	err = json.Unmarshal(data, &rType)
-	if err != nil {
-		return createErrorResponse("", "", err)
+	if err = json.Unmarshal(data, &header); err != nil {
+		return nil, err
 	}
 
-	switch string(rType.Action) {
-	case actionGet:
-		return client.processGetRequest(data)
+	var response interface{}
 
-	case actionSet:
-		return client.processSetRequest(data)
+	switch string(header.Action) {
+	case ActionGet:
+		response, err = client.processGetRequest(data)
 
-	case actionAuth:
-		return client.processAuthRequest(data)
+	case ActionSet:
+		response, err = client.processSetRequest(data)
 
-	case actionSubscribe:
-		return client.processSubscribeRequest(data)
+	case ActionAuth:
+		response, err = client.processAuthRequest(data)
 
-	case actionUnsubscribe:
-		return client.processUnsubscribeRequest(data)
+	case ActionSubscribe:
+		response, err = client.processSubscribeRequest(data)
 
-	case actionUnsubscribeAll:
-		return client.processUnsubscribeAllRequest(data)
+	case ActionUnsubscribe:
+		response, err = client.processUnsubscribeRequest(data)
+
+	case ActionUnsubscribeAll:
+		response, err = client.processUnsubscribeAllRequest(data)
 
 	default:
-		return createErrorResponse(rType.Action, rType.RequestID, errors.New("Unsupported action type: "+rType.Action))
+		err = fmt.Errorf("Unsupported action type: %s", header.Action)
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if responseJSON, err = json.Marshal(response); err != nil {
+		return nil, err
+	}
+
+	return responseJSON, nil
 }
 
 // process Get request
-func (client *wsClient) processGetRequest(requestJSON []byte) (responseJSON []byte, err error) {
-	var rGet requestGet
+func (client *wsClient) processGetRequest(requestJSON []byte) (responseItf interface{}, err error) {
+	var request GetRequest
 
-	if err = json.Unmarshal(requestJSON, &rGet); err != nil {
-		return createErrorResponse(rGet.Action, rGet.RequestID, err)
+	if err = json.Unmarshal(requestJSON, &request); err != nil {
+		return nil, err
 	}
 
-	vehData, err := client.dataProvider.GetData(rGet.Path, client.authInfo)
+	response := GetResponse{
+		MessageHeader: request.MessageHeader,
+		Timestamp:     getCurTime()}
+
+	vehicleData, err := client.dataProvider.GetData(request.Path, client.authInfo)
 	if err != nil {
-		return createErrorResponse(rGet.Action, rGet.RequestID, err)
+		response.Error = createErrorInfo(err)
+		return &response, nil
 	}
 
-	response := getSuccessResponse{
-		Action:    rGet.Action,
-		RequestID: rGet.RequestID,
-		Value:     vehData,
-		Timestamp: getCurTime()}
+	response.Value = vehicleData
 
-	if responseJSON, err = json.Marshal(response); err != nil {
-		return createErrorResponse(rGet.Action, rGet.RequestID, err)
-	}
-
-	return responseJSON, nil
+	return &response, nil
 }
 
 // process Set request
-func (client *wsClient) processSetRequest(requestJSON []byte) (responseJSON []byte, err error) {
-	var rSet requestSet
+func (client *wsClient) processSetRequest(requestJSON []byte) (responseItf interface{}, err error) {
+	var request SetRequest
 
-	if err = json.Unmarshal(requestJSON, &rSet); err != nil {
-		return createErrorResponse(rSet.Action, rSet.RequestID, err)
+	if err = json.Unmarshal(requestJSON, &request); err != nil {
+		return nil, err
 	}
 
-	if err = client.dataProvider.SetData(rSet.Path, rSet.Value, client.authInfo); err != nil {
-		return createErrorResponse(rSet.Action, rSet.RequestID, err)
+	response := SetResponse{
+		MessageHeader: request.MessageHeader,
+		Timestamp:     getCurTime()}
+
+	if err = client.dataProvider.SetData(request.Path, request.Value, client.authInfo); err != nil {
+		response.Error = createErrorInfo(err)
+		return &response, nil
 	}
 
-	response := setSuccessResponse{
-		Action:    rSet.Action,
-		RequestID: rSet.RequestID,
-		Timestamp: getCurTime()}
-
-	if responseJSON, err = json.Marshal(response); err != nil {
-		return createErrorResponse(rSet.Action, rSet.RequestID, err)
-	}
-
-	return responseJSON, nil
+	return &response, nil
 }
 
 // process Auth request
-func (client *wsClient) processAuthRequest(requestJSON []byte) (responseJSON []byte, err error) {
-	var rAuth requestAuth
+func (client *wsClient) processAuthRequest(requestJSON []byte) (responseItf interface{}, err error) {
+	var request AuthRequest
 
-	if err = json.Unmarshal(requestJSON, &rAuth); err != nil {
-		return createErrorResponse(rAuth.Action, rAuth.RequestID, err)
+	if err = json.Unmarshal(requestJSON, &request); err != nil {
+		return nil, err
 	}
 
-	if rAuth.Tokens.Authorization == nil {
-		return createErrorResponse(rAuth.Action, rAuth.RequestID, errors.New("Nil token authorization"))
+	response := AuthResponse{
+		MessageHeader: request.MessageHeader}
+
+	if request.Tokens.Authorization == "" {
+		response.Error = createErrorInfo(errors.New("empty token authorization"))
+		return &response, nil
 	}
 
-	if !client.authInfo.IsAuthorized {
-		//TODO: add retry count
-		//data, errInfo := getPermissionListForClient(*request.Tokens.Authorization)
-		data, err := dbusclient.GetVisPermissionByToken(*rAuth.Tokens.Authorization)
-		if err != nil {
-			return createErrorResponse(rAuth.Action, rAuth.RequestID, err)
-		}
-		client.authInfo.Permissions = data
-		client.authInfo.IsAuthorized = true
-	} else {
-		log.WithField("token", rAuth.Tokens.Authorization).Debug("Token already authorized")
+	if client.authInfo.Permissions, err = dbusclient.GetVisPermissionByToken(request.Tokens.Authorization); err != nil {
+		response.Error = createErrorInfo(errors.New("empty token authorization"))
+		return &response, nil
 	}
 
-	response := authSuccessResponse{
-		Action:    rAuth.Action,
-		RequestID: rAuth.RequestID,
-		TTL:       10000,
-		Timestamp: getCurTime()}
+	client.authInfo.IsAuthorized = true
+	response.TTL = 10000
 
-	if responseJSON, err = json.Marshal(response); err != nil {
-		return createErrorResponse(rAuth.Action, rAuth.RequestID, err)
-	}
-
-	return responseJSON, nil
+	return &response, nil
 }
 
 // process Subscribe request
-func (client *wsClient) processSubscribeRequest(requestJSON []byte) (responseJSON []byte, err error) {
-	var rSubs requestSubscribe
+func (client *wsClient) processSubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
+	var request SubscribeRequest
 
-	if err = json.Unmarshal(requestJSON, &rSubs); err != nil {
-		return createErrorResponse(rSubs.Action, rSubs.RequestID, err)
+	if err = json.Unmarshal(requestJSON, &request); err != nil {
+		return nil, err
 	}
 
-	if rSubs.Filters != nil && *rSubs.Filters != "" {
+	if request.Filters != "" {
 		log.Warn("Filter currently not implemented. Filters will be ignored")
 	}
 
-	subscribeID, channel, err := client.dataProvider.Subscribe(rSubs.Path, client.authInfo)
+	response := SubscribeResponse{
+		MessageHeader: request.MessageHeader,
+		Timestamp:     getCurTime()}
+
+	id, channel, err := client.dataProvider.Subscribe(request.Path, client.authInfo)
 	if err != nil {
-		return createErrorResponse(rSubs.Action, rSubs.RequestID, err)
+		response.Error = createErrorInfo(err)
+		return &response, nil
 	}
 
-	log.WithFields(log.Fields{"path": rSubs.Path, "id": subscribeID}).Debug("Register subscription")
+	log.WithFields(log.Fields{"path": request.Path, "id": id}).Debug("Register subscription")
 
-	response := subscribeUnsubscribeSuccessResponse{
-		Action:         actionSubscribe,
-		RequestID:      rSubs.RequestID,
-		SubscriptionID: strconv.FormatUint(subscribeID, 10),
-		Timestamp:      getCurTime()}
+	response.SubscriptionID = strconv.FormatUint(id, 10)
 
-	if responseJSON, err = json.Marshal(response); err != nil {
-		return createErrorResponse(rSubs.Action, rSubs.RequestID, err)
-	}
+	client.subscribeChannels[id] = channel
+	go client.processSubscribeChannel(id, channel)
 
-	client.subscribeChannels[subscribeID] = channel
-	go client.processSubscribeChannel(subscribeID, channel)
-
-	return responseJSON, nil
+	return &response, nil
 }
 
 // process Unsubscribe request
-func (client *wsClient) processUnsubscribeRequest(requestJSON []byte) (responseJSON []byte, err error) {
-	var rUnsubs requestUnsubscribe
+func (client *wsClient) processUnsubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
+	var request UnsubscribeRequest
 
-	if err = json.Unmarshal(requestJSON, &rUnsubs); err != nil {
-		return createErrorResponse(rUnsubs.Action, rUnsubs.RequestID, err)
+	if err = json.Unmarshal(requestJSON, &request); err != nil {
+		return nil, err
 	}
 
-	subscribeID, err := strconv.ParseUint(rUnsubs.SubscriptionID, 10, 64)
+	response := UnsubscribeResponse{
+		MessageHeader:  request.MessageHeader,
+		SubscriptionID: request.SubscriptionID,
+		Timestamp:      getCurTime()}
+
+	subscribeID, err := strconv.ParseUint(request.SubscriptionID, 10, 64)
 	if err != nil {
-		return createErrorResponse(rUnsubs.Action, rUnsubs.RequestID, err)
+		response.Error = createErrorInfo(err)
+		return &response, nil
 	}
 
 	if err = client.dataProvider.Unsubscribe(subscribeID, client.authInfo); err != nil {
-		return createErrorResponse(rUnsubs.Action, rUnsubs.RequestID, err)
+		response.Error = createErrorInfo(err)
+		return &response, nil
 	}
 
 	delete(client.subscribeChannels, subscribeID)
 
-	log.WithFields(log.Fields{"id": rUnsubs.SubscriptionID}).Debug("Unregister subscription")
+	log.WithFields(log.Fields{"id": request.SubscriptionID}).Debug("Unregister subscription")
 
-	response := subscribeUnsubscribeSuccessResponse{
-		Action:         actionUnsubscribe,
-		SubscriptionID: rUnsubs.SubscriptionID,
-		RequestID:      rUnsubs.RequestID,
-		Timestamp:      getCurTime()}
-
-	if responseJSON, err = json.Marshal(response); err != nil {
-		return createErrorResponse(rUnsubs.Action, rUnsubs.RequestID, err)
-	}
-
-	return responseJSON, nil
+	return &response, nil
 }
 
 // process UnsubscribeAll request
-func (client *wsClient) processUnsubscribeAllRequest(requestJSON []byte) (responseJSON []byte, err error) {
-	var rUnsubsAll requestUnsubscribeAll
+func (client *wsClient) processUnsubscribeAllRequest(requestJSON []byte) (responseItf interface{}, err error) {
+	var request UnsubscribeAllRequest
 
-	err = json.Unmarshal(requestJSON, &rUnsubsAll)
-	if err != nil {
-		return createErrorResponse(rUnsubsAll.Action, rUnsubsAll.RequestID, err)
+	if err = json.Unmarshal(requestJSON, &request); err != nil {
+		return nil, err
 	}
+
+	response := UnsubscribeAllResponse{
+		MessageHeader: request.MessageHeader,
+		Timestamp:     getCurTime()}
 
 	if err = client.unsubscribeAll(); err != nil {
-		return createErrorResponse(rUnsubsAll.Action, rUnsubsAll.RequestID, err)
+		response.Error = createErrorInfo(err)
+		return &response, nil
 	}
 
-	response := unsubscribeAllSuccessResponse{
-		Action:    actionUnsubscribeAll,
-		RequestID: rUnsubsAll.RequestID,
-		Timestamp: getCurTime()}
-
-	if responseJSON, err = json.Marshal(response); err != nil {
-		return createErrorResponse(rUnsubsAll.Action, rUnsubsAll.RequestID, err)
-	}
-
-	return responseJSON, nil
+	return &response, nil
 }
 
 func (client *wsClient) processSubscribeChannel(id uint64, channel <-chan interface{}) {
 	for {
 		data, more := <-channel
 		if more {
-			notification := subscribeNotification{
-				Action:         actionSubscription,
-				SubscriptionID: strconv.FormatUint(id, 10),
+			subscriptionID := strconv.FormatUint(id, 10)
+
+			notification := SubscriptionNotification{
+				Action:         ActionSubscription,
+				SubscriptionID: subscriptionID,
 				Value:          data,
 				Timestamp:      getCurTime()}
 
 			notificationJSON, err := json.Marshal(notification)
 			if err != nil {
-				notificationJSON, err = createSubscribeError(id, err)
-				if err != nil {
-					log.Errorf("Can't create subscribe error response: %s", err)
-					break
-				}
+				log.Errorf("Can't marshal subscription notification: %s", err)
 			}
 
-			client.sendMessage(websocket.TextMessage, notificationJSON)
+			if notificationJSON != nil {
+				client.sendMessage(websocket.TextMessage, notificationJSON)
+			}
 		} else {
 			log.WithField("subscribeID", id).Debug("Subscription closed")
 			return
@@ -472,53 +453,26 @@ func (client *wsClient) unsubscribeAll() (err error) {
 	return err
 }
 
-func codeFromError(err error) (code int) {
+func createErrorInfo(err error) (errorInfo *ErrorInfo) {
+	if err == nil {
+		return nil
+	}
+
+	errorInfo = &ErrorInfo{Message: err.Error()}
+
 	switch {
 	case strings.Contains(strings.ToLower(err.Error()), "not found") ||
 		strings.Contains(strings.ToLower(err.Error()), "not exist"):
-		code = 404
+		errorInfo.Number = 404
 	case strings.Contains(strings.ToLower(err.Error()), "not authorized"):
-		code = 401
+		errorInfo.Number = 401
 	case strings.Contains(strings.ToLower(err.Error()), "not have permissions"):
-		code = 403
+		errorInfo.Number = 403
 	default:
-		code = 400
+		errorInfo.Number = 400
 	}
 
-	return code
-}
-
-func createErrorResponse(action string, reqID string, inErr error) (responseJSON []byte, outErr error) {
-	response := errorResponse{
-		Action:    action,
-		Timestamp: getCurTime(),
-		Error:     errorInfo{Number: codeFromError(inErr), Message: inErr.Error()},
-		RequestID: reqID}
-
-	responseJSON, outErr = json.Marshal(response)
-	if outErr != nil {
-		log.Errorf("Error creating error response: %s", outErr)
-	}
-
-	outErr = inErr
-
-	return responseJSON, outErr
-}
-
-func createSubscribeError(id uint64, inErr error) (responseJSON []byte, err error) {
-	response := subscribeError{
-		Action:         actionSubscription,
-		SubscriptionID: strconv.FormatUint(id, 10),
-		Error:          errorInfo{Number: codeFromError(inErr), Message: inErr.Error()},
-		Timestamp:      getCurTime(),
-	}
-
-	responseJSON, err = json.Marshal(response)
-	if err != nil {
-		return responseJSON, err
-	}
-
-	return responseJSON, nil
+	return errorInfo
 }
 
 func getCurTime() int64 {
