@@ -1,4 +1,4 @@
-package wsserver
+package visserver
 
 import (
 	"encoding/json"
@@ -6,15 +6,20 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"gitpct.epam.com/epmd-aepr/aos_servicemanager/wsserver"
 
+	"gitpct.epam.com/epmd-aepr/aos_vis/config"
 	"gitpct.epam.com/epmd-aepr/aos_vis/dataprovider"
 	"gitpct.epam.com/epmd-aepr/aos_vis/dbusclient"
 )
+
+/*******************************************************************************
+ * Consts
+ ******************************************************************************/
 
 /*******************************************************************************
  * Consts
@@ -31,20 +36,14 @@ const (
 	ActionSubscription   = "subscription"
 )
 
-const (
-	writeSocketTimeout = 10 * time.Second
-)
-
 /*******************************************************************************
  * Types
  ******************************************************************************/
 
-type wsClient struct {
-	wsConnection      *websocket.Conn
-	authInfo          *dataprovider.AuthInfo
-	dataProvider      *dataprovider.DataProvider
-	subscribeChannels map[uint64]<-chan interface{}
-	sync.Mutex
+// Server update manager server structure
+type Server struct {
+	wsServer     *wsserver.Server
+	dataProvider *dataprovider.DataProvider
 }
 
 // MessageHeader VIS message header
@@ -157,68 +156,63 @@ type UnsubscribeAllResponse struct {
 	Timestamp int64      `json:"timestamp"`
 }
 
+type messageProcessor struct {
+	authInfo          *dataprovider.AuthInfo
+	dataProvider      *dataprovider.DataProvider
+	subscribeChannels map[uint64]<-chan interface{}
+
+	sendMessage wsserver.SendMessage
+}
+
 /*******************************************************************************
- * Variables
+ * Public
  ******************************************************************************/
+
+// New creates new Web socket server
+func New(config *config.Config) (server *Server, err error) {
+	log.Debug("Create VIS server")
+
+	server = &Server{}
+
+	if server.dataProvider, err = dataprovider.New(config); err != nil {
+		return nil, err
+	}
+
+	if server.wsServer, err = wsserver.New("VIS", config.ServerURL, config.VISCert, config.VISKey, server.newMessageProcessor); err != nil {
+		return nil, err
+	}
+
+	return server, nil
+}
+
+// Close closes web socket server and all connections
+func (server *Server) Close() {
+	server.wsServer.Close()
+	server.dataProvider.Close()
+}
+
+// ProcessMessage proccess incoming messages
+func (processor *messageProcessor) ProcessMessage(messageType int, message []byte) (response []byte, err error) {
+	if messageType != websocket.TextMessage {
+		return nil, errors.New("incoming message in unsupported format")
+	}
+
+	return processor.processIncomingMessage(message)
+}
 
 /*******************************************************************************
  * Private
  ******************************************************************************/
 
-func newClient(wsConnection *websocket.Conn, dataProvider *dataprovider.DataProvider) (client *wsClient, err error) {
-	log.WithField("RemoteAddr", wsConnection.RemoteAddr()).Info("Create new client")
-
-	client = &wsClient{
-		wsConnection:      wsConnection,
+func (server *Server) newMessageProcessor(sendMessage wsserver.SendMessage) (processor wsserver.MessageProcessor, err error) {
+	return &messageProcessor{
+		authInfo:          &dataprovider.AuthInfo{},
+		dataProvider:      server.dataProvider,
 		subscribeChannels: make(map[uint64]<-chan interface{}),
-		dataProvider:      dataProvider,
-		authInfo:          &dataprovider.AuthInfo{}}
-
-	return client, nil
+		sendMessage:       sendMessage}, nil
 }
 
-func (client *wsClient) close(sendCloseMessage bool) (err error) {
-	log.WithField("RemoteAddr", client.wsConnection.RemoteAddr()).Info("Close client")
-
-	client.unsubscribeAll()
-
-	if sendCloseMessage {
-		client.sendMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-	}
-
-	return client.wsConnection.Close()
-}
-
-func (client *wsClient) run() {
-	for {
-		mt, message, err := client.wsConnection.ReadMessage()
-		if err != nil {
-			if !websocket.IsCloseError(err, websocket.CloseNormalClosure) &&
-				!strings.Contains(err.Error(), "use of closed network connection") {
-				log.Errorf("Error reading socket: %s", err)
-			}
-
-			break
-		}
-
-		if mt == websocket.TextMessage {
-			log.Debugf("Receive: %s", string(message))
-
-			response, err := client.processIncomingMessage(message)
-			if err != nil {
-				log.Errorf("Error processing message: %s", err)
-			}
-
-			if response != nil {
-				client.sendMessage(websocket.TextMessage, response)
-			}
-		} else {
-			log.WithField("format", mt).Warning("Incoming message in unsupported format")
-		}
-	}
-}
-
-func (client *wsClient) processIncomingMessage(data []byte) (responseJSON []byte, err error) {
+func (processor *messageProcessor) processIncomingMessage(data []byte) (responseJSON []byte, err error) {
 	var header MessageHeader
 
 	if err = json.Unmarshal(data, &header); err != nil {
@@ -229,22 +223,22 @@ func (client *wsClient) processIncomingMessage(data []byte) (responseJSON []byte
 
 	switch string(header.Action) {
 	case ActionGet:
-		response, err = client.processGetRequest(data)
+		response, err = processor.processGetRequest(data)
 
 	case ActionSet:
-		response, err = client.processSetRequest(data)
+		response, err = processor.processSetRequest(data)
 
 	case ActionAuth:
-		response, err = client.processAuthRequest(data)
+		response, err = processor.processAuthRequest(data)
 
 	case ActionSubscribe:
-		response, err = client.processSubscribeRequest(data)
+		response, err = processor.processSubscribeRequest(data)
 
 	case ActionUnsubscribe:
-		response, err = client.processUnsubscribeRequest(data)
+		response, err = processor.processUnsubscribeRequest(data)
 
 	case ActionUnsubscribeAll:
-		response, err = client.processUnsubscribeAllRequest(data)
+		response, err = processor.processUnsubscribeAllRequest(data)
 
 	default:
 		err = fmt.Errorf("Unsupported action type: %s", header.Action)
@@ -262,7 +256,7 @@ func (client *wsClient) processIncomingMessage(data []byte) (responseJSON []byte
 }
 
 // process Get request
-func (client *wsClient) processGetRequest(requestJSON []byte) (responseItf interface{}, err error) {
+func (processor *messageProcessor) processGetRequest(requestJSON []byte) (responseItf interface{}, err error) {
 	var request GetRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
@@ -273,7 +267,7 @@ func (client *wsClient) processGetRequest(requestJSON []byte) (responseItf inter
 		MessageHeader: request.MessageHeader,
 		Timestamp:     getCurTime()}
 
-	vehicleData, err := client.dataProvider.GetData(request.Path, client.authInfo)
+	vehicleData, err := processor.dataProvider.GetData(request.Path, processor.authInfo)
 	if err != nil {
 		response.Error = createErrorInfo(err)
 		return &response, nil
@@ -285,7 +279,7 @@ func (client *wsClient) processGetRequest(requestJSON []byte) (responseItf inter
 }
 
 // process Set request
-func (client *wsClient) processSetRequest(requestJSON []byte) (responseItf interface{}, err error) {
+func (processor *messageProcessor) processSetRequest(requestJSON []byte) (responseItf interface{}, err error) {
 	var request SetRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
@@ -296,7 +290,7 @@ func (client *wsClient) processSetRequest(requestJSON []byte) (responseItf inter
 		MessageHeader: request.MessageHeader,
 		Timestamp:     getCurTime()}
 
-	if err = client.dataProvider.SetData(request.Path, request.Value, client.authInfo); err != nil {
+	if err = processor.dataProvider.SetData(request.Path, request.Value, processor.authInfo); err != nil {
 		response.Error = createErrorInfo(err)
 		return &response, nil
 	}
@@ -305,7 +299,7 @@ func (client *wsClient) processSetRequest(requestJSON []byte) (responseItf inter
 }
 
 // process Auth request
-func (client *wsClient) processAuthRequest(requestJSON []byte) (responseItf interface{}, err error) {
+func (processor *messageProcessor) processAuthRequest(requestJSON []byte) (responseItf interface{}, err error) {
 	var request AuthRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
@@ -320,19 +314,19 @@ func (client *wsClient) processAuthRequest(requestJSON []byte) (responseItf inte
 		return &response, nil
 	}
 
-	if client.authInfo.Permissions, err = dbusclient.GetVisPermissionByToken(request.Tokens.Authorization); err != nil {
+	if processor.authInfo.Permissions, err = dbusclient.GetVisPermissionByToken(request.Tokens.Authorization); err != nil {
 		response.Error = createErrorInfo(errors.New("empty token authorization"))
 		return &response, nil
 	}
 
-	client.authInfo.IsAuthorized = true
+	processor.authInfo.IsAuthorized = true
 	response.TTL = 10000
 
 	return &response, nil
 }
 
 // process Subscribe request
-func (client *wsClient) processSubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
+func (processor *messageProcessor) processSubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
 	var request SubscribeRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
@@ -347,7 +341,7 @@ func (client *wsClient) processSubscribeRequest(requestJSON []byte) (responseItf
 		MessageHeader: request.MessageHeader,
 		Timestamp:     getCurTime()}
 
-	id, channel, err := client.dataProvider.Subscribe(request.Path, client.authInfo)
+	id, channel, err := processor.dataProvider.Subscribe(request.Path, processor.authInfo)
 	if err != nil {
 		response.Error = createErrorInfo(err)
 		return &response, nil
@@ -357,14 +351,14 @@ func (client *wsClient) processSubscribeRequest(requestJSON []byte) (responseItf
 
 	response.SubscriptionID = strconv.FormatUint(id, 10)
 
-	client.subscribeChannels[id] = channel
-	go client.processSubscribeChannel(id, channel)
+	processor.subscribeChannels[id] = channel
+	go processor.processSubscribeChannel(id, channel)
 
 	return &response, nil
 }
 
 // process Unsubscribe request
-func (client *wsClient) processUnsubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
+func (processor *messageProcessor) processUnsubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
 	var request UnsubscribeRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
@@ -382,12 +376,12 @@ func (client *wsClient) processUnsubscribeRequest(requestJSON []byte) (responseI
 		return &response, nil
 	}
 
-	if err = client.dataProvider.Unsubscribe(subscribeID, client.authInfo); err != nil {
+	if err = processor.dataProvider.Unsubscribe(subscribeID, processor.authInfo); err != nil {
 		response.Error = createErrorInfo(err)
 		return &response, nil
 	}
 
-	delete(client.subscribeChannels, subscribeID)
+	delete(processor.subscribeChannels, subscribeID)
 
 	log.WithFields(log.Fields{"id": request.SubscriptionID}).Debug("Unregister subscription")
 
@@ -395,7 +389,7 @@ func (client *wsClient) processUnsubscribeRequest(requestJSON []byte) (responseI
 }
 
 // process UnsubscribeAll request
-func (client *wsClient) processUnsubscribeAllRequest(requestJSON []byte) (responseItf interface{}, err error) {
+func (processor *messageProcessor) processUnsubscribeAllRequest(requestJSON []byte) (responseItf interface{}, err error) {
 	var request UnsubscribeAllRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
@@ -406,7 +400,7 @@ func (client *wsClient) processUnsubscribeAllRequest(requestJSON []byte) (respon
 		MessageHeader: request.MessageHeader,
 		Timestamp:     getCurTime()}
 
-	if err = client.unsubscribeAll(); err != nil {
+	if err = processor.unsubscribeAll(); err != nil {
 		response.Error = createErrorInfo(err)
 		return &response, nil
 	}
@@ -414,7 +408,7 @@ func (client *wsClient) processUnsubscribeAllRequest(requestJSON []byte) (respon
 	return &response, nil
 }
 
-func (client *wsClient) processSubscribeChannel(id uint64, channel <-chan interface{}) {
+func (processor *messageProcessor) processSubscribeChannel(id uint64, channel <-chan interface{}) {
 	for {
 		data, more := <-channel
 		if more {
@@ -432,7 +426,7 @@ func (client *wsClient) processSubscribeChannel(id uint64, channel <-chan interf
 			}
 
 			if notificationJSON != nil {
-				client.sendMessage(websocket.TextMessage, notificationJSON)
+				processor.sendMessage(websocket.TextMessage, notificationJSON)
 			}
 		} else {
 			log.WithField("subscribeID", id).Debug("Subscription closed")
@@ -441,14 +435,14 @@ func (client *wsClient) processSubscribeChannel(id uint64, channel <-chan interf
 	}
 }
 
-func (client *wsClient) unsubscribeAll() (err error) {
-	for subscribeID := range client.subscribeChannels {
-		if localErr := client.dataProvider.Unsubscribe(subscribeID, client.authInfo); localErr != nil {
+func (processor *messageProcessor) unsubscribeAll() (err error) {
+	for subscribeID := range processor.subscribeChannels {
+		if localErr := processor.dataProvider.Unsubscribe(subscribeID, processor.authInfo); localErr != nil {
 			err = localErr
 		}
 	}
 
-	client.subscribeChannels = make(map[uint64]<-chan interface{})
+	processor.subscribeChannels = make(map[uint64]<-chan interface{})
 
 	return err
 }
@@ -477,25 +471,4 @@ func createErrorInfo(err error) (errorInfo *ErrorInfo) {
 
 func getCurTime() int64 {
 	return time.Now().UnixNano() / 1000000
-}
-
-func (client *wsClient) sendMessage(messageType int, data []byte) (err error) {
-	client.Lock()
-	defer client.Unlock()
-
-	log.Debugf("Send: %s", string(data))
-
-	if writeSocketTimeout != 0 {
-		client.wsConnection.SetWriteDeadline(time.Now().Add(writeSocketTimeout))
-	}
-
-	if err = client.wsConnection.WriteMessage(messageType, data); err != nil {
-		log.Errorf("Can't write message: %s", err)
-
-		client.wsConnection.Close()
-
-		return err
-	}
-
-	return nil
 }

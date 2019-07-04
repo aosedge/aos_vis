@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"gitpct.epam.com/epmd-aepr/aos_vis/config"
-	"gitpct.epam.com/epmd-aepr/aos_vis/wsserver"
+	"gitpct.epam.com/epmd-aepr/aos_vis/visserver"
 )
 
 // GitSummary provided by govvv at compile-time
@@ -46,7 +46,7 @@ func main() {
 		log.Fatalf("Can' open config file: %s", err)
 	}
 
-	server, err := wsserver.New(config)
+	server, err := visserver.New(config)
 	if err != nil {
 		log.Fatalf("Can't create ws server: %s", err)
 	}
