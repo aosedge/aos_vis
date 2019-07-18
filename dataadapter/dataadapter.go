@@ -43,7 +43,7 @@ func NewAdapter(pluginPath string, configJSON []byte) (adapter DataAdapter, err 
 
 	newAdapterFunction, ok := newAdapterSymbol.(func(configJSON []byte) (DataAdapter, error))
 	if !ok {
-		return adapter, errors.New("Unexpected function type")
+		return adapter, errors.New("unexpected function type")
 	}
 
 	return newAdapterFunction(configJSON)

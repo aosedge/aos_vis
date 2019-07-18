@@ -75,7 +75,7 @@ func (adapter *BaseAdapter) IsPathPublic(path string) (result bool, err error) {
 	defer adapter.Unlock()
 
 	if _, ok := adapter.Data[path]; !ok {
-		return result, fmt.Errorf("Path %s doesn't exits", path)
+		return result, fmt.Errorf("path %s doesn't exits", path)
 	}
 
 	return adapter.Data[path].Public, nil
@@ -90,7 +90,7 @@ func (adapter *BaseAdapter) GetData(pathList []string) (data map[string]interfac
 
 	for _, path := range pathList {
 		if _, ok := adapter.Data[path]; !ok {
-			return data, fmt.Errorf("Path %s doesn't exits", path)
+			return data, fmt.Errorf("path %s doesn't exits", path)
 		}
 		data[path] = adapter.Data[path].Value
 	}
@@ -107,11 +107,11 @@ func (adapter *BaseAdapter) SetData(data map[string]interface{}) (err error) {
 
 	for path, value := range data {
 		if _, ok := adapter.Data[path]; !ok {
-			return fmt.Errorf("Path %s doesn't exits", path)
+			return fmt.Errorf("path %s doesn't exits", path)
 		}
 
 		if adapter.Data[path].ReadOnly {
-			return fmt.Errorf("Signal %s cannot be set since it is a read only signal", path)
+			return fmt.Errorf("signal %s cannot be set since it is a read only signal", path)
 		}
 
 		oldValue := adapter.Data[path].Value
@@ -141,7 +141,7 @@ func (adapter *BaseAdapter) Subscribe(pathList []string) (err error) {
 
 	for _, path := range pathList {
 		if _, ok := adapter.Data[path]; !ok {
-			return fmt.Errorf("Path %s doesn't exits", path)
+			return fmt.Errorf("path %s doesn't exits", path)
 		}
 
 		adapter.Data[path].Subscribe = true
@@ -157,7 +157,7 @@ func (adapter *BaseAdapter) Unsubscribe(pathList []string) (err error) {
 
 	for _, path := range pathList {
 		if _, ok := adapter.Data[path]; !ok {
-			return fmt.Errorf("Path %s doesn't exits", path)
+			return fmt.Errorf("path %s doesn't exits", path)
 		}
 
 		adapter.Data[path].Subscribe = false

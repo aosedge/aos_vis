@@ -241,7 +241,7 @@ func (processor *messageProcessor) processIncomingMessage(data []byte) (response
 		response, err = processor.processUnsubscribeAllRequest(data)
 
 	default:
-		err = fmt.Errorf("Unsupported action type: %s", header.Action)
+		err = fmt.Errorf("unsupported action type: %s", header.Action)
 	}
 
 	if err != nil {

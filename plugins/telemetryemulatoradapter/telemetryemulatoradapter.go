@@ -55,7 +55,7 @@ func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) 
 	}
 
 	if cfg.SensorURL == "" {
-		return nil, errors.New("Sensor URL should be defined")
+		return nil, errors.New("sensor URL should be defined")
 	}
 
 	localAdapter.updatePeriod = cfg.UpdatePeriod
@@ -253,7 +253,7 @@ func convertVisFormatToData(visData map[string]interface{}) (dataJSON []byte, er
 			path = strings.TrimPrefix(path, "Attribute.Emulator.")
 			sendData[path] = value
 		} else {
-			return dataJSON, fmt.Errorf("Path %s does not exist", path)
+			return dataJSON, fmt.Errorf("path %s does not exist", path)
 		}
 	}
 

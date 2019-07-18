@@ -683,7 +683,7 @@ func arrayToMap(data interface{}) (result map[string]interface{}, err error) {
 	// Create map from array
 	array, ok := data.([]map[string]interface{})
 	if !ok {
-		return result, fmt.Errorf("Wrong data type: %s", reflect.TypeOf(data))
+		return result, fmt.Errorf("wrong data type: %s", reflect.TypeOf(data))
 	}
 
 	result = make(map[string]interface{})

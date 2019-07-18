@@ -78,7 +78,7 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	}
 
 	if len(provider.adapters) == 0 {
-		return nil, errors.New("No valid adapter info provided")
+		return nil, errors.New("no valid adapter info provided")
 	}
 
 	return provider, nil
@@ -132,7 +132,7 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 	}
 
 	if len(commonData) == 0 {
-		return data, errors.New("The specified data path does not exist")
+		return data, errors.New("specified data path does not exist")
 	}
 
 	return convertData(path, commonData), nil
@@ -203,7 +203,7 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 
 	// If adapterMap is empty: no path found
 	if len(adapterDataMap) == 0 {
-		return errors.New("The server is unable to fulfil the client request because the request is malformed")
+		return errors.New("server is unable to fulfil the client request because the request is malformed")
 	}
 
 	// Everything ok: try to set to adapter
@@ -254,7 +254,7 @@ func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uin
 	}
 
 	if len(subscribeMap) == 0 {
-		return id, channel, errors.New("The specified data path does not exist")
+		return id, channel, errors.New("specified data path does not exist")
 	}
 
 	// Subscribe for adapter data changes
@@ -287,7 +287,7 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 
 	subscribeInfo, ok := provider.subscribeInfoMap[id]
 	if !ok {
-		return fmt.Errorf("Subscribe id %v not found", id)
+		return fmt.Errorf("subscribe id %v not found", id)
 	}
 	close(subscribeInfo.channel)
 	delete(provider.subscribeInfoMap, id)
@@ -439,7 +439,7 @@ func checkPermissions(adapter dataadapter.DataAdapter, path string, authInfo *Au
 		return err
 	}
 	if !authInfo.IsAuthorized && !isPublic {
-		return errors.New("Client is not authorized")
+		return errors.New("client is not authorized")
 	}
 	if isPublic {
 		return nil
@@ -461,7 +461,7 @@ func checkPermissions(adapter dataadapter.DataAdapter, path string, authInfo *Au
 		}
 	}
 
-	return errors.New("Client does not have permissions")
+	return errors.New("client does not have permissions")
 }
 
 func convertData(requestedPath string, data map[string]interface{}) (result interface{}) {

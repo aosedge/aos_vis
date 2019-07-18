@@ -30,7 +30,7 @@ type TestAdapterInfo struct {
 func GetName(adapterInfo *TestAdapterInfo) (err error) {
 	name := adapterInfo.Adapter.GetName()
 	if name != adapterInfo.Name {
-		return fmt.Errorf("Wrong adapter %s name: %s", adapterInfo.Name, name)
+		return fmt.Errorf("wrong adapter %s name: %s", adapterInfo.Name, name)
 	}
 
 	return nil
@@ -44,7 +44,7 @@ func GetPathList(adapterInfo *TestAdapterInfo) (err error) {
 	}
 
 	if adapterInfo.PathListLen != 0 && len(pathList) != adapterInfo.PathListLen {
-		return fmt.Errorf("Wrong adapter %s path list len: %d", adapterInfo.Name, len(pathList))
+		return fmt.Errorf("wrong adapter %s path list len: %d", adapterInfo.Name, len(pathList))
 	}
 
 	return nil
@@ -88,7 +88,7 @@ func GetSetData(adapterInfo *TestAdapterInfo) (err error) {
 	// check data
 	for path, data := range getData {
 		if !reflect.DeepEqual(adapterInfo.SetData[path], data) {
-			return fmt.Errorf("Wrong path: %s value: %v", path, data)
+			return fmt.Errorf("wrong path: %s value: %v", path, data)
 		}
 	}
 
@@ -120,11 +120,11 @@ func SubscribeUnsubscribe(adapterInfo *TestAdapterInfo) (err error) {
 		// check data
 		for path, data := range getData {
 			if !reflect.DeepEqual(adapterInfo.SetSubscribeData[path], data) {
-				return fmt.Errorf("Wrong path: %s value: %v", path, data)
+				return fmt.Errorf("wrong path: %s value: %v", path, data)
 			}
 		}
 	case <-time.After(100 * time.Millisecond):
-		return fmt.Errorf("Waiting for adapter %s data timeout", adapterInfo.Name)
+		return fmt.Errorf("waiting for adapter %s data timeout", adapterInfo.Name)
 	}
 
 	// unsubscribe
