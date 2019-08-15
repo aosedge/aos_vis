@@ -192,6 +192,15 @@ func (adapter *RenesasSimulatorAdapter) handleConnection(w http.ResponseWriter, 
 					log.Errorf("Can't parse simulator data: %s", err)
 				}
 
+				// Multiply longitude by -1, fix for Renesas simulator
+				longitude, ok := result["Signal.Cabin.Infotainment.Navigation.CurrentLocation.Longitude"]
+				if ok {
+					floatLongitude, ok := longitude.(float64)
+					if ok {
+						result["Signal.Cabin.Infotainment.Navigation.CurrentLocation.Longitude"] = -1 * floatLongitude
+					}
+				}
+
 				if len(result) != 0 {
 					if err = adapter.baseAdapter.SetData(result); err != nil {
 						log.Errorf("Can't set data to adapter: %s", err)
@@ -238,5 +247,6 @@ func (adapter *RenesasSimulatorAdapter) handleSimulatorData(prefix string, data 
 			return err
 		}
 	}
+
 	return nil
 }
