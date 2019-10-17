@@ -115,7 +115,13 @@
 			"Plugin": "telemetryemulatoradapter.so",
 			"Disabled": true,
 			"Params": {
-				"SensorURL": "http://127.0.0.1:8800"
+				"SensorURL": "http://127.0.0.1:8800",
+				"PathPrefix": "Signal.Emulator",
+				"PathConverter" : {
+					"Signal.Emulator.telemetry.lon": "Signal.Cabin.Infotainment.Navigation.CurrentLocation.Longitude",
+					"Signal.Emulator.telemetry.lat": "Signal.Cabin.Infotainment.Navigation.CurrentLocation.Latitude",
+					"Signal.Emulator.telemetry.veh_speed": "Signal.Cabin.Infotainment.Navigation.CurrentLocation.Speed"
+				}
 			}
 		},
 		{

@@ -25,15 +25,16 @@ const (
 
 // TelemetryEmulatorAdapter sensor emulator adapter
 type TelemetryEmulatorAdapter struct {
-	sensorURL    *url.URL
-	updatePeriod uint64
-
+	sensorURL   *url.URL
+	cfg         config
 	baseAdapter *dataadapter.BaseAdapter
 }
 
 type config struct {
-	SensorURL    string
-	UpdatePeriod uint64
+	SensorURL     string
+	UpdatePeriod  uint64
+	PathPrefix    string
+	PathConverter map[string]string
 }
 
 /*******************************************************************************
@@ -44,9 +45,7 @@ type config struct {
 func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) {
 	log.Info("Create telemetry emulator adapter")
 
-	localAdapter := new(TelemetryEmulatorAdapter)
-
-	cfg := config{UpdatePeriod: defaultUpdatePeriod}
+	cfg := config{UpdatePeriod: defaultUpdatePeriod, PathPrefix: "Signal.Emulator"}
 
 	// Parse config
 	err = json.Unmarshal(configJSON, &cfg)
@@ -58,8 +57,11 @@ func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) 
 		return nil, errors.New("sensor URL should be defined")
 	}
 
-	localAdapter.updatePeriod = cfg.UpdatePeriod
-	localAdapter.sensorURL, err = url.Parse(cfg.SensorURL)
+	localAdapter := &TelemetryEmulatorAdapter{cfg: cfg}
+
+	if localAdapter.sensorURL, err = url.Parse(localAdapter.cfg.SensorURL); err != nil {
+		return nil, err
+	}
 
 	if localAdapter.baseAdapter, err = dataadapter.NewBaseAdapter(); err != nil {
 		return nil, err
@@ -173,24 +175,38 @@ func (adapter *TelemetryEmulatorAdapter) UnsubscribeAll() (err error) {
  * Private
  ******************************************************************************/
 
-func parseNode(prefix string, element interface{}) (visData map[string]interface{}) {
+func (adapter *TelemetryEmulatorAdapter) convertPath(inPath string) (outPath string) {
+	var ok bool
+
+	if outPath, ok = adapter.cfg.PathConverter[inPath]; !ok {
+		return inPath
+	}
+
+	return outPath
+}
+
+func (adapter *TelemetryEmulatorAdapter) parseNode(prefix string, element interface{}) (visData map[string]interface{}) {
 	visData = make(map[string]interface{})
 
 	m, ok := element.(map[string]interface{})
 	if ok {
 		for path, value := range m {
-			for visPath, visValue := range parseNode(prefix+"."+path, value) {
-				visData[visPath] = visValue
+			if prefix != "" {
+				path = prefix + "." + path
+			}
+
+			for visPath, visValue := range adapter.parseNode(path, value) {
+				visData[adapter.convertPath(visPath)] = visValue
 			}
 		}
 	} else {
-		visData[prefix] = element
+		visData[adapter.convertPath(prefix)] = element
 	}
 
 	return visData
 }
 
-func convertDataToVisFormat(dataJSON []byte) (visData map[string]interface{}, err error) {
+func (adapter *TelemetryEmulatorAdapter) convertDataToVisFormat(dataJSON []byte) (visData map[string]interface{}, err error) {
 	var data interface{}
 
 	err = json.Unmarshal(dataJSON, &data)
@@ -198,7 +214,7 @@ func convertDataToVisFormat(dataJSON []byte) (visData map[string]interface{}, er
 		return visData, err
 	}
 
-	visData = parseNode("Signal.Emulator", data)
+	visData = adapter.parseNode(adapter.cfg.PathPrefix, data)
 
 	return visData, nil
 }
@@ -224,11 +240,11 @@ func (adapter *TelemetryEmulatorAdapter) getDataFromTelemetryEmulator() (visData
 
 	log.WithField("url", address).Debugf("Get data from sensor emulator: %s", string(data))
 
-	return convertDataToVisFormat(data)
+	return adapter.convertDataToVisFormat(data)
 }
 
 func (adapter *TelemetryEmulatorAdapter) processData() {
-	ticker := time.NewTicker(time.Duration(adapter.updatePeriod) * time.Millisecond)
+	ticker := time.NewTicker(time.Duration(adapter.cfg.UpdatePeriod) * time.Millisecond)
 	for {
 		select {
 		case <-ticker.C:
