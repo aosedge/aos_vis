@@ -1,3 +1,5 @@
 aos_vis
 **/*.so
 **/.*
+vendor/**
+Gopkg.lock
