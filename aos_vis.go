@@ -25,8 +25,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"gitpct.epam.com/epmd-aepr/aos_vis/config"
-	"gitpct.epam.com/epmd-aepr/aos_vis/visserver"
+	"aos_vis/config"
+	"aos_vis/visserver"
 )
 
 // GitSummary provided by govvv at compile-time

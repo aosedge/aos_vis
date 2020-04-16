@@ -23,7 +23,8 @@ import (
 
 	"github.com/godbus/dbus"
 	log "github.com/sirupsen/logrus"
-	"gitpct.epam.com/epmd-aepr/aos_vis/dbusclient"
+
+	"aos_vis/dbusclient"
 )
 
 /*******************************************************************************

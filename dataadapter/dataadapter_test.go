@@ -24,8 +24,9 @@ import (
 	"testing"
 
 	log "github.com/sirupsen/logrus"
-	"gitpct.epam.com/epmd-aepr/aos_vis/dataadapter"
-	"gitpct.epam.com/epmd-aepr/aos_vis/dataadaptertest"
+
+	"aos_vis/dataadapter"
+	"aos_vis/dataadaptertest"
 )
 
 /*******************************************************************************

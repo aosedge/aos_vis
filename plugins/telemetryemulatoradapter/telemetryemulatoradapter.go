@@ -12,7 +12,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"gitpct.epam.com/epmd-aepr/aos_vis/dataadapter"
+
+	"aos_vis/dataadapter"
 )
 
 /*******************************************************************************

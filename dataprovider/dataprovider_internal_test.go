@@ -27,7 +27,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"gitpct.epam.com/epmd-aepr/aos_vis/config"
+
+	"aos_vis/config"
 )
 
 /*******************************************************************************

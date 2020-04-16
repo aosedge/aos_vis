@@ -27,11 +27,11 @@ import (
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"gitpct.epam.com/epmd-aepr/aos_servicemanager/wsserver"
+	"gitpct.epam.com/epmd-aepr/aos_common/wsserver"
 
-	"gitpct.epam.com/epmd-aepr/aos_vis/config"
-	"gitpct.epam.com/epmd-aepr/aos_vis/dataprovider"
-	"gitpct.epam.com/epmd-aepr/aos_vis/dbusclient"
+	"aos_vis/config"
+	"aos_vis/dataprovider"
+	"aos_vis/dbusclient"
 )
 
 /*******************************************************************************

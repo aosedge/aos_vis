@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"time"
 
-	"gitpct.epam.com/epmd-aepr/aos_vis/dataadapter"
+	"aos_vis/dataadapter"
 )
 
 /*******************************************************************************

@@ -25,11 +25,10 @@ import (
 	"testing"
 	"time"
 
-	"gitpct.epam.com/epmd-aepr/aos_servicemanager/wsclient"
-
 	"github.com/godbus/dbus"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"gitpct.epam.com/epmd-aepr/aos_common/wsclient"
 
 	"gitpct.epam.com/epmd-aepr/aos_vis/config"
 	"gitpct.epam.com/epmd-aepr/aos_vis/visserver"

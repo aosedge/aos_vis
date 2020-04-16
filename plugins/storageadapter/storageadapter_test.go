@@ -6,7 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"gitpct.epam.com/epmd-aepr/aos_vis/dataadaptertest"
+	"aos_vis/dataadaptertest"
 )
 
 /*******************************************************************************

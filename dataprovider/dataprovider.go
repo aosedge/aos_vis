@@ -26,8 +26,9 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
-	"gitpct.epam.com/epmd-aepr/aos_vis/config"
-	"gitpct.epam.com/epmd-aepr/aos_vis/dataadapter"
+
+	"aos_vis/config"
+	"aos_vis/dataadapter"
 )
 
 /*******************************************************************************
