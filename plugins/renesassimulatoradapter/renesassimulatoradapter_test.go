@@ -192,6 +192,13 @@ func TestGetData(t *testing.T) {
 	}
 
 	for path, value := range data {
+		// Workaround for inverse longitude of Renesas simulator
+		if path == "Signal.Cabin.Infotainment.Navigation.CurrentLocation.Longitude" {
+			if floatLongitude, ok := value.(float64); ok {
+				value = floatLongitude * -1
+			}
+		}
+
 		if value != dataMap[path] {
 			t.Errorf("Wrong value: path %s, value %v", path, value)
 		}
@@ -238,6 +245,13 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	select {
 	case data := <-adapterInfo.Adapter.GetSubscribeChannel():
 		for path, value := range data {
+			// Workaround for inverse longitude of Renesas simulator
+			if path == "Signal.Cabin.Infotainment.Navigation.CurrentLocation.Longitude" {
+				if floatLongitude, ok := value.(float64); ok {
+					value = floatLongitude * -1
+				}
+			}
+
 			if value != dataMap[path] {
 				t.Errorf("Wrong value: path %s, value %v", path, value)
 			}
