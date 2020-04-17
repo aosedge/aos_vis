@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -59,8 +60,10 @@ const (
 
 // Server update manager server structure
 type Server struct {
+	sync.Mutex
 	wsServer     *wsserver.Server
 	dataProvider *dataprovider.DataProvider
+	clients      map[*wsserver.Client]*clientInfo
 }
 
 // MessageHeader VIS message header
@@ -173,12 +176,11 @@ type UnsubscribeAllResponse struct {
 	Timestamp int64      `json:"timestamp"`
 }
 
-type messageProcessor struct {
+type clientInfo struct {
 	authInfo          *dataprovider.AuthInfo
-	dataProvider      *dataprovider.DataProvider
 	subscribeChannels map[uint64]<-chan interface{}
-
-	sendMessage wsserver.SendMessage
+	dataProvider      *dataprovider.DataProvider
+	wsClient          *wsserver.Client
 }
 
 /*******************************************************************************
@@ -189,13 +191,13 @@ type messageProcessor struct {
 func New(config *config.Config) (server *Server, err error) {
 	log.Debug("Create VIS server")
 
-	server = &Server{}
+	server = &Server{clients: make(map[*wsserver.Client]*clientInfo)}
 
 	if server.dataProvider, err = dataprovider.New(config); err != nil {
 		return nil, err
 	}
 
-	if server.wsServer, err = wsserver.New("VIS", config.ServerURL, config.VISCert, config.VISKey, server.newMessageProcessor); err != nil {
+	if server.wsServer, err = wsserver.New("VIS", config.ServerURL, config.VISCert, config.VISKey, server); err != nil {
 		return nil, err
 	}
 
@@ -204,58 +206,73 @@ func New(config *config.Config) (server *Server, err error) {
 
 // Close closes web socket server and all connections
 func (server *Server) Close() {
+	server.Lock()
+	defer server.Unlock()
+
 	server.wsServer.Close()
 	server.dataProvider.Close()
 }
 
+// ClientConnected connect client notification
+func (server *Server) ClientConnected(client *wsserver.Client) {
+	server.Lock()
+	defer server.Unlock()
+
+	server.clients[client] = &clientInfo{
+		authInfo:          &dataprovider.AuthInfo{},
+		subscribeChannels: make(map[uint64]<-chan interface{}),
+		dataProvider:      server.dataProvider,
+		wsClient:          client}
+}
+
+// ClientDisconnected disconnect client notification
+func (server *Server) ClientDisconnected(client *wsserver.Client) {
+	server.Lock()
+	defer server.Unlock()
+
+	delete(server.clients, client)
+}
+
 // ProcessMessage proccess incoming messages
-func (processor *messageProcessor) ProcessMessage(messageType int, message []byte) (response []byte, err error) {
+func (server *Server) ProcessMessage(wsClient *wsserver.Client, messageType int, message []byte) (response []byte, err error) {
+	server.Lock()
+	defer server.Unlock()
+
 	if messageType != websocket.TextMessage {
 		return nil, errors.New("incoming message in unsupported format")
 	}
 
-	return processor.processIncomingMessage(message)
-}
+	client, ok := server.clients[wsClient]
+	if !ok {
+		return nil, errors.New("message from unknown client")
+	}
 
-/*******************************************************************************
- * Private
- ******************************************************************************/
-
-func (server *Server) newMessageProcessor(sendMessage wsserver.SendMessage) (processor wsserver.MessageProcessor, err error) {
-	return &messageProcessor{
-		authInfo:          &dataprovider.AuthInfo{},
-		dataProvider:      server.dataProvider,
-		subscribeChannels: make(map[uint64]<-chan interface{}),
-		sendMessage:       sendMessage}, nil
-}
-
-func (processor *messageProcessor) processIncomingMessage(data []byte) (responseJSON []byte, err error) {
 	var header MessageHeader
 
-	if err = json.Unmarshal(data, &header); err != nil {
+	if err = json.Unmarshal(message, &header); err != nil {
 		return nil, err
 	}
 
-	var response interface{}
+	var responseItf interface{}
 
 	switch string(header.Action) {
 	case ActionGet:
-		response, err = processor.processGetRequest(data)
+		responseItf, err = client.processGetRequest(message)
 
 	case ActionSet:
-		response, err = processor.processSetRequest(data)
+		responseItf, err = client.processSetRequest(message)
 
 	case ActionAuth:
-		response, err = processor.processAuthRequest(data)
+		responseItf, err = client.processAuthRequest(message)
 
 	case ActionSubscribe:
-		response, err = processor.processSubscribeRequest(data)
+		responseItf, err = client.processSubscribeRequest(message)
 
 	case ActionUnsubscribe:
-		response, err = processor.processUnsubscribeRequest(data)
+		responseItf, err = client.processUnsubscribeRequest(message)
 
 	case ActionUnsubscribeAll:
-		response, err = processor.processUnsubscribeAllRequest(data)
+		responseItf, err = client.processUnsubscribeAllRequest(message)
 
 	default:
 		err = fmt.Errorf("unsupported action type: %s", header.Action)
@@ -265,85 +282,89 @@ func (processor *messageProcessor) processIncomingMessage(data []byte) (response
 		return nil, err
 	}
 
-	if responseJSON, err = json.Marshal(response); err != nil {
+	if response, err = json.Marshal(responseItf); err != nil {
 		return nil, err
 	}
 
-	return responseJSON, nil
+	return response, nil
 }
 
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
+
 // process Get request
-func (processor *messageProcessor) processGetRequest(requestJSON []byte) (responseItf interface{}, err error) {
+func (client *clientInfo) processGetRequest(requestJSON []byte) (response *GetResponse, err error) {
 	var request GetRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
 		return nil, err
 	}
 
-	response := GetResponse{
+	response = &GetResponse{
 		MessageHeader: request.MessageHeader,
 		Timestamp:     getCurTime()}
 
-	vehicleData, err := processor.dataProvider.GetData(request.Path, processor.authInfo)
+	vehicleData, err := client.dataProvider.GetData(request.Path, client.authInfo)
 	if err != nil {
 		response.Error = createErrorInfo(err)
-		return &response, nil
+		return response, nil
 	}
 
 	response.Value = vehicleData
 
-	return &response, nil
+	return response, nil
 }
 
 // process Set request
-func (processor *messageProcessor) processSetRequest(requestJSON []byte) (responseItf interface{}, err error) {
+func (client *clientInfo) processSetRequest(requestJSON []byte) (response *SetResponse, err error) {
 	var request SetRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
 		return nil, err
 	}
 
-	response := SetResponse{
+	response = &SetResponse{
 		MessageHeader: request.MessageHeader,
 		Timestamp:     getCurTime()}
 
-	if err = processor.dataProvider.SetData(request.Path, request.Value, processor.authInfo); err != nil {
+	if err = client.dataProvider.SetData(request.Path, request.Value, client.authInfo); err != nil {
 		response.Error = createErrorInfo(err)
-		return &response, nil
+		return response, nil
 	}
 
-	return &response, nil
+	return response, nil
 }
 
 // process Auth request
-func (processor *messageProcessor) processAuthRequest(requestJSON []byte) (responseItf interface{}, err error) {
+func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *AuthResponse, err error) {
 	var request AuthRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
 		return nil, err
 	}
 
-	response := AuthResponse{
+	response = &AuthResponse{
 		MessageHeader: request.MessageHeader}
 
 	if request.Tokens.Authorization == "" {
 		response.Error = createErrorInfo(errors.New("empty token authorization"))
-		return &response, nil
+		return response, nil
 	}
 
-	if processor.authInfo.Permissions, err = dbusclient.GetVisPermissionByToken(request.Tokens.Authorization); err != nil {
+	if client.authInfo.Permissions, err = dbusclient.GetVisPermissionByToken(request.Tokens.Authorization); err != nil {
 		response.Error = createErrorInfo(errors.New("empty token authorization"))
-		return &response, nil
+		return response, nil
 	}
 
-	processor.authInfo.IsAuthorized = true
+	client.authInfo.IsAuthorized = true
 	response.TTL = 10000
 
-	return &response, nil
+	return response, nil
 }
 
 // process Subscribe request
-func (processor *messageProcessor) processSubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
+func (client *clientInfo) processSubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
 	var request SubscribeRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
@@ -358,7 +379,7 @@ func (processor *messageProcessor) processSubscribeRequest(requestJSON []byte) (
 		MessageHeader: request.MessageHeader,
 		Timestamp:     getCurTime()}
 
-	id, channel, err := processor.dataProvider.Subscribe(request.Path, processor.authInfo)
+	id, channel, err := client.dataProvider.Subscribe(request.Path, client.authInfo)
 	if err != nil {
 		response.Error = createErrorInfo(err)
 		return &response, nil
@@ -368,14 +389,14 @@ func (processor *messageProcessor) processSubscribeRequest(requestJSON []byte) (
 
 	response.SubscriptionID = strconv.FormatUint(id, 10)
 
-	processor.subscribeChannels[id] = channel
-	go processor.processSubscribeChannel(id, channel)
+	client.subscribeChannels[id] = channel
+	go client.processSubscribeChannel(id, channel)
 
 	return &response, nil
 }
 
 // process Unsubscribe request
-func (processor *messageProcessor) processUnsubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
+func (client *clientInfo) processUnsubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
 	var request UnsubscribeRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
@@ -393,12 +414,12 @@ func (processor *messageProcessor) processUnsubscribeRequest(requestJSON []byte)
 		return &response, nil
 	}
 
-	if err = processor.dataProvider.Unsubscribe(subscribeID, processor.authInfo); err != nil {
+	if err = client.dataProvider.Unsubscribe(subscribeID, client.authInfo); err != nil {
 		response.Error = createErrorInfo(err)
 		return &response, nil
 	}
 
-	delete(processor.subscribeChannels, subscribeID)
+	delete(client.subscribeChannels, subscribeID)
 
 	log.WithFields(log.Fields{"id": request.SubscriptionID}).Debug("Unregister subscription")
 
@@ -406,7 +427,7 @@ func (processor *messageProcessor) processUnsubscribeRequest(requestJSON []byte)
 }
 
 // process UnsubscribeAll request
-func (processor *messageProcessor) processUnsubscribeAllRequest(requestJSON []byte) (responseItf interface{}, err error) {
+func (client *clientInfo) processUnsubscribeAllRequest(requestJSON []byte) (responseItf interface{}, err error) {
 	var request UnsubscribeAllRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
@@ -417,7 +438,7 @@ func (processor *messageProcessor) processUnsubscribeAllRequest(requestJSON []by
 		MessageHeader: request.MessageHeader,
 		Timestamp:     getCurTime()}
 
-	if err = processor.unsubscribeAll(); err != nil {
+	if err = client.unsubscribeAll(); err != nil {
 		response.Error = createErrorInfo(err)
 		return &response, nil
 	}
@@ -425,7 +446,7 @@ func (processor *messageProcessor) processUnsubscribeAllRequest(requestJSON []by
 	return &response, nil
 }
 
-func (processor *messageProcessor) processSubscribeChannel(id uint64, channel <-chan interface{}) {
+func (client *clientInfo) processSubscribeChannel(id uint64, channel <-chan interface{}) {
 	for {
 		data, more := <-channel
 		if more {
@@ -443,7 +464,7 @@ func (processor *messageProcessor) processSubscribeChannel(id uint64, channel <-
 			}
 
 			if notificationJSON != nil {
-				processor.sendMessage(websocket.TextMessage, notificationJSON)
+				client.wsClient.SendMessage(websocket.TextMessage, notificationJSON)
 			}
 		} else {
 			log.WithField("subscribeID", id).Debug("Subscription closed")
@@ -452,14 +473,14 @@ func (processor *messageProcessor) processSubscribeChannel(id uint64, channel <-
 	}
 }
 
-func (processor *messageProcessor) unsubscribeAll() (err error) {
-	for subscribeID := range processor.subscribeChannels {
-		if localErr := processor.dataProvider.Unsubscribe(subscribeID, processor.authInfo); localErr != nil {
+func (client *clientInfo) unsubscribeAll() (err error) {
+	for subscribeID := range client.subscribeChannels {
+		if localErr := client.dataProvider.Unsubscribe(subscribeID, client.authInfo); localErr != nil {
 			err = localErr
 		}
 	}
 
-	processor.subscribeChannels = make(map[uint64]<-chan interface{})
+	client.subscribeChannels = make(map[uint64]<-chan interface{})
 
 	return err
 }
