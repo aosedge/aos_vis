@@ -28,6 +28,7 @@ import (
 	"github.com/godbus/dbus"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"gitpct.epam.com/epmd-aepr/aos_common/visprotocol"
 	"gitpct.epam.com/epmd-aepr/aos_common/wsclient"
 
 	"aos_vis/config"
@@ -177,12 +178,12 @@ func TestGetNoAuth(t *testing.T) {
 		t.Fatalf("Can't connect to server: %s", err)
 	}
 
-	getRequest := visserver.GetRequest{
-		MessageHeader: visserver.MessageHeader{
-			Action:    visserver.ActionGet,
+	getRequest := visprotocol.GetRequest{
+		MessageHeader: visprotocol.MessageHeader{
+			Action:    visprotocol.ActionGet,
 			RequestID: "8765"},
 		Path: "Attribute.Vehicle.VehicleIdentification.VIN"}
-	getResponse := visserver.GetResponse{}
+	getResponse := visprotocol.GetResponse{}
 
 	if err = client.SendRequest("RequestID", getRequest.RequestID, &getRequest, &getResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
@@ -204,12 +205,12 @@ func TestGet(t *testing.T) {
 		t.Fatalf("Can't connect to server: %s", err)
 	}
 
-	getRequest := visserver.GetRequest{
-		MessageHeader: visserver.MessageHeader{
-			Action:    visserver.ActionGet,
+	getRequest := visprotocol.GetRequest{
+		MessageHeader: visprotocol.MessageHeader{
+			Action:    visprotocol.ActionGet,
 			RequestID: "8755"},
 		Path: "Signal.Drivetrain.InternalCombustionEngine.RPM"}
-	getResponse := visserver.GetResponse{}
+	getResponse := visprotocol.GetResponse{}
 
 	if err = client.SendRequest("RequestID", getRequest.RequestID, &getRequest, &getResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
@@ -219,13 +220,13 @@ func TestGet(t *testing.T) {
 		t.Fatalf("Should be error 401")
 	}
 
-	authRequest := visserver.AuthRequest{
-		MessageHeader: visserver.MessageHeader{
-			Action:    visserver.ActionAuth,
+	authRequest := visprotocol.AuthRequest{
+		MessageHeader: visprotocol.MessageHeader{
+			Action:    visprotocol.ActionAuth,
 			RequestID: "12345"},
-		Tokens: visserver.Tokens{
+		Tokens: visprotocol.Tokens{
 			Authorization: "appUID"}}
-	authResponse := visserver.AuthResponse{}
+	authResponse := visprotocol.AuthResponse{}
 
 	if err = client.SendRequest("RequestID", authRequest.RequestID, &authRequest, &authResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
@@ -255,13 +256,13 @@ func TestSet(t *testing.T) {
 		t.Fatalf("Can't connect to server: %s", err)
 	}
 
-	authRequest := visserver.AuthRequest{
-		MessageHeader: visserver.MessageHeader{
-			Action:    visserver.ActionAuth,
+	authRequest := visprotocol.AuthRequest{
+		MessageHeader: visprotocol.MessageHeader{
+			Action:    visprotocol.ActionAuth,
 			RequestID: "12345"},
-		Tokens: visserver.Tokens{
+		Tokens: visprotocol.Tokens{
 			Authorization: "appUID"}}
-	authResponse := visserver.AuthResponse{}
+	authResponse := visprotocol.AuthResponse{}
 
 	if err = client.SendRequest("RequestID", authRequest.RequestID, &authRequest, &authResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
@@ -271,9 +272,9 @@ func TestSet(t *testing.T) {
 		t.Fatalf("Auth request error: %s", authResponse.Error.Message)
 	}
 
-	setRequest := visserver.SetRequest{
-		MessageHeader: visserver.MessageHeader{
-			Action:    visserver.ActionSet,
+	setRequest := visprotocol.SetRequest{
+		MessageHeader: visprotocol.MessageHeader{
+			Action:    visprotocol.ActionSet,
 			RequestID: "8888"},
 		Path: "Signal.Cabin.Door.Row1.*",
 		Value: []interface{}{
@@ -281,7 +282,7 @@ func TestSet(t *testing.T) {
 			map[string]interface{}{"Right.Window.Position": 100},
 			map[string]interface{}{"Left.IsLocked": true},
 			map[string]interface{}{"Left.Window.Position": 250}}}
-	setResponse := visserver.GetResponse{}
+	setResponse := visprotocol.GetResponse{}
 
 	if err = client.SendRequest("RequestID", setRequest.RequestID, &setRequest, &setResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
@@ -293,10 +294,10 @@ func TestSet(t *testing.T) {
 }
 
 func TestSubscribeUnsubscribe(t *testing.T) {
-	notificationChannel := make(chan visserver.SubscriptionNotification, 1)
+	notificationChannel := make(chan visprotocol.SubscriptionNotification, 1)
 
 	client, err := wsclient.New("TestClient", func(data []byte) {
-		var notification visserver.SubscriptionNotification
+		var notification visprotocol.SubscriptionNotification
 
 		if err := json.Unmarshal(data, &notification); err != nil {
 			t.Fatalf("Error parsing notification: %s", err)
@@ -313,13 +314,13 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		t.Fatalf("Can't connect to server: %s", err)
 	}
 
-	authRequest := visserver.AuthRequest{
-		MessageHeader: visserver.MessageHeader{
-			Action:    visserver.ActionAuth,
+	authRequest := visprotocol.AuthRequest{
+		MessageHeader: visprotocol.MessageHeader{
+			Action:    visprotocol.ActionAuth,
 			RequestID: "12345"},
-		Tokens: visserver.Tokens{
+		Tokens: visprotocol.Tokens{
 			Authorization: "appUID"}}
-	authResponse := visserver.AuthResponse{}
+	authResponse := visprotocol.AuthResponse{}
 
 	if err = client.SendRequest("RequestID", authRequest.RequestID, &authRequest, &authResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
@@ -331,12 +332,12 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 
 	// Subscribe
 
-	subscribeRequest := visserver.SubscribeRequest{
-		MessageHeader: visserver.MessageHeader{
-			Action:    visserver.ActionSubscribe,
+	subscribeRequest := visprotocol.SubscribeRequest{
+		MessageHeader: visprotocol.MessageHeader{
+			Action:    visprotocol.ActionSubscribe,
 			RequestID: "1004"},
 		Path: "Signal.Cabin.Door.Row1.Right.Window.Position"}
-	subscribeResponse := visserver.SubscribeResponse{}
+	subscribeResponse := visprotocol.SubscribeResponse{}
 
 	if err = client.SendRequest("RequestID", subscribeRequest.RequestID, &subscribeRequest, &subscribeResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
@@ -354,13 +355,13 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 
 	// Change data
 
-	setRequest := visserver.SetRequest{
-		MessageHeader: visserver.MessageHeader{
-			Action:    visserver.ActionSet,
+	setRequest := visprotocol.SetRequest{
+		MessageHeader: visprotocol.MessageHeader{
+			Action:    visprotocol.ActionSet,
 			RequestID: "1004"},
 		Path:  "Signal.Cabin.Door.Row1.Right.Window.Position",
 		Value: 123}
-	setResponse := visserver.GetResponse{}
+	setResponse := visprotocol.GetResponse{}
 
 	if err = client.SendRequest("RequestID", setRequest.RequestID, &setRequest, &setResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
@@ -387,12 +388,12 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 
 	// Unsubscribe wrong id
 
-	unsubscribeRequest := visserver.UnsubscribeRequest{
-		MessageHeader: visserver.MessageHeader{
-			Action:    visserver.ActionUnsubscribe,
+	unsubscribeRequest := visprotocol.UnsubscribeRequest{
+		MessageHeader: visprotocol.MessageHeader{
+			Action:    visprotocol.ActionUnsubscribe,
 			RequestID: "1004"},
 		SubscriptionID: "1"}
-	unsubscribeResponse := visserver.UnsubscribeResponse{}
+	unsubscribeResponse := visprotocol.UnsubscribeResponse{}
 
 	if err = client.SendRequest("RequestID", unsubscribeRequest.RequestID, &unsubscribeRequest, &unsubscribeResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
@@ -405,7 +406,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	// Unsubscribe
 
 	unsubscribeRequest.SubscriptionID = subscriptionID
-	unsubscribeResponse = visserver.UnsubscribeResponse{}
+	unsubscribeResponse = visprotocol.UnsubscribeResponse{}
 
 	if err = client.SendRequest("RequestID", unsubscribeRequest.RequestID, &unsubscribeRequest, &unsubscribeResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
@@ -417,10 +418,10 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 
 	// UnsubscribeAll
 
-	unsubscribeAllRequest := visserver.UnsubscribeAllRequest{
-		MessageHeader: visserver.MessageHeader{
-			Action: visserver.ActionUnsubscribeAll}}
-	unsubscribeAllResponse := visserver.UnsubscribeAllResponse{}
+	unsubscribeAllRequest := visprotocol.UnsubscribeAllRequest{
+		MessageHeader: visprotocol.MessageHeader{
+			Action: visprotocol.ActionUnsubscribeAll}}
+	unsubscribeAllResponse := visprotocol.UnsubscribeAllResponse{}
 
 	if err = client.SendRequest("RequestID", unsubscribeAllRequest.RequestID, &unsubscribeAllRequest, &unsubscribeAllResponse); err != nil {
 		t.Errorf("Send request error: %s", err)

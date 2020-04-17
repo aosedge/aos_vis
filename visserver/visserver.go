@@ -28,6 +28,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+	"gitpct.epam.com/epmd-aepr/aos_common/visprotocol"
 	"gitpct.epam.com/epmd-aepr/aos_common/wsserver"
 
 	"aos_vis/config"
@@ -64,116 +65,6 @@ type Server struct {
 	wsServer     *wsserver.Server
 	dataProvider *dataprovider.DataProvider
 	clients      map[*wsserver.Client]*clientInfo
-}
-
-// MessageHeader VIS message header
-type MessageHeader struct {
-	Action    string `json:"action"`
-	RequestID string `json:"requestId"`
-}
-
-// ErrorInfo VIS error info
-type ErrorInfo struct {
-	Number  int    `json:"number"`
-	Reason  string `json:"reason"`
-	Message string `json:"message"`
-}
-
-// Tokens VIS authorize tokens
-type Tokens struct {
-	Authorization    string `json:"authorization,omitempty"`
-	WwwVehicleDevice string `json:"www-vehicle-device,omitempty"`
-}
-
-// AuthRequest VIS authorize request
-type AuthRequest struct {
-	MessageHeader
-	Tokens Tokens `json:"tokens"`
-}
-
-// AuthResponse VIS authorize success response
-type AuthResponse struct {
-	MessageHeader
-	Error *ErrorInfo `json:"error,omitempty"`
-	TTL   int64      `json:"TTL,omitempty"`
-}
-
-// GetRequest VIS get request
-type GetRequest struct {
-	MessageHeader
-	Path string `json:"path"`
-}
-
-// GetResponse VIS get success response
-type GetResponse struct {
-	MessageHeader
-	Error     *ErrorInfo  `json:"error,omitempty"`
-	Value     interface{} `json:"value,omitempty"`
-	Timestamp int64       `json:"timestamp"`
-}
-
-// SetRequest VIS set request
-type SetRequest struct {
-	MessageHeader
-	Path  string      `json:"path"`
-	Value interface{} `json:"value"`
-}
-
-// SetResponse VIS set success response
-type SetResponse struct {
-	MessageHeader
-	Error     *ErrorInfo `json:"error,omitempty"`
-	Timestamp int64      `json:"timestamp,omitempty"`
-}
-
-// SubscribeRequest VIS subscribe request
-type SubscribeRequest struct {
-	MessageHeader
-	Path    string `json:"path"`
-	Filters string `json:"filters,omitempty"` //TODO: will be implemented later
-}
-
-// SubscribeResponse VIS subscribe success response
-type SubscribeResponse struct {
-	MessageHeader
-	Error          *ErrorInfo `json:"error,omitempty"`
-	SubscriptionID string     `json:"subscriptionId,omitempty"`
-	Timestamp      int64      `json:"timestamp"`
-}
-
-// SubscriptionNotification VIS subscription notification
-type SubscriptionNotification struct {
-	Error          *ErrorInfo  `json:"error,omitempty"`
-	Action         string      `json:"action"`
-	SubscriptionID string      `json:"subscriptionId"`
-	Value          interface{} `json:"value,omitempty"`
-	Timestamp      int64       `json:"timestamp"`
-}
-
-// UnsubscribeRequest VIS unsubscribe request
-type UnsubscribeRequest struct {
-	MessageHeader
-	SubscriptionID string `json:"subscriptionId"`
-}
-
-// UnsubscribeResponse VIS unsubscribe success response
-type UnsubscribeResponse struct {
-	MessageHeader
-	Error          *ErrorInfo `json:"error,omitempty"`
-	SubscriptionID string     `json:"subscriptionId"`
-	Timestamp      int64      `json:"timestamp"`
-}
-
-// UnsubscribeAllRequest VIS unsubscribe all request
-type UnsubscribeAllRequest struct {
-	MessageHeader
-}
-
-// UnsubscribeAllResponse VIS unsubscribe all success response
-type UnsubscribeAllResponse struct {
-	MessageHeader
-	Error     *ErrorInfo `json:"error,omitempty"`
-	Timestamp int64      `json:"timestamp"`
 }
 
 type clientInfo struct {
@@ -247,7 +138,7 @@ func (server *Server) ProcessMessage(wsClient *wsserver.Client, messageType int,
 		return nil, errors.New("message from unknown client")
 	}
 
-	var header MessageHeader
+	var header visprotocol.MessageHeader
 
 	if err = json.Unmarshal(message, &header); err != nil {
 		return nil, err
@@ -294,14 +185,14 @@ func (server *Server) ProcessMessage(wsClient *wsserver.Client, messageType int,
  ******************************************************************************/
 
 // process Get request
-func (client *clientInfo) processGetRequest(requestJSON []byte) (response *GetResponse, err error) {
-	var request GetRequest
+func (client *clientInfo) processGetRequest(requestJSON []byte) (response *visprotocol.GetResponse, err error) {
+	var request visprotocol.GetRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
 		return nil, err
 	}
 
-	response = &GetResponse{
+	response = &visprotocol.GetResponse{
 		MessageHeader: request.MessageHeader,
 		Timestamp:     getCurTime()}
 
@@ -317,14 +208,14 @@ func (client *clientInfo) processGetRequest(requestJSON []byte) (response *GetRe
 }
 
 // process Set request
-func (client *clientInfo) processSetRequest(requestJSON []byte) (response *SetResponse, err error) {
-	var request SetRequest
+func (client *clientInfo) processSetRequest(requestJSON []byte) (response *visprotocol.SetResponse, err error) {
+	var request visprotocol.SetRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
 		return nil, err
 	}
 
-	response = &SetResponse{
+	response = &visprotocol.SetResponse{
 		MessageHeader: request.MessageHeader,
 		Timestamp:     getCurTime()}
 
@@ -337,14 +228,14 @@ func (client *clientInfo) processSetRequest(requestJSON []byte) (response *SetRe
 }
 
 // process Auth request
-func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *AuthResponse, err error) {
-	var request AuthRequest
+func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *visprotocol.AuthResponse, err error) {
+	var request visprotocol.AuthRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
 		return nil, err
 	}
 
-	response = &AuthResponse{
+	response = &visprotocol.AuthResponse{
 		MessageHeader: request.MessageHeader}
 
 	if request.Tokens.Authorization == "" {
@@ -365,7 +256,7 @@ func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *Auth
 
 // process Subscribe request
 func (client *clientInfo) processSubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
-	var request SubscribeRequest
+	var request visprotocol.SubscribeRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
 		return nil, err
@@ -375,7 +266,7 @@ func (client *clientInfo) processSubscribeRequest(requestJSON []byte) (responseI
 		log.Warn("Filter currently not implemented. Filters will be ignored")
 	}
 
-	response := SubscribeResponse{
+	response := visprotocol.SubscribeResponse{
 		MessageHeader: request.MessageHeader,
 		Timestamp:     getCurTime()}
 
@@ -397,13 +288,13 @@ func (client *clientInfo) processSubscribeRequest(requestJSON []byte) (responseI
 
 // process Unsubscribe request
 func (client *clientInfo) processUnsubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
-	var request UnsubscribeRequest
+	var request visprotocol.UnsubscribeRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
 		return nil, err
 	}
 
-	response := UnsubscribeResponse{
+	response := visprotocol.UnsubscribeResponse{
 		MessageHeader:  request.MessageHeader,
 		SubscriptionID: request.SubscriptionID,
 		Timestamp:      getCurTime()}
@@ -428,13 +319,13 @@ func (client *clientInfo) processUnsubscribeRequest(requestJSON []byte) (respons
 
 // process UnsubscribeAll request
 func (client *clientInfo) processUnsubscribeAllRequest(requestJSON []byte) (responseItf interface{}, err error) {
-	var request UnsubscribeAllRequest
+	var request visprotocol.UnsubscribeAllRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
 		return nil, err
 	}
 
-	response := UnsubscribeAllResponse{
+	response := visprotocol.UnsubscribeAllResponse{
 		MessageHeader: request.MessageHeader,
 		Timestamp:     getCurTime()}
 
@@ -452,7 +343,7 @@ func (client *clientInfo) processSubscribeChannel(id uint64, channel <-chan inte
 		if more {
 			subscriptionID := strconv.FormatUint(id, 10)
 
-			notification := SubscriptionNotification{
+			notification := visprotocol.SubscriptionNotification{
 				Action:         ActionSubscription,
 				SubscriptionID: subscriptionID,
 				Value:          data,
@@ -485,12 +376,12 @@ func (client *clientInfo) unsubscribeAll() (err error) {
 	return err
 }
 
-func createErrorInfo(err error) (errorInfo *ErrorInfo) {
+func createErrorInfo(err error) (errorInfo *visprotocol.ErrorInfo) {
 	if err == nil {
 		return nil
 	}
 
-	errorInfo = &ErrorInfo{Message: err.Error()}
+	errorInfo = &visprotocol.ErrorInfo{Message: err.Error()}
 
 	switch {
 	case strings.Contains(strings.ToLower(err.Error()), "not found") ||
