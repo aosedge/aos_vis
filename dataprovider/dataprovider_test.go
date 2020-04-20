@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dataprovider
+package dataprovider_test
 
 import (
 	"encoding/json"
@@ -29,6 +29,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"aos_vis/config"
+	"aos_vis/dataprovider"
 )
 
 /*******************************************************************************
@@ -48,7 +49,7 @@ func init() {
  * Vars
  ******************************************************************************/
 
-var provider *DataProvider
+var provider *dataprovider.DataProvider
 
 /*******************************************************************************
  * Main
@@ -93,7 +94,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Can't parse config: %s", err)
 	}
 
-	provider, err = New(&cfg)
+	provider, err = dataprovider.New(&cfg)
 	if err != nil {
 		log.Fatalf("Can't create data provider: %s", err)
 	}
@@ -394,13 +395,13 @@ func TestSetData(t *testing.T) {
 
 func TestPermissions(t *testing.T) {
 	// Check public path for not authorized client
-	_, err := provider.GetData("Attribute.Vehicle.VehicleIdentification.VIN", &AuthInfo{})
+	_, err := provider.GetData("Attribute.Vehicle.VehicleIdentification.VIN", &dataprovider.AuthInfo{})
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}
 
 	// Check private path for not authorized client
-	_, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM", &AuthInfo{})
+	_, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM", &dataprovider.AuthInfo{})
 	if err == nil {
 		t.Error("Path should not be accessible")
 	} else if !strings.Contains(err.Error(), "not authorized") {
@@ -409,7 +410,7 @@ func TestPermissions(t *testing.T) {
 
 	// Check authorized but not permitted
 	_, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM",
-		&AuthInfo{IsAuthorized: true, Permissions: map[string]string{}})
+		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{}})
 	if err == nil {
 		t.Error("Path should not be accessible")
 	} else if !strings.Contains(err.Error(), "not have permissions") {
@@ -418,14 +419,14 @@ func TestPermissions(t *testing.T) {
 
 	// Check read permissions
 	_, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM",
-		&AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Drivetrain.InternalCombustionEngine.RPM": "r"}})
+		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Drivetrain.InternalCombustionEngine.RPM": "r"}})
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}
 
 	// Check no write permissions
 	err = provider.SetData("Signal.Cabin.Door.Row1.Right.Window.Position", 0,
-		&AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Cabin.Door.*": "r"}})
+		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Cabin.Door.*": "r"}})
 	if err == nil {
 		t.Error("Path should not be accessible")
 	} else if !strings.Contains(err.Error(), "not have permissions") {
@@ -434,7 +435,7 @@ func TestPermissions(t *testing.T) {
 
 	// Check write permissions
 	err = provider.SetData("Signal.Cabin.Door.Row1.Right.Window.Position", 0,
-		&AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Cabin.Door.*": "rw"}})
+		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Cabin.Door.*": "rw"}})
 	if err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
@@ -675,14 +676,14 @@ func TestPathFilter(t *testing.T) {
 	}
 
 	for _, testItem := range testData {
-		regexp, err := createPathFilter(testItem.filter)
+		regexp, err := dataprovider.CreatePathFilter(testItem.filter)
 		if err != nil {
 			t.Errorf("Can't create regexp from path: %s", err)
 			continue
 		}
 
 		for _, result := range testItem.result {
-			if regexp.match(result.path) != result.match {
+			if regexp.Match(result.path) != result.match {
 				if result.match {
 					t.Errorf("Path %s doesn't match filter %s", result.path, testItem.filter)
 				} else {
