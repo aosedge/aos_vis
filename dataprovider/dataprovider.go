@@ -28,7 +28,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"aos_vis/config"
-	"aos_vis/dataadapter"
 )
 
 /*******************************************************************************
@@ -47,7 +46,7 @@ type DataProvider struct {
 	currentSubsID    uint64
 	subscribeInfoMap map[uint64]*subscribeInfo
 	sync.Mutex
-	adapters []dataadapter.DataAdapter
+	adapters []DataAdapter
 }
 
 // AuthInfo authorization info
@@ -56,8 +55,35 @@ type AuthInfo struct {
 	Permissions  map[string]string
 }
 
+// DataAdapter interface to data adapter
+type DataAdapter interface {
+	// Close closes adapter
+	Close()
+	// GetName returns adapter name
+	GetName() (name string)
+	// GetPathList returns list of all pathes for this adapter
+	GetPathList() (pathList []string, err error)
+	// IsPathPublic returns true if requested data accessible without authorization
+	IsPathPublic(path string) (result bool, err error)
+	// GetData returns data by path
+	GetData(pathList []string) (data map[string]interface{}, err error)
+	// SetData sets data by pathes
+	SetData(data map[string]interface{}) (err error)
+	// GetSubscribeChannel returns channel on which data changes will be sent
+	GetSubscribeChannel() (channel <-chan map[string]interface{})
+	// Subscribe subscribes for data changes
+	Subscribe(pathList []string) (err error)
+	// Unsubscribe unsubscribes from data changes
+	Unsubscribe(pathList []string) (err error)
+	// UnsubscribeAll unsubscribes from all data changes
+	UnsubscribeAll() (err error)
+}
+
+// NewPlugin plugin new function
+type NewPlugin func(configJSON json.RawMessage) (adapter DataAdapter, err error)
+
 type sensorDescription struct {
-	adapter      dataadapter.DataAdapter
+	adapter      DataAdapter
 	subscribeIds *list.List
 }
 
@@ -67,8 +93,21 @@ type subscribeInfo struct {
 }
 
 /*******************************************************************************
+ * Vars
+ ******************************************************************************/
+
+var plugins = make(map[string]NewPlugin)
+
+/*******************************************************************************
  * Public
  ******************************************************************************/
+
+// RegisterPlugin registers data adapter plugin
+func RegisterPlugin(plugin string, newFunc NewPlugin) {
+	log.WithField("plugin", plugin).Info("Register plugin")
+
+	plugins[plugin] = newFunc
+}
 
 // New returns pointer to DataProvider
 func New(config *config.Config) (provider *DataProvider, err error) {
@@ -79,7 +118,7 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	provider.sensors = make(map[string]*sensorDescription)
 	provider.subscribeInfoMap = make(map[uint64]*subscribeInfo)
 
-	provider.adapters = make([]dataadapter.DataAdapter, 0, 8)
+	provider.adapters = make([]DataAdapter, 0, 8)
 
 	for _, adapterCfg := range config.Adapters {
 		if adapterCfg.Disabled {
@@ -119,7 +158,7 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 	}
 
 	// Create map of pathes grouped by adapter
-	adapterDataMap := make(map[dataadapter.DataAdapter][]string)
+	adapterDataMap := make(map[DataAdapter][]string)
 
 	for path, sensor := range provider.sensors {
 		if filter.Match(path) {
@@ -187,7 +226,7 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 	}
 
 	// adapterDataMap contains VIS data grouped by adapters
-	adapterDataMap := make(map[dataadapter.DataAdapter]map[string]interface{})
+	adapterDataMap := make(map[DataAdapter]map[string]interface{})
 
 	for path, sensor := range provider.sensors {
 		if filter.Match(path) {
@@ -251,7 +290,7 @@ func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uin
 	}
 
 	// Create map of pathes grouped by adapter
-	subscribeMap := make(map[dataadapter.DataAdapter][]string)
+	subscribeMap := make(map[DataAdapter][]string)
 
 	// Get data from adapter and group it by parent
 	for path, sensor := range provider.sensors {
@@ -311,7 +350,7 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 	delete(provider.subscribeInfoMap, id)
 
 	// Create map of pathes grouped by adapter
-	unsubscribeMap := make(map[dataadapter.DataAdapter][]string)
+	unsubscribeMap := make(map[DataAdapter][]string)
 
 	// Go through all sensors and remove id
 	for path, sensor := range provider.sensors {
@@ -369,13 +408,13 @@ func (provider *DataProvider) GetSubscribeIDs() (result []uint64) {
  * Private
  ******************************************************************************/
 
-func (provider *DataProvider) createAdapter(pluginPath string, params interface{}) (adapter dataadapter.DataAdapter, err error) {
-	paramsJSON, err := json.Marshal(params)
-	if err != nil {
-		return nil, err
+func (provider *DataProvider) createAdapter(plugin string, params json.RawMessage) (adapter DataAdapter, err error) {
+	newFunc, ok := plugins[plugin]
+	if !ok {
+		return nil, fmt.Errorf("plugin %s not found", plugin)
 	}
 
-	adapter, err = dataadapter.NewAdapter(pluginPath, paramsJSON)
+	adapter, err = newFunc(params)
 	if err != nil {
 		return nil, err
 	}
@@ -400,7 +439,7 @@ func (provider *DataProvider) createAdapter(pluginPath string, params interface{
 	return adapter, nil
 }
 
-func (provider *DataProvider) handleSubscribeChannel(adapter dataadapter.DataAdapter) {
+func (provider *DataProvider) handleSubscribeChannel(adapter DataAdapter) {
 	for {
 		changes, more := <-adapter.GetSubscribeChannel()
 		if !more {
@@ -447,7 +486,7 @@ func getParentPath(path string) (parent string) {
 	return path[:strings.LastIndex(path, ".")]
 }
 
-func checkPermissions(adapter dataadapter.DataAdapter, path string, authInfo *AuthInfo, permissions string) (err error) {
+func checkPermissions(adapter DataAdapter, path string, authInfo *AuthInfo, permissions string) (err error) {
 	if authInfo == nil {
 		return nil
 	}

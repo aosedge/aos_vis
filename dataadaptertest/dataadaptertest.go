@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"time"
 
-	"aos_vis/dataadapter"
+	"aos_vis/dataprovider"
 )
 
 /*******************************************************************************
@@ -31,7 +31,7 @@ import (
 
 // TestAdapterInfo contains info for adapter test
 type TestAdapterInfo struct {
-	Adapter          dataadapter.DataAdapter
+	Adapter          dataprovider.DataAdapter
 	Name             string
 	PathListLen      int
 	SetData          map[string]interface{}

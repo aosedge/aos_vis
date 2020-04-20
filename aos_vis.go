@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"aos_vis/config"
+	_ "aos_vis/plugins"
 	"aos_vis/visserver"
 )
 

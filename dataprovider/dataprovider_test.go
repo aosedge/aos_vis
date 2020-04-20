@@ -18,6 +18,7 @@
 package dataprovider_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -61,7 +62,7 @@ func TestMain(m *testing.M) {
 	configJSON := `{
 	"Adapters":[
 		{
-			"Plugin":"../storageadapter.so",
+			"Plugin":"testadapter",
 			"Params": {
 				"Data" : {
 					"Attribute.Vehicle.VehicleIdentification.VIN":    {"Value": "TestVIN", "Public": true,"ReadOnly": true},
@@ -93,6 +94,27 @@ func TestMain(m *testing.M) {
 	if err = decoder.Decode(&cfg); err != nil {
 		log.Fatalf("Can't parse config: %s", err)
 	}
+
+	dataprovider.RegisterPlugin("testadapter", func(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
+		baseAdapter, err := dataprovider.NewBaseAdapter()
+		if err != nil {
+			return nil, err
+		}
+
+		var sensors struct {
+			Data map[string]*dataprovider.BaseData
+		}
+
+		decoder := json.NewDecoder(bytes.NewReader(configJSON))
+		decoder.UseNumber()
+		if err = decoder.Decode(&sensors); err != nil {
+			return nil, err
+		}
+
+		baseAdapter.Data = sensors.Data
+
+		return baseAdapter, nil
+	})
 
 	provider, err = dataprovider.New(&cfg)
 	if err != nil {

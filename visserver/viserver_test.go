@@ -18,6 +18,7 @@
 package visserver_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/url"
 	"os"
@@ -32,6 +33,7 @@ import (
 	"gitpct.epam.com/epmd-aepr/aos_common/wsclient"
 
 	"aos_vis/config"
+	"aos_vis/dataprovider"
 	"aos_vis/visserver"
 )
 
@@ -106,7 +108,7 @@ func TestMain(m *testing.M) {
 		"VISKey":  "../data/wwwivi.key.pem",
 		"Adapters":[
 			{
-				"Plugin":"../storageadapter.so",
+				"Plugin":"testadapter",
 				"Params": {
 					"Data" : {
 						"Attribute.Vehicle.VehicleIdentification.VIN":    {"Value": "TestVIN", "Public": true,"ReadOnly": true},
@@ -145,6 +147,27 @@ func TestMain(m *testing.M) {
 	}
 
 	cfg.ServerURL = url.Host
+
+	dataprovider.RegisterPlugin("testadapter", func(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
+		baseAdapter, err := dataprovider.NewBaseAdapter()
+		if err != nil {
+			return nil, err
+		}
+
+		var sensors struct {
+			Data map[string]*dataprovider.BaseData
+		}
+
+		decoder := json.NewDecoder(bytes.NewReader(configJSON))
+		decoder.UseNumber()
+		if err = decoder.Decode(&sensors); err != nil {
+			return nil, err
+		}
+
+		baseAdapter.Data = sensors.Data
+
+		return baseAdapter, nil
+	})
 
 	server, err := visserver.New(&cfg)
 	if err != nil {

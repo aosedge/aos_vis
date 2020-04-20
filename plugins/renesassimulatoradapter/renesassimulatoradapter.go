@@ -1,4 +1,21 @@
-package main
+// SPDX-License-Identifier: Apache-2.0
+//
+// Copyright 2019 Renesas Inc.
+// Copyright 2019 EPAM Systems Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package renesassimulatoradapter
 
 import (
 	"context"
@@ -10,7 +27,7 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
-	"aos_vis/dataadapter"
+	"aos_vis/dataprovider"
 )
 
 /*******************************************************************************
@@ -21,7 +38,7 @@ import (
 type RenesasSimulatorAdapter struct {
 	httpServer  *http.Server
 	upgrader    websocket.Upgrader
-	baseAdapter *dataadapter.BaseAdapter
+	baseAdapter *dataprovider.BaseAdapter
 	signalMap   map[string]string
 }
 
@@ -39,8 +56,8 @@ type simulatorMessage struct {
  * Public
  ******************************************************************************/
 
-// NewAdapter creates adapter instance
-func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) {
+// New creates adapter instance
+func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
 	log.Info("Create Renesas simulator adapter")
 
 	localAdapter := new(RenesasSimulatorAdapter)
@@ -55,7 +72,7 @@ func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) 
 
 	localAdapter.signalMap = config.SignalMap
 
-	if localAdapter.baseAdapter, err = dataadapter.NewBaseAdapter(); err != nil {
+	if localAdapter.baseAdapter, err = dataprovider.NewBaseAdapter(); err != nil {
 		return nil, err
 	}
 
@@ -63,7 +80,7 @@ func NewAdapter(configJSON []byte) (adapter dataadapter.DataAdapter, err error) 
 
 	for _, signal := range localAdapter.signalMap {
 		if signal != "" {
-			localAdapter.baseAdapter.Data[signal] = &dataadapter.BaseData{}
+			localAdapter.baseAdapter.Data[signal] = &dataprovider.BaseData{}
 		}
 	}
 

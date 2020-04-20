@@ -39,7 +39,7 @@ type Config struct {
 type AdapterConfig struct {
 	Plugin   string
 	Disabled bool
-	Params   interface{}
+	Params   json.RawMessage
 }
 
 /*******************************************************************************
