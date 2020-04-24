@@ -1,14 +1,18 @@
 # github.com/godbus/dbus v4.1.0+incompatible
+## explicit
 github.com/godbus/dbus
 # github.com/google/uuid v1.1.1
 github.com/google/uuid
 # github.com/gorilla/websocket v1.4.2
+## explicit
 github.com/gorilla/websocket
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/sirupsen/logrus v1.5.0
+## explicit
 github.com/sirupsen/logrus
-# gitpct.epam.com/epmd-aepr/aos_common v0.0.0-20200415150449-14cbd70bccaf
+# gitpct.epam.com/epmd-aepr/aos_common v0.0.0-20200424142856-dd18c1e6e367
+## explicit
 gitpct.epam.com/epmd-aepr/aos_common/visprotocol
 gitpct.epam.com/epmd-aepr/aos_common/wsclient
 gitpct.epam.com/epmd-aepr/aos_common/wsserver
