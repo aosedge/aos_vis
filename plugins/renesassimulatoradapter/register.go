@@ -1,5 +1,3 @@
-// +build WITH_RENESASSIMULATORADAPTER
-
 // SPDX-License-Identifier: Apache-2.0
 //
 // Copyright 2019 Renesas Inc.
