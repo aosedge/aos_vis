@@ -39,8 +39,8 @@ type BaseAdapter struct {
 type BaseData struct {
 	Public    bool
 	ReadOnly  bool
-	Subscribe bool
 	Value     interface{}
+	subscribe bool
 }
 
 /*******************************************************************************
@@ -128,7 +128,7 @@ func (adapter *BaseAdapter) SetData(data map[string]interface{}) (err error) {
 		oldValue := adapter.Data[path].Value
 		adapter.Data[path].Value = value
 
-		if !reflect.DeepEqual(oldValue, value) && adapter.Data[path].Subscribe {
+		if !reflect.DeepEqual(oldValue, value) && adapter.Data[path].subscribe {
 			changedData[path] = value
 		}
 	}
@@ -155,7 +155,7 @@ func (adapter *BaseAdapter) Subscribe(pathList []string) (err error) {
 			return fmt.Errorf("path %s doesn't exits", path)
 		}
 
-		adapter.Data[path].Subscribe = true
+		adapter.Data[path].subscribe = true
 	}
 
 	return nil
@@ -171,7 +171,7 @@ func (adapter *BaseAdapter) Unsubscribe(pathList []string) (err error) {
 			return fmt.Errorf("path %s doesn't exits", path)
 		}
 
-		adapter.Data[path].Subscribe = false
+		adapter.Data[path].subscribe = false
 	}
 
 	return nil
@@ -183,7 +183,7 @@ func (adapter *BaseAdapter) UnsubscribeAll() (err error) {
 	defer adapter.Unlock()
 
 	for _, data := range adapter.Data {
-		data.Subscribe = false
+		data.subscribe = false
 	}
 
 	return nil
