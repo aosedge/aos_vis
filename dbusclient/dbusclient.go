@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	objectPath    = "/com/aosservicemanager/vistoken"
-	interfaceName = "com.aosservicemanager.vistoken"
+	objectPath    = "/com/aos/servicemanager"
+	interfaceName = "com.aos.servicemanager"
 )
 
 // GetVisPermissionByToken dbus call GetPermission

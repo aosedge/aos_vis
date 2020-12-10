@@ -57,7 +57,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Can't create session connection: %v", err)
 	}
 
-	reply, err := conn.RequestName("com.aosservicemanager.vistoken", dbus.NameFlagDoNotQueue)
+	reply, err := conn.RequestName("com.aos.servicemanager", dbus.NameFlagDoNotQueue)
 	if err != nil {
 		log.Fatal("Can't request name")
 	}
@@ -66,7 +66,7 @@ func TestMain(m *testing.M) {
 	}
 
 	server := dbusInterface{}
-	conn.Export(server, "/com/aosservicemanager/vistoken", "com.aosservicemanager.vistoken")
+	conn.Export(server, "/com/aos/servicemanager", "com.aos.servicemanager")
 
 	ret := m.Run()
 
