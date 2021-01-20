@@ -243,7 +243,7 @@ func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *visp
 		return response, nil
 	}
 
-	if client.authInfo.Permissions, err = dbusclient.GetVisPermissionByToken(request.Tokens.Authorization); err != nil {
+	if client.authInfo.Permissions, err = dbusclient.GetVisPermissionByToken(request.Tokens.Authorization, true); err != nil {
 		response.Error = createErrorInfo(errors.New("empty token authorization"))
 		return response, nil
 	}

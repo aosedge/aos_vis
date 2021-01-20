@@ -25,16 +25,22 @@ import (
 )
 
 const (
-	objectPath    = "/com/aos/servicemanager"
-	interfaceName = "com.aos.servicemanager"
+	objectPath    = "/com/aos/servicemanager/vis"
+	interfaceName = "com.aos.servicemanager.vis"
 )
 
 // GetVisPermissionByToken dbus call GetPermission
-func GetVisPermissionByToken(token string) (permissions map[string]string, err error) {
+func GetVisPermissionByToken(token string, useSystemBus bool) (permissions map[string]string, err error) {
 	var permissionJSON string
 	var dbusErr string
+	var conn *dbus.Conn
 
-	conn, err := dbus.SessionBus()
+	if useSystemBus == true {
+		conn, err = dbus.SystemBus()
+	} else {
+		conn, err = dbus.SessionBus()
+	}
+
 	if err != nil {
 		return permissions, err
 	}

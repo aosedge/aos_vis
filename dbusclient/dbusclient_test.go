@@ -57,7 +57,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Can't create session connection: %v", err)
 	}
 
-	reply, err := conn.RequestName("com.aos.servicemanager", dbus.NameFlagDoNotQueue)
+	reply, err := conn.RequestName("com.aos.servicemanager.vis", dbus.NameFlagDoNotQueue)
 	if err != nil {
 		log.Fatal("Can't request name")
 	}
@@ -66,7 +66,7 @@ func TestMain(m *testing.M) {
 	}
 
 	server := dbusInterface{}
-	conn.Export(server, "/com/aos/servicemanager", "com.aos.servicemanager")
+	conn.Export(server, "/com/aos/servicemanager/vis", "com.aos.servicemanager.vis")
 
 	ret := m.Run()
 
@@ -74,7 +74,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestDBUS(t *testing.T) {
-	permission, err := dbusclient.GetVisPermissionByToken("APPID")
+	permission, err := dbusclient.GetVisPermissionByToken("APPID", false)
 	if err != nil {
 		t.Fatalf("Can't make D-Bus call: %s", err)
 	}
