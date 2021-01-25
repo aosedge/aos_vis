@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -163,6 +164,8 @@ func generateVIN() (vin []byte) {
 	const vinSymbols = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 	vin = make([]byte, vinLength)
+
+	rand.Seed(time.Now().UnixNano())
 
 	for i := range vin {
 		vin[i] = vinSymbols[rand.Intn(len(vinSymbols))]
