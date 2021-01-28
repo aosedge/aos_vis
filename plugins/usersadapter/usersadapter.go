@@ -121,12 +121,19 @@ func (adapter *usersAdapter) GetData(pathList []string) (data map[string]interfa
 func (adapter *usersAdapter) SetData(data map[string]interface{}) (err error) {
 	for path, value := range data {
 		if path == adapter.config.VISPath {
-			users, ok := value.([]string)
+			users, ok := value.([]interface{})
 			if !ok {
 				return fmt.Errorf("wrong value type for path %s", path)
 			}
 
-			adapter.users = users
+			for _, user := range users {
+				userStr, ok := user.(string)
+				if !ok {
+					return fmt.Errorf("wrong element type for path %s", path)
+				}
+
+				adapter.users = append(adapter.users, userStr)
+			}
 
 			log.WithField("users", adapter.users).Debug("Set Users")
 

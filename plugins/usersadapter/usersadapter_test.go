@@ -29,6 +29,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"gitpct.epam.com/epmd-aepr/aos_common/visprotocol"
 
 	"aos_vis/plugins/usersadapter"
 )
@@ -167,7 +168,11 @@ func TestSetUser(t *testing.T) {
 	}
 	defer adapter.Close()
 
-	setUsers := []string{"claim0", "claim1", "claim2"}
+	setUsersStr := []string{"claim0", "claim1", "claim2"}
+	setUsers := make([]interface{}, len(setUsersStr))
+	for i, v := range setUsersStr {
+		setUsers[i] = v
+	}
 
 	if err = adapter.Subscribe([]string{usersVISPath}); err != nil {
 		t.Fatalf("Subscribe error: %s", err)
@@ -185,6 +190,60 @@ func TestSetUser(t *testing.T) {
 
 	case <-time.After(5 * time.Second):
 		t.Error("Wait data change timeout")
+	}
+}
+
+func TestSetUserFromJson(t *testing.T) {
+	usersFile := path.Join(tmpDir, "users.txt")
+	if err := os.RemoveAll(usersFile); err != nil {
+		t.Fatalf("Can't remove Users file: %s", err)
+	}
+
+	adapter, err := usersadapter.New(generateConfig(usersVISPath, usersFile))
+	if err != nil {
+		t.Fatalf("Can't create adapter: %s", err)
+	}
+
+	defer adapter.Close()
+
+	setRequest := `{
+		"action": "set",
+		"requestId": "d1d735bf-40ae-4ac3-a68c-d1d60368c83b",
+		"path": "Attribute.Vehicle.UserIdentification.Users",
+		"value": ["428efde9-76e7-4532-9024-50b6b292fea6"]
+	}`
+
+	request := visprotocol.SetRequest{}
+
+	if err := json.Unmarshal([]byte(setRequest), &request); err != nil {
+		t.Fatalf("Can't unmarshall request: %s", err)
+	}
+
+	if err := adapter.SetData(map[string]interface{}{usersVISPath: request.Value}); err != nil {
+		t.Fatalf("Can't set data: %s", err)
+	}
+
+	data, err := adapter.GetData([]string{usersVISPath})
+	if err != nil {
+		t.Fatalf("Can't get data: %s", err)
+	}
+
+	_, ok := data[usersVISPath]
+	if !ok {
+		t.Fatal("Users not found in data")
+	}
+
+	users, ok := data[usersVISPath].([]string)
+	if !ok {
+		t.Fatal("Wrong Users data type")
+	}
+
+	if len(users) != 1 {
+		t.Errorf("Wrong count of Users")
+	}
+
+	if users[0] != "428efde9-76e7-4532-9024-50b6b292fea6" {
+		t.Errorf("Wrong value of users")
 	}
 }
 
