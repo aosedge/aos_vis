@@ -26,7 +26,7 @@ Specify parameters in visconfig.json file:
 
 ```json
 {
-	"ServerURL": ":8088",
+	"ServerURL": ":443",
 	"VISCert": "data/wwwivi.crt.pem",
 	"VISKey": "data/wwwivi.key.pem",
 	"Adapters":[

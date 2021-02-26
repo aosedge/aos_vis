@@ -37,7 +37,7 @@ import (
 	"aos_vis/visserver"
 )
 
-const serverURL = "wss://localhost:8088"
+const serverURL = "wss://localhost:443"
 
 type visResponse struct {
 	Action         string      `json:"action"`

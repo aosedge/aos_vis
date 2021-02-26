@@ -33,7 +33,7 @@ import (
 
 func createConfigFile() (err error) {
 	configContent := `{
-"ServerUrl": "localhost:8088",
+"ServerUrl": "localhost:443",
 "VISCert": "wwwivi.crt.pem",
 "VISKey": "wwwivi.key.pem",
 "Adapters":[{
@@ -101,7 +101,7 @@ func TestGetCredentials(t *testing.T) {
 		t.Fatalf("Error opening config file: %s", err)
 	}
 
-	if config.ServerURL != "localhost:8088" {
+	if config.ServerURL != "localhost:443" {
 		t.Errorf("Wrong ServerURL value: %s", config.ServerURL)
 	}
 
