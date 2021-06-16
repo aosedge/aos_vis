@@ -43,7 +43,8 @@ func createConfigFile() (err error) {
 		"Plugin": "test2"
 	}, {
 		"Plugin": "test3"
-	}]
+	}],
+"PermissionServerURL": "aosiam:8090"
 }`
 
 	if err := ioutil.WriteFile(path.Join("tmp", "visconfig.json"), []byte(configContent), 0644); err != nil {
@@ -131,5 +132,16 @@ func TestAdapters(t *testing.T) {
 
 	if config.Adapters[0].Disabled != true || config.Adapters[1].Disabled != false || config.Adapters[2].Disabled != false {
 		t.Error("Wrong disable value")
+	}
+}
+
+func TestPermissionServerURL(t *testing.T) {
+	config, err := config.New("tmp/visconfig.json")
+	if err != nil {
+		t.Fatalf("Error opening config file: %s", err)
+	}
+
+	if config.PermissionServerURL != "aosiam:8090" {
+		t.Errorf("Wrong PermissionServerURL value: %s", config.ServerURL)
 	}
 }

@@ -29,10 +29,11 @@ import (
 
 // Config instance
 type Config struct {
-	ServerURL string          `json:"serverURL"`
-	VISCert   string          `json:"VISCert"`
-	VISKey    string          `json:"VISKey"`
-	Adapters  []AdapterConfig `json:"adapters"`
+	ServerURL           string          `json:"serverURL"`
+	VISCert             string          `json:"VISCert"`
+	VISKey              string          `json:"VISKey"`
+	Adapters            []AdapterConfig `json:"adapters"`
+	PermissionServerURL string          `json:"permissionServerURL"`
 }
 
 // AdapterConfig adapter configuration
