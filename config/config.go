@@ -29,17 +29,17 @@ import (
 
 // Config instance
 type Config struct {
-	ServerURL string
-	VISCert   string
-	VISKey    string
-	Adapters  []AdapterConfig
+	ServerURL string          `json:"serverURL"`
+	VISCert   string          `json:"VISCert"`
+	VISKey    string          `json:"VISKey"`
+	Adapters  []AdapterConfig `json:"adapters"`
 }
 
 // AdapterConfig adapter configuration
 type AdapterConfig struct {
-	Plugin   string
-	Disabled bool
-	Params   json.RawMessage
+	Plugin   string          `json:"plugin"`
+	Disabled bool            `json:"disabled"`
+	Params   json.RawMessage `json:"params"`
 }
 
 /*******************************************************************************
