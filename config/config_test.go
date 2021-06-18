@@ -34,6 +34,7 @@ import (
 func createConfigFile() (err error) {
 	configContent := `{
 "ServerUrl": "localhost:443",
+"CACert": "/etc/ssl/certs/rootCA.crt",
 "VISCert": "wwwivi.crt.pem",
 "VISKey": "wwwivi.key.pem",
 "Adapters":[{
@@ -112,6 +113,10 @@ func TestGetCredentials(t *testing.T) {
 
 	if config.VISKey != "wwwivi.key.pem" {
 		t.Errorf("Wrong VISKey value: %s", config.VISKey)
+	}
+
+	if config.CACert != "/etc/ssl/certs/rootCA.crt" {
+		t.Errorf("Wrong CACert value: %s", config.CACert)
 	}
 }
 

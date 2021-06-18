@@ -30,6 +30,7 @@ import (
 // Config instance
 type Config struct {
 	ServerURL           string          `json:"serverURL"`
+	CACert              string          `json:"caCert"`
 	VISCert             string          `json:"VISCert"`
 	VISKey              string          `json:"VISKey"`
 	Adapters            []AdapterConfig `json:"adapters"`
