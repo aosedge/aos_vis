@@ -36,7 +36,7 @@ import (
  ******************************************************************************/
 
 const (
-	websocketTimeout = 10 * time.Second
+	websocketTimeout = 120 * time.Second
 	errorChannelSize = 1
 )
 
@@ -283,9 +283,10 @@ func (client *Client) processMessages() {
 			}
 
 			if key == requestID.Interface() {
+				client.requests.Delete(param.id)
+
 				param.rspChannel <- true
 				rspFound = true
-				client.requests.Delete(param.id)
 				return false
 			}
 
