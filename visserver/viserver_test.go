@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/godbus/dbus"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"gitpct.epam.com/epmd-aepr/aos_common/visprotocol"
@@ -55,7 +54,7 @@ type errorInfo struct {
 	Message string
 }
 
-type dbusInterface struct {
+type permissionProvider struct {
 }
 
 type configuration struct {
@@ -77,8 +76,11 @@ func init() {
 	log.SetOutput(os.Stdout)
 }
 
-func (GetPermission dbusInterface) GetPermission(token string) (string, string, *dbus.Error) {
-	return `{"Signal.*": "rw"}`, "OK", nil
+func (provider *permissionProvider) GetVisPermissionByToken(token string) (permissions map[string]string, err error) {
+	permission := make(map[string]string)
+	permission["Signal.*"] = "rw"
+
+	return permission, nil
 }
 
 /*******************************************************************************
@@ -86,22 +88,8 @@ func (GetPermission dbusInterface) GetPermission(token string) (string, string, 
  ******************************************************************************/
 
 func TestMain(m *testing.M) {
-	conn, err := dbus.SessionBus()
-	if err != nil {
-		log.Fatalf("Can't create session connection: %s", err)
-	}
 
-	reply, err := conn.RequestName("com.aosservicemanager.vistoken", dbus.NameFlagDoNotQueue)
-	if err != nil {
-		log.Fatal("Can't request name")
-	}
-
-	if reply != dbus.RequestNameReplyPrimaryOwner {
-		log.Fatal("Name already taken")
-	}
-
-	dbusserver := dbusInterface{}
-	conn.Export(dbusserver, "/com/aosservicemanager/vistoken", "com.aosservicemanager.vistoken")
+	permissionProvider := permissionProvider{}
 
 	configJSON := `{
 		"VISCert": "../data/wwwivi.crt.pem",
@@ -137,7 +125,7 @@ func TestMain(m *testing.M) {
 
 	decoder := json.NewDecoder(strings.NewReader(configJSON))
 	// Parse config
-	if err = decoder.Decode(&cfg); err != nil {
+	if err := decoder.Decode(&cfg); err != nil {
 		log.Fatalf("Can't parse config: %s", err)
 	}
 
@@ -169,7 +157,7 @@ func TestMain(m *testing.M) {
 		return baseAdapter, nil
 	})
 
-	server, err := visserver.New(&cfg)
+	server, err := visserver.New(&cfg, &permissionProvider)
 	if err != nil {
 		log.Fatalf("Can't create ws server: %s", err)
 	}

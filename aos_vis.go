@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"aos_vis/config"
+	"aos_vis/permissionprovider"
 	_ "aos_vis/plugins"
 	"aos_vis/visserver"
 )
@@ -64,7 +65,12 @@ func main() {
 		log.Fatalf("Can' open config file: %s", err)
 	}
 
-	server, err := visserver.New(config)
+	permissionsProvider, err := permissionprovider.New(config, false)
+	if err != nil {
+		log.Fatalf("Can't create permission provider: %s", err)
+	}
+
+	server, err := visserver.New(config, permissionsProvider)
 	if err != nil {
 		log.Fatalf("Can't create ws server: %s", err)
 	}
@@ -74,6 +80,8 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 	server.Close()
+
+	permissionsProvider.Close()
 
 	os.Exit(1)
 }

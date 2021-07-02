@@ -33,12 +33,15 @@ import (
 
 	"aos_vis/config"
 	"aos_vis/dataprovider"
-	"aos_vis/dbusclient"
 )
 
 /*******************************************************************************
- * Consts
+ * Types
  ******************************************************************************/
+
+type PermissionProvider interface {
+	GetVisPermissionByToken(token string) (permissions map[string]string, err error)
+}
 
 /*******************************************************************************
  * Consts
@@ -62,16 +65,18 @@ const (
 // Server update manager server structure
 type Server struct {
 	sync.Mutex
-	wsServer     *wsserver.Server
-	dataProvider *dataprovider.DataProvider
-	clients      map[*wsserver.Client]*clientInfo
+	wsServer           *wsserver.Server
+	dataProvider       *dataprovider.DataProvider
+	clients            map[*wsserver.Client]*clientInfo
+	permissionProvider PermissionProvider
 }
 
 type clientInfo struct {
-	authInfo          *dataprovider.AuthInfo
-	subscribeChannels map[uint64]<-chan interface{}
-	dataProvider      *dataprovider.DataProvider
-	wsClient          *wsserver.Client
+	authInfo           *dataprovider.AuthInfo
+	subscribeChannels  map[uint64]<-chan interface{}
+	dataProvider       *dataprovider.DataProvider
+	wsClient           *wsserver.Client
+	permissionProvider PermissionProvider
 }
 
 /*******************************************************************************
@@ -79,10 +84,10 @@ type clientInfo struct {
  ******************************************************************************/
 
 // New creates new Web socket server
-func New(config *config.Config) (server *Server, err error) {
+func New(config *config.Config, permissionProvider PermissionProvider) (server *Server, err error) {
 	log.Debug("Create VIS server")
 
-	server = &Server{clients: make(map[*wsserver.Client]*clientInfo)}
+	server = &Server{clients: make(map[*wsserver.Client]*clientInfo), permissionProvider: permissionProvider}
 
 	if server.dataProvider, err = dataprovider.New(config); err != nil {
 		return nil, err
@@ -108,12 +113,16 @@ func (server *Server) Close() {
 func (server *Server) ClientConnected(client *wsserver.Client) {
 	server.Lock()
 	defer server.Unlock()
+	log.Info("ClientConnected")
 
 	server.clients[client] = &clientInfo{
 		authInfo:          &dataprovider.AuthInfo{},
 		subscribeChannels: make(map[uint64]<-chan interface{}),
 		dataProvider:      server.dataProvider,
 		wsClient:          client}
+
+	log.Info("GetPermissionProvider")
+	server.clients[client].permissionProvider = server.GetPermissionProvider()
 }
 
 // ClientDisconnected disconnect client notification
@@ -180,6 +189,10 @@ func (server *Server) ProcessMessage(wsClient *wsserver.Client, messageType int,
 	return response, nil
 }
 
+func (server *Server) GetPermissionProvider() (permissionProvider PermissionProvider) {
+	return server.permissionProvider
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/
@@ -243,8 +256,9 @@ func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *visp
 		return response, nil
 	}
 
-	if client.authInfo.Permissions, err = dbusclient.GetVisPermissionByToken(request.Tokens.Authorization, true); err != nil {
-		response.Error = createErrorInfo(errors.New("empty token authorization"))
+	if client.authInfo.Permissions, err = client.permissionProvider.GetVisPermissionByToken(request.Tokens.Authorization); err != nil {
+		log.Error("err: ", err)
+		response.Error = createErrorInfo(errors.New("service not authorized"))
 		return response, nil
 	}
 
