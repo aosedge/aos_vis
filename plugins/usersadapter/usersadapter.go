@@ -126,6 +126,8 @@ func (adapter *usersAdapter) SetData(data map[string]interface{}) (err error) {
 				return fmt.Errorf("wrong value type for path %s", path)
 			}
 
+			adapter.users = []string{}
+
 			for _, user := range users {
 				userStr, ok := user.(string)
 				if !ok {

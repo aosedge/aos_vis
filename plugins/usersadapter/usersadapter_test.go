@@ -168,28 +168,35 @@ func TestSetUser(t *testing.T) {
 	}
 	defer adapter.Close()
 
-	setUsersStr := []string{"claim0", "claim1", "claim2"}
-	setUsers := make([]interface{}, len(setUsersStr))
-	for i, v := range setUsersStr {
-		setUsers[i] = v
+	setUsersTestSet := [][]string{
+		{"claim0", "claim1", "claim2"},
+		{"claim3"},
+		{},
 	}
 
 	if err = adapter.Subscribe([]string{usersVISPath}); err != nil {
 		t.Fatalf("Subscribe error: %s", err)
 	}
 
-	if err = adapter.SetData(map[string]interface{}{usersVISPath: setUsers}); err != nil {
-		t.Fatalf("Set data error: %s", err)
-	}
-
-	select {
-	case data := <-adapter.GetSubscribeChannel():
-		if !reflect.DeepEqual(data[usersVISPath], setUsers) {
-			t.Errorf("Wrong Users value: %s", setUsers)
+	for setIndex := range setUsersTestSet {
+		setUsers := make([]interface{}, len(setUsersTestSet[setIndex]))
+		for i, v := range setUsersTestSet[setIndex] {
+			setUsers[i] = v
 		}
 
-	case <-time.After(5 * time.Second):
-		t.Error("Wait data change timeout")
+		if err = adapter.SetData(map[string]interface{}{usersVISPath: setUsers}); err != nil {
+			t.Fatalf("Set data error: %s", err)
+		}
+
+		select {
+		case data := <-adapter.GetSubscribeChannel():
+			if !reflect.DeepEqual(data[usersVISPath], setUsers) {
+				t.Errorf("Wrong Users value: %s", setUsers)
+			}
+
+		case <-time.After(5 * time.Second):
+			t.Error("Wait data change timeout")
+		}
 	}
 }
 
