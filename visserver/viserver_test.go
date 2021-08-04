@@ -37,6 +37,7 @@ import (
 )
 
 const serverURL = "wss://localhost:443"
+const caCert = "../data/rootCA.pem"
 
 type visResponse struct {
 	Action         string      `json:"action"`
@@ -179,7 +180,7 @@ func closeConnection(c *websocket.Conn) {
 }
 
 func TestGetNoAuth(t *testing.T) {
-	client, err := wsclient.New("TestClient", nil)
+	client, err := wsclient.New("TestClient", wsclient.ClientParam{CaCertFile: caCert}, nil)
 	if err != nil {
 		t.Fatalf("Can't create client: %s", err)
 	}
@@ -206,7 +207,7 @@ func TestGetNoAuth(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	client, err := wsclient.New("TestClient", nil)
+	client, err := wsclient.New("TestClient", wsclient.ClientParam{CaCertFile: caCert}, nil)
 	if err != nil {
 		t.Fatalf("Can't create client: %s", err)
 	}
@@ -257,7 +258,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	client, err := wsclient.New("TestClient", nil)
+	client, err := wsclient.New("TestClient", wsclient.ClientParam{CaCertFile: caCert}, nil)
 	if err != nil {
 		t.Fatalf("Can't create client: %s", err)
 	}
@@ -307,7 +308,7 @@ func TestSet(t *testing.T) {
 func TestSubscribeUnsubscribe(t *testing.T) {
 	notificationChannel := make(chan visprotocol.SubscriptionNotification, 1)
 
-	client, err := wsclient.New("TestClient", func(data []byte) {
+	client, err := wsclient.New("TestClient", wsclient.ClientParam{CaCertFile: caCert}, func(data []byte) {
 		var notification visprotocol.SubscriptionNotification
 
 		if err := json.Unmarshal(data, &notification); err != nil {
