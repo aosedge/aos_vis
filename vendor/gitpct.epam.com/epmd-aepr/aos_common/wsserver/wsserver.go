@@ -19,7 +19,6 @@ package wsserver
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strings"
 	"sync"
@@ -27,6 +26,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
+
+	"gitpct.epam.com/epmd-aepr/aos_common/aoserrors"
 )
 
 /*******************************************************************************
@@ -93,7 +94,7 @@ func New(name, url, cert, key string, handler ClientHandler) (server *Server, er
 		log.WithFields(log.Fields{"address": url, "crt": crt, "key": key}).Debug("Listen for clients")
 
 		if err := server.httpServer.ListenAndServeTLS(crt, key); err != http.ErrServerClosed {
-			log.Error("Server listening error: ", err)
+			log.Error("Server listening error: ", aoserrors.Wrap(err))
 			return
 		}
 	}(cert, key)
@@ -154,7 +155,7 @@ func (client *Client) SendMessage(messageType int, data []byte) (err error) {
 			client.connection.Close()
 		}
 
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	return nil
@@ -179,11 +180,11 @@ func (server *Server) newClient(w http.ResponseWriter, r *http.Request) (client 
 	client = &Client{RemoteAddr: r.RemoteAddr, handler: server.handler}
 
 	if websocket.IsWebSocketUpgrade(r) != true {
-		return nil, errors.New("new connection is not websocket")
+		return nil, aoserrors.New("new connection is not websocket")
 	}
 
 	if client.connection, err = server.upgrader.Upgrade(w, r, nil); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	server.clients[client.RemoteAddr] = client
@@ -209,7 +210,7 @@ func (client *Client) close(sendCloseMessage bool) (err error) {
 		client.SendMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	}
 
-	return client.connection.Close()
+	return aoserrors.Wrap(client.connection.Close())
 }
 
 func (client *Client) run() {

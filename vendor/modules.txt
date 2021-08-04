@@ -7,14 +7,15 @@ github.com/golang/protobuf/ptypes/empty
 github.com/golang/protobuf/ptypes/timestamp
 # github.com/google/uuid v1.1.2
 github.com/google/uuid
-# github.com/gorilla/websocket v1.4.2
+# github.com/gorilla/websocket v1.4.1
 ## explicit
 github.com/gorilla/websocket
 # github.com/sirupsen/logrus v1.7.0
 ## explicit
 github.com/sirupsen/logrus
-# gitpct.epam.com/epmd-aepr/aos_common v0.0.0-20210624204849-60c9a07c8e6a
+# gitpct.epam.com/epmd-aepr/aos_common v0.0.0-20210713152207-c523a792a812
 ## explicit
+gitpct.epam.com/epmd-aepr/aos_common/aoserrors
 gitpct.epam.com/epmd-aepr/aos_common/api/iamanager
 gitpct.epam.com/epmd-aepr/aos_common/utils/cryptutils
 gitpct.epam.com/epmd-aepr/aos_common/visprotocol
