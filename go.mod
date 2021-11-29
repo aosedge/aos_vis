@@ -3,6 +3,7 @@ module aos_vis
 go 1.14
 
 require (
+	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f
 	github.com/gorilla/websocket v1.4.1
 	github.com/sirupsen/logrus v1.7.0
 	gitpct.epam.com/epmd-aepr/aos_common v0.0.0-20210713152207-c523a792a812

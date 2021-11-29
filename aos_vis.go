@@ -23,6 +23,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/coreos/go-systemd/daemon"
 	log "github.com/sirupsen/logrus"
 
 	"aos_vis/config"
@@ -73,6 +74,11 @@ func main() {
 	server, err := visserver.New(config, permissionsProvider)
 	if err != nil {
 		log.Fatalf("Can't create ws server: %s", err)
+	}
+
+	// Notify systemd
+	if _, err = daemon.SdNotify(false, daemon.SdNotifyReady); err != nil {
+		log.Errorf("Can't notify systemd: %s", err)
 	}
 
 	// handle SIGTERM
