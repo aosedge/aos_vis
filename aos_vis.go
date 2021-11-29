@@ -20,12 +20,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/coreos/go-systemd/journal"
 	log "github.com/sirupsen/logrus"
+	"gitpct.epam.com/epmd-aepr/aos_common/aoserrors"
 
 	"aos_vis/config"
 	"aos_vis/permissionprovider"
@@ -36,6 +39,10 @@ import (
 // GitSummary provided by govvv at compile-time
 var GitSummary string
 
+type journalHook struct {
+	severityMap map[log.Level]journal.Priority
+}
+
 func init() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableTimestamp: false,
@@ -45,11 +52,52 @@ func init() {
 	log.SetOutput(os.Stdout)
 }
 
+func newJournalHook() (hook *journalHook) {
+	hook = &journalHook{
+		severityMap: map[log.Level]journal.Priority{
+			log.DebugLevel: journal.PriDebug,
+			log.InfoLevel:  journal.PriInfo,
+			log.WarnLevel:  journal.PriWarning,
+			log.ErrorLevel: journal.PriErr,
+			log.FatalLevel: journal.PriCrit,
+			log.PanicLevel: journal.PriEmerg,
+		}}
+
+	return hook
+}
+
+func (hook *journalHook) Fire(entry *log.Entry) (err error) {
+	if entry == nil {
+		return aoserrors.New("log entry is nil")
+	}
+
+	logMessage, err := entry.String()
+	if err != nil {
+		return aoserrors.Wrap(err)
+	}
+
+	err = journal.Print(hook.severityMap[entry.Level], logMessage)
+
+	return aoserrors.Wrap(err)
+}
+
+func (hook *journalHook) Levels() []log.Level {
+	return []log.Level{
+		log.PanicLevel,
+		log.FatalLevel,
+		log.ErrorLevel,
+		log.WarnLevel,
+		log.InfoLevel,
+		log.DebugLevel,
+	}
+}
+
 func main() {
 	// Initialize command line flags
 	configFile := flag.String("c", "visconfig.json", "path to config file")
 	strLogLevel := flag.String("v", "info", `log level: "debug", "info", "warn", "error", "fatal", "panic"`)
 	showVersion := flag.Bool("version", false, `show VIS version`)
+	useJournal := flag.Bool("j", false, "output logs to systemd journal")
 
 	flag.Parse()
 
@@ -57,6 +105,14 @@ func main() {
 	if *showVersion {
 		fmt.Printf("Version: %s\n", GitSummary)
 		return
+	}
+
+	// Set log output
+	if *useJournal {
+		log.AddHook(newJournalHook())
+		log.SetOutput(ioutil.Discard)
+	} else {
+		log.SetOutput(os.Stdout)
 	}
 
 	// Set log level
