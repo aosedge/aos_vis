@@ -36,12 +36,24 @@ import (
 	"aos_vis/visserver"
 )
 
-// GitSummary provided by govvv at compile-time
-var GitSummary string
+/*******************************************************************************
+ * Types
+ ******************************************************************************/
 
 type journalHook struct {
 	severityMap map[log.Level]journal.Priority
 }
+
+/*******************************************************************************
+ * Vars
+ ******************************************************************************/
+
+// GitSummary provided by govvv at compile-time
+var GitSummary string
+
+/*******************************************************************************
+ * Init
+ ******************************************************************************/
 
 func init() {
 	log.SetFormatter(&log.TextFormatter{
@@ -51,6 +63,10 @@ func init() {
 	log.SetLevel(log.InfoLevel)
 	log.SetOutput(os.Stdout)
 }
+
+/*******************************************************************************
+ * Journal hook
+ ******************************************************************************/
 
 func newJournalHook() (hook *journalHook) {
 	hook = &journalHook{
@@ -91,6 +107,10 @@ func (hook *journalHook) Levels() []log.Level {
 		log.DebugLevel,
 	}
 }
+
+/*******************************************************************************
+ * Main
+ ******************************************************************************/
 
 func main() {
 	// Initialize command line flags
