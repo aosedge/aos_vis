@@ -19,6 +19,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -48,8 +49,15 @@ func main() {
 	// Initialize command line flags
 	configFile := flag.String("c", "visconfig.json", "path to config file")
 	strLogLevel := flag.String("v", "info", `log level: "debug", "info", "warn", "error", "fatal", "panic"`)
+	showVersion := flag.Bool("version", false, `show VIS version`)
 
 	flag.Parse()
+
+	// Show versions
+	if *showVersion {
+		fmt.Printf("Version: %s\n", GitSummary)
+		return
+	}
 
 	// Set log level
 	logLevel, err := log.ParseLevel(*strLogLevel)
