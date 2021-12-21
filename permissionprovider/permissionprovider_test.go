@@ -28,7 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
-	pb "gitpct.epam.com/epmd-aepr/aos_common/api/iamanager"
+	pb "github.com/aoscloud/aos_common/api/iamanager/v1"
 
 	"aos_vis/config"
 	"aos_vis/permissionprovider"

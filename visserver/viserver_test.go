@@ -26,10 +26,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aoscloud/aos_common/visprotocol"
+	"github.com/aoscloud/aos_common/wsclient"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"gitpct.epam.com/epmd-aepr/aos_common/visprotocol"
-	"gitpct.epam.com/epmd-aepr/aos_common/wsclient"
 
 	"aos_vis/config"
 	"aos_vis/dataprovider"

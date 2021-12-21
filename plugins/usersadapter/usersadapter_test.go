@@ -28,8 +28,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aoscloud/aos_common/visprotocol"
 	log "github.com/sirupsen/logrus"
-	"gitpct.epam.com/epmd-aepr/aos_common/visprotocol"
 
 	"aos_vis/plugins/usersadapter"
 )
