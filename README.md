@@ -1,6 +1,6 @@
 ## Vehicle Information Service
-[![pipeline status](https://gitpct.epam.com/epmd-aepr/aos_vis/badges/master/pipeline.svg)](https://gitpct.epam.com/epmd-aepr/aos_vis/commits/master)
-[![coverage report](https://gitpct.epam.com/epmd-aepr/aos_vis/badges/master/coverage.svg)](https://gitpct.epam.com/epmd-aepr/aos_vis/commits/master) 
+[![CI](https://github.com/aoscloud/aos_vis/workflows/CI/badge.svg)](https://github.com/aoscloud/aos_vis/actions?query=workflow%3ACI)
+
 
 aos_vis is web socket server which provides vehicle information data using W3C protocol
 
