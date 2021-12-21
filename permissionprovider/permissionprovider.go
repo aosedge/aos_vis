@@ -24,8 +24,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	pb "gitpct.epam.com/epmd-aepr/aos_common/api/iamanager"
-	"gitpct.epam.com/epmd-aepr/aos_common/utils/cryptutils"
+	pb "github.com/aoscloud/aos_common/api/iamanager/v1"
+	"github.com/aoscloud/aos_common/utils/cryptutils"
 
 	"aos_vis/config"
 )
