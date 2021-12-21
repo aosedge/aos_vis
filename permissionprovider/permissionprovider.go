@@ -39,7 +39,7 @@ type PermissionProvider struct {
 	serverURL  string
 	rootCert   string
 	insecure   bool
-	iamClient  pb.IAManagerPublicClient
+	iamClient  pb.IAMPublicServiceClient
 	connection *grpc.ClientConn
 }
 
@@ -76,7 +76,7 @@ func (provider *PermissionProvider) GetVisPermissionByToken(token string) (permi
 	ctx, cancel := context.WithTimeout(context.Background(), iamRequestTimeout)
 	defer cancel()
 
-	req := &pb.GetPermissionsReq{Secret: token, FunctionalServerId: visFunctionalServerId}
+	req := &pb.PermissionsRequest{Secret: token, FunctionalServerId: visFunctionalServerId}
 
 	response, err := provider.iamClient.GetPermissions(ctx, req)
 	if err != nil {
@@ -118,7 +118,7 @@ func (provider *PermissionProvider) connect() (err error) {
 		return err
 	}
 
-	provider.iamClient = pb.NewIAManagerPublicClient(provider.connection)
+	provider.iamClient = pb.NewIAMPublicServiceClient(provider.connection)
 
 	return nil
 }
