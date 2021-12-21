@@ -41,6 +41,7 @@ import (
 type testServer struct {
 	grpcServer  *grpc.Server
 	permissions map[string]map[string]string
+	pb.UnimplementedIAMPublicServiceServer
 }
 
 /*******************************************************************************
@@ -109,7 +110,7 @@ func newTestServer(url string) (server *testServer, err error) {
 	}
 	server.grpcServer = grpc.NewServer()
 
-	pb.RegisterIAManagerPublicServer(server.grpcServer, server)
+	pb.RegisterIAMPublicServiceServer(server.grpcServer, server)
 
 	go server.grpcServer.Serve(listener)
 
@@ -124,8 +125,8 @@ func (server *testServer) close() (err error) {
 	return nil
 }
 
-func (server *testServer) GetPermissions(ctx context.Context, req *pb.GetPermissionsReq) (rsp *pb.GetPermissionsRsp, err error) {
-	rsp = &pb.GetPermissionsRsp{}
+func (server *testServer) GetPermissions(ctx context.Context, req *pb.PermissionsRequest) (rsp *pb.PermissionsResponse, err error) {
+	rsp = &pb.PermissionsResponse{}
 
 	if req.FunctionalServerId != visFunctionalServerID {
 		return rsp, fmt.Errorf("incorrect functional server ID: %s", req.FunctionalServerId)
