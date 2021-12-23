@@ -25,4 +25,9 @@ jobs:
         run: go build
 
       - name: Test
-        run: sudo env "PATH=$PATH" go test -v ./... -failfast
+        run:
+          sudo env "PATH=$PATH" go test -v ./... -failfast -coverprofile=coverage.out -covermode=atomic
+          sudo chmod 666 coverage.out
+
+      - name: Code coverage
+        run: bash <(curl -s https://codecov.io/bash)
