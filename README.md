@@ -1,6 +1,6 @@
 ## Vehicle Information Service
 [![CI](https://github.com/aoscloud/aos_vis/workflows/CI/badge.svg)](https://github.com/aoscloud/aos_vis/actions?query=workflow%3ACI)
-
+[![codecov](https://codecov.io/gh/aoscloud/aos_vis/branch/main/graph/badge.svg?token=h194cLyKqU)](https://codecov.io/gh/aoscloud/aos_vis)
 
 aos_vis is web socket server which provides vehicle information data using W3C protocol
 
