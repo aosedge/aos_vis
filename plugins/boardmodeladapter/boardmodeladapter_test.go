@@ -108,6 +108,9 @@ func TestGetBoardModel(t *testing.T) {
 	defer adapter.Close()
 
 	data, err := adapter.GetData([]string{boardModelVISPath})
+	if err != nil {
+		t.Fatalf("Can't get data: %s", err)
+	}
 
 	if _, ok := data[boardModelVISPath]; !ok {
 		t.Fatal("boardModel not found in data")

@@ -264,17 +264,16 @@ func (adapter *TelemetryEmulatorAdapter) getDataFromTelemetryEmulator() (visData
 func (adapter *TelemetryEmulatorAdapter) processData() {
 	ticker := time.NewTicker(time.Duration(adapter.cfg.UpdatePeriod) * time.Millisecond)
 	for {
-		select {
-		case <-ticker.C:
-			data, err := adapter.getDataFromTelemetryEmulator()
-			if err != nil {
-				log.Errorf("Can't read data: %s", err)
-				continue
-			}
-			if err = adapter.baseAdapter.SetData(data); err != nil {
-				log.Errorf("Can't update data: %s", err)
-				continue
-			}
+		<-ticker.C
+
+		data, err := adapter.getDataFromTelemetryEmulator()
+		if err != nil {
+			log.Errorf("Can't read data: %s", err)
+			continue
+		}
+		if err = adapter.baseAdapter.SetData(data); err != nil {
+			log.Errorf("Can't update data: %s", err)
+			continue
 		}
 	}
 }

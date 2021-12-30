@@ -106,6 +106,9 @@ func TestGenerateVIN(t *testing.T) {
 	defer adapter.Close()
 
 	data, err := adapter.GetData([]string{vinVISPath})
+	if err != nil {
+		t.Fatalf("Can't get data: %s", err)
+	}
 
 	if _, ok := data[vinVISPath]; !ok {
 		t.Fatal("VIN not found in data")
@@ -141,6 +144,9 @@ func TestExistingVIN(t *testing.T) {
 	defer adapter.Close()
 
 	data, err := adapter.GetData([]string{vinVISPath})
+	if err != nil {
+		t.Fatalf("Can't get data: %s", err)
+	}
 
 	if _, ok := data[vinVISPath]; !ok {
 		t.Fatal("VIN not found in data")
