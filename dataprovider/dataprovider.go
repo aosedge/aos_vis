@@ -208,10 +208,10 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 	// map or simple value. Convert array of map to map and keep map as is.
 	suffixMap := make(map[string]interface{})
 
-	switch data.(type) {
+	switch data := data.(type) {
 	// convert array of map to map
 	case []interface{}:
-		for _, arrayItem := range data.([]interface{}) {
+		for _, arrayItem := range data {
 			arrayMap, ok := arrayItem.(map[string]interface{})
 			if ok {
 				for path, value := range arrayMap {
@@ -222,7 +222,7 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 
 	// keep map as is
 	case map[string]interface{}:
-		suffixMap = data.(map[string]interface{})
+		suffixMap = data
 	}
 
 	// adapterDataMap contains VIS data grouped by adapters

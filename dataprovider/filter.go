@@ -64,9 +64,5 @@ func (filter *PathFilter) Match(path string) (result bool) {
 		maskIndex++
 	}
 
-	if maskIndex != len(maskSlice) {
-		return false
-	}
-
-	return true
+	return maskIndex == len(maskSlice)
 }

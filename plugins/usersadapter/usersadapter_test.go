@@ -111,6 +111,9 @@ func TestEmptyUser(t *testing.T) {
 	defer adapter.Close()
 
 	data, err := adapter.GetData([]string{usersVISPath})
+	if err != nil {
+		t.Fatalf("Can't get data: %s", err)
+	}
 
 	if _, ok := data[usersVISPath]; !ok {
 		t.Fatal("User not found in data")
@@ -141,6 +144,9 @@ func TestExistingUser(t *testing.T) {
 	defer adapter.Close()
 
 	data, err := adapter.GetData([]string{usersVISPath})
+	if err != nil {
+		t.Fatalf("Can't get data: %s", err)
+	}
 
 	if _, ok := data[usersVISPath]; !ok {
 		t.Fatal("Users not found in data")

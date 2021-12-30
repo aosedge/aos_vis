@@ -110,7 +110,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 func (adapter *RenesasSimulatorAdapter) Close() {
 	log.Info("Close Renesas simulator adapter")
 
-	adapter.httpServer.Shutdown(context.Background())
+	_ = adapter.httpServer.Shutdown(context.Background())
 	adapter.baseAdapter.Close()
 }
 
@@ -171,7 +171,7 @@ func (adapter *RenesasSimulatorAdapter) UnsubscribeAll() (err error) {
 func (adapter *RenesasSimulatorAdapter) handleConnection(w http.ResponseWriter, r *http.Request) {
 	log.WithField("RemoteAddr", r.RemoteAddr).Debug("Renesas simulator connection request")
 
-	if websocket.IsWebSocketUpgrade(r) != true {
+	if !websocket.IsWebSocketUpgrade(r) {
 		log.Error("New connection is not websocket")
 		return
 	}
