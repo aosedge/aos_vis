@@ -28,7 +28,6 @@ import (
 
 	"github.com/aoscloud/aos_common/visprotocol"
 	"github.com/aoscloud/aos_common/wsclient"
-	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
 	"aos_vis/config"
@@ -39,29 +38,7 @@ import (
 const serverURL = "wss://localhost:443"
 const caCert = "../data/rootCA.pem"
 
-type visResponse struct {
-	Action         string      `json:"action"`
-	RequestID      string      `json:"requestId"`
-	Value          interface{} `json:"value"`
-	Error          *errorInfo  `json:"error"`
-	Ttl            int64       `json:"TTL"`
-	SubscriptionID *string     `json:"subscriptionId"`
-	Timestamp      int64       `json:"timestamp"`
-}
-
-type errorInfo struct {
-	Number  int
-	Reason  string
-	Message string
-}
-
 type permissionProvider struct {
-}
-
-type configuration struct {
-	ServerUrl string
-	VISCert   string
-	VISKey    string
 }
 
 /*******************************************************************************
@@ -172,11 +149,6 @@ func TestMain(m *testing.M) {
 	server.Close()
 
 	os.Exit(ret)
-}
-
-func closeConnection(c *websocket.Conn) {
-	c.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-	c.Close()
 }
 
 func TestGetNoAuth(t *testing.T) {

@@ -369,7 +369,9 @@ func (client *clientInfo) processSubscribeChannel(id uint64, channel <-chan inte
 			}
 
 			if notificationJSON != nil {
-				client.wsClient.SendMessage(websocket.TextMessage, notificationJSON)
+				if err := client.wsClient.SendMessage(websocket.TextMessage, notificationJSON); err != nil {
+					log.Errorf("Can't send message: %s", err)
+				}
 			}
 		} else {
 			log.WithField("subscribeID", id).Debug("Subscription closed")

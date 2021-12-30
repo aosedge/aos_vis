@@ -298,8 +298,7 @@ func TestGetData(t *testing.T) {
 		}
 	*/
 
-	data, err = provider.GetData("Body.Flux.Capacitor", nil)
-	if err == nil {
+	if _, err = provider.GetData("Body.Flux.Capacitor", nil); err == nil {
 		t.Error("Path should not exists")
 	} else if !strings.Contains(err.Error(), "not exist") {
 		t.Errorf("Wrong error type: %s", err)
