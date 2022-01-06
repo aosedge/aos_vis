@@ -137,7 +137,8 @@ func (server *Server) ClientDisconnected(client *wsserver.Client) {
 }
 
 // ProcessMessage proccess incoming messages
-func (server *Server) ProcessMessage(wsClient *wsserver.Client, messageType int, message []byte) (response []byte, err error) {
+func (server *Server) ProcessMessage(
+	wsClient *wsserver.Client, messageType int, message []byte) (response []byte, err error) {
 	server.Lock()
 	defer server.Unlock()
 
@@ -262,7 +263,8 @@ func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *visp
 		return response, nil
 	}
 
-	if client.authInfo.Permissions, err = client.permissionProvider.GetVisPermissionByToken(request.Tokens.Authorization); err != nil {
+	if client.authInfo.Permissions,
+		err = client.permissionProvider.GetVisPermissionByToken(request.Tokens.Authorization); err != nil {
 		log.Error("err: ", err)
 
 		response.Error = createErrorInfo(errors.New("service not authorized"))
