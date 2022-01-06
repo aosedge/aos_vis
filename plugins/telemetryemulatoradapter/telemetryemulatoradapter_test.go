@@ -27,8 +27,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"aos_vis/dataadaptertest"
-	"aos_vis/plugins/telemetryemulatoradapter"
+	"github.com/aoscloud/aos_vis/dataadaptertest"
+	"github.com/aoscloud/aos_vis/plugins/telemetryemulatoradapter"
 )
 
 /*******************************************************************************

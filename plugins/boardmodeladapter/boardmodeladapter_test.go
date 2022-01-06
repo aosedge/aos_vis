@@ -26,7 +26,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"aos_vis/plugins/boardmodeladapter"
+	"github.com/aoscloud/aos_vis/plugins/boardmodeladapter"
 )
 
 /*******************************************************************************

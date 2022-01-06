@@ -30,8 +30,8 @@ import (
 
 	pb "github.com/aoscloud/aos_common/api/iamanager/v1"
 
-	"aos_vis/config"
-	"aos_vis/permissionprovider"
+	"github.com/aoscloud/aos_vis/config"
+	"github.com/aoscloud/aos_vis/permissionprovider"
 )
 
 /*******************************************************************************

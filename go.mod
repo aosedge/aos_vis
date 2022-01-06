@@ -1,4 +1,4 @@
-module aos_vis
+module github.com/aoscloud/aos_vis
 
 go 1.14
 

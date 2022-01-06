@@ -18,7 +18,7 @@
 package usersadapter
 
 import (
-	"aos_vis/dataprovider"
+	"github.com/aoscloud/aos_vis/dataprovider"
 )
 
 /*******************************************************************************

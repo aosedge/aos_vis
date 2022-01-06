@@ -27,7 +27,7 @@ import (
 	pb "github.com/aoscloud/aos_common/api/iamanager/v1"
 	"github.com/aoscloud/aos_common/utils/cryptutils"
 
-	"aos_vis/config"
+	"github.com/aoscloud/aos_vis/config"
 )
 
 /*******************************************************************************
@@ -59,8 +59,10 @@ const visFunctionalServerId = "vis"
 
 // New creates new permission provider
 func New(config *config.Config, insecure bool) (provider *PermissionProvider, err error) {
-	provider = &PermissionProvider{serverURL: config.PermissionServerURL,
-		rootCert: config.CACert, iamClient: nil, insecure: insecure, connection: nil}
+	provider = &PermissionProvider{
+		serverURL: config.PermissionServerURL,
+		rootCert:  config.CACert, iamClient: nil, insecure: insecure, connection: nil,
+	}
 
 	return provider, nil
 }
