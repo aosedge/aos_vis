@@ -49,7 +49,7 @@ type journalHook struct {
  ******************************************************************************/
 
 // GitSummary provided by govvv at compile-time
-var GitSummary string
+var GitSummary string // nolint
 
 /*******************************************************************************
  * Init
@@ -125,7 +125,7 @@ func main() {
 
 	// Show versions
 	if *showVersion {
-		fmt.Printf("Version: %s\n", GitSummary)
+		fmt.Printf("Version: %s/n", GitSummary) // nolint
 		return
 	}
 
@@ -142,6 +142,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error: %s", err)
 	}
+
 	log.SetLevel(logLevel)
 
 	log.WithFields(log.Fields{"configFile": *configFile, "version": GitSummary}).Info("Start VIS Server")
