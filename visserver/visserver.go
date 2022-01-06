@@ -119,7 +119,8 @@ func (server *Server) ClientConnected(client *wsserver.Client) {
 		authInfo:          &dataprovider.AuthInfo{},
 		subscribeChannels: make(map[uint64]<-chan interface{}),
 		dataProvider:      server.dataProvider,
-		wsClient:          client}
+		wsClient:          client,
+	}
 
 	log.Info("GetPermissionProvider")
 	server.clients[client].permissionProvider = server.GetPermissionProvider()
@@ -207,7 +208,8 @@ func (client *clientInfo) processGetRequest(requestJSON []byte) (response *vispr
 
 	response = &visprotocol.GetResponse{
 		MessageHeader: request.MessageHeader,
-		Timestamp:     getCurTime()}
+		Timestamp:     getCurTime(),
+	}
 
 	vehicleData, err := client.dataProvider.GetData(request.Path, client.authInfo)
 	if err != nil {
@@ -230,7 +232,8 @@ func (client *clientInfo) processSetRequest(requestJSON []byte) (response *vispr
 
 	response = &visprotocol.SetResponse{
 		MessageHeader: request.MessageHeader,
-		Timestamp:     getCurTime()}
+		Timestamp:     getCurTime(),
+	}
 
 	if err = client.dataProvider.SetData(request.Path, request.Value, client.authInfo); err != nil {
 		response.Error = createErrorInfo(err)
@@ -249,7 +252,8 @@ func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *visp
 	}
 
 	response = &visprotocol.AuthResponse{
-		MessageHeader: request.MessageHeader}
+		MessageHeader: request.MessageHeader,
+	}
 
 	if request.Tokens.Authorization == "" {
 		response.Error = createErrorInfo(errors.New("empty token authorization"))
@@ -282,7 +286,8 @@ func (client *clientInfo) processSubscribeRequest(requestJSON []byte) (responseI
 
 	response := visprotocol.SubscribeResponse{
 		MessageHeader: request.MessageHeader,
-		Timestamp:     getCurTime()}
+		Timestamp:     getCurTime(),
+	}
 
 	id, channel, err := client.dataProvider.Subscribe(request.Path, client.authInfo)
 	if err != nil {
@@ -311,7 +316,8 @@ func (client *clientInfo) processUnsubscribeRequest(requestJSON []byte) (respons
 	response := visprotocol.UnsubscribeResponse{
 		MessageHeader:  request.MessageHeader,
 		SubscriptionID: request.SubscriptionID,
-		Timestamp:      getCurTime()}
+		Timestamp:      getCurTime(),
+	}
 
 	subscribeID, err := strconv.ParseUint(request.SubscriptionID, 10, 64)
 	if err != nil {
@@ -341,7 +347,8 @@ func (client *clientInfo) processUnsubscribeAllRequest(requestJSON []byte) (resp
 
 	response := visprotocol.UnsubscribeAllResponse{
 		MessageHeader: request.MessageHeader,
-		Timestamp:     getCurTime()}
+		Timestamp:     getCurTime(),
+	}
 
 	if err = client.unsubscribeAll(); err != nil {
 		response.Error = createErrorInfo(err)
@@ -361,7 +368,8 @@ func (client *clientInfo) processSubscribeChannel(id uint64, channel <-chan inte
 				Action:         ActionSubscription,
 				SubscriptionID: subscriptionID,
 				Value:          data,
-				Timestamp:      getCurTime()}
+				Timestamp:      getCurTime(),
+			}
 
 			notificationJSON, err := json.Marshal(notification)
 			if err != nil {

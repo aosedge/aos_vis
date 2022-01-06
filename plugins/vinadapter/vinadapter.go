@@ -74,7 +74,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 
 		log.Warnf("Can't read VIN: %s. Generate new one: %s", err, string(vin))
 
-		if err = ioutil.WriteFile(localAdapter.config.FilePath, vin, 0644); err != nil {
+		if err = ioutil.WriteFile(localAdapter.config.FilePath, vin, 0o644); err != nil {
 			return nil, err
 		}
 	}

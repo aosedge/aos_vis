@@ -48,9 +48,11 @@ type testServer struct {
  * Consts
  ******************************************************************************/
 
-const serverURL = "localhost:8090"
-const visFunctionalServerID = "vis"
-const secret = "secret_ID"
+const (
+	serverURL             = "localhost:8090"
+	visFunctionalServerID = "vis"
+	secret                = "secret_ID"
+)
 
 /*******************************************************************************
  * Init
@@ -60,7 +62,8 @@ func init() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableTimestamp: false,
 		TimestampFormat:  "2006-01-02 15:04:05.000",
-		FullTimestamp:    true})
+		FullTimestamp:    true,
+	})
 	log.SetLevel(log.DebugLevel)
 	log.SetOutput(os.Stdout)
 }
