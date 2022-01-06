@@ -97,7 +97,8 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Can't parse config: %s", err)
 	}
 
-	dataprovider.RegisterPlugin("testadapter", func(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
+	dataprovider.RegisterPlugin("testadapter", func(configJSON json.RawMessage) (
+		adapter dataprovider.DataAdapter, err error) {
 		baseAdapter, err := dataprovider.NewBaseAdapter()
 		if err != nil {
 			return nil, aoserrors.Wrap(err)
@@ -442,7 +443,10 @@ func TestPermissions(t *testing.T) {
 
 	// Check read permissions
 	_, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.RPM",
-		&dataprovider.AuthInfo{IsAuthorized: true, Permissions: map[string]string{"Signal.Drivetrain.InternalCombustionEngine.RPM": "r"}})
+		&dataprovider.AuthInfo{
+			IsAuthorized: true,
+			Permissions:  map[string]string{"Signal.Drivetrain.InternalCombustionEngine.RPM": "r"},
+		})
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
 	}

@@ -116,7 +116,8 @@ func TestMain(m *testing.M) {
 
 	cfg.ServerURL = url.Host
 
-	dataprovider.RegisterPlugin("testadapter", func(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
+	dataprovider.RegisterPlugin("testadapter", func(configJSON json.RawMessage) (
+		adapter dataprovider.DataAdapter, err error) {
 		baseAdapter, err := dataprovider.NewBaseAdapter()
 		if err != nil {
 			return nil, aoserrors.Wrap(err)
@@ -343,7 +344,8 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	}
 	subscribeResponse := visprotocol.SubscribeResponse{}
 
-	if err = client.SendRequest("RequestID", subscribeRequest.RequestID, &subscribeRequest, &subscribeResponse); err != nil {
+	if err = client.SendRequest(
+		"RequestID", subscribeRequest.RequestID, &subscribeRequest, &subscribeResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
 	}
 
@@ -381,7 +383,8 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 
 	select {
 	case notification := <-notificationChannel:
-		if notification.Action != "subscription" || notification.SubscriptionID != subscriptionID || notification.Value.(float64) != 123.0 {
+		if notification.Action != "subscription" || notification.SubscriptionID != subscriptionID ||
+			notification.Value.(float64) != 123.0 {
 			t.Fatalf("Unexpected value")
 		}
 
@@ -404,7 +407,8 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	}
 	unsubscribeResponse := visprotocol.UnsubscribeResponse{}
 
-	if err = client.SendRequest("RequestID", unsubscribeRequest.RequestID, &unsubscribeRequest, &unsubscribeResponse); err != nil {
+	if err = client.SendRequest(
+		"RequestID", unsubscribeRequest.RequestID, &unsubscribeRequest, &unsubscribeResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
 	}
 
@@ -417,7 +421,8 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	unsubscribeRequest.SubscriptionID = subscriptionID
 	unsubscribeResponse = visprotocol.UnsubscribeResponse{}
 
-	if err = client.SendRequest("RequestID", unsubscribeRequest.RequestID, &unsubscribeRequest, &unsubscribeResponse); err != nil {
+	if err = client.SendRequest(
+		"RequestID", unsubscribeRequest.RequestID, &unsubscribeRequest, &unsubscribeResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
 	}
 
@@ -434,7 +439,8 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	}
 	unsubscribeAllResponse := visprotocol.UnsubscribeAllResponse{}
 
-	if err = client.SendRequest("RequestID", unsubscribeAllRequest.RequestID, &unsubscribeAllRequest, &unsubscribeAllResponse); err != nil {
+	if err = client.SendRequest(
+		"RequestID", unsubscribeAllRequest.RequestID, &unsubscribeAllRequest, &unsubscribeAllResponse); err != nil {
 		t.Errorf("Send request error: %s", err)
 	}
 

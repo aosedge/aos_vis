@@ -136,7 +136,8 @@ func (server *testServer) close() (err error) {
 	return nil
 }
 
-func (server *testServer) GetPermissions(ctx context.Context, req *pb.PermissionsRequest) (rsp *pb.PermissionsResponse, err error) {
+func (server *testServer) GetPermissions(
+	ctx context.Context, req *pb.PermissionsRequest) (rsp *pb.PermissionsResponse, err error) {
 	rsp = &pb.PermissionsResponse{}
 
 	if req.FunctionalServerId != visFunctionalServerID {
