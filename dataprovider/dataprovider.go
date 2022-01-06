@@ -283,7 +283,8 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 }
 
 // Subscribe subscribes for data change
-func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uint64, channel <-chan interface{}, err error) {
+func (provider *DataProvider) Subscribe(
+	path string, authInfo *AuthInfo) (id uint64, channel <-chan interface{}, err error) {
 	provider.Lock()
 	defer provider.Unlock()
 

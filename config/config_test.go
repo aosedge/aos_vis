@@ -132,11 +132,13 @@ func TestAdapters(t *testing.T) {
 		t.Errorf("Wrong adapters len: %d", len(config.Adapters))
 	}
 
-	if config.Adapters[0].Plugin != "test1" || config.Adapters[1].Plugin != "test2" || config.Adapters[2].Plugin != "test3" {
+	if config.Adapters[0].Plugin != "test1" || config.Adapters[1].Plugin != "test2" ||
+		config.Adapters[2].Plugin != "test3" {
 		t.Error("Wrong adapter name")
 	}
 
-	if config.Adapters[0].Disabled != true || config.Adapters[1].Disabled != false || config.Adapters[2].Disabled != false {
+	if config.Adapters[0].Disabled != true || config.Adapters[1].Disabled != false ||
+		config.Adapters[2].Disabled != false {
 		t.Error("Wrong disable value")
 	}
 }

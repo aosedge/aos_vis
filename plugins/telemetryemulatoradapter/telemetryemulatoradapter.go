@@ -216,7 +216,8 @@ func (adapter *TelemetryEmulatorAdapter) convertPath(inPath string) (outPath str
 	return outPath
 }
 
-func (adapter *TelemetryEmulatorAdapter) parseNode(prefix string, element interface{}) (visData map[string]interface{}) {
+func (adapter *TelemetryEmulatorAdapter) parseNode(
+	prefix string, element interface{}) (visData map[string]interface{}) {
 	visData = make(map[string]interface{})
 
 	m, ok := element.(map[string]interface{})
@@ -237,7 +238,8 @@ func (adapter *TelemetryEmulatorAdapter) parseNode(prefix string, element interf
 	return visData
 }
 
-func (adapter *TelemetryEmulatorAdapter) convertDataToVisFormat(dataJSON []byte) (visData map[string]interface{}, err error) {
+func (adapter *TelemetryEmulatorAdapter) convertDataToVisFormat(dataJSON []byte) (visData map[string]interface{},
+	err error) {
 	var data interface{}
 
 	err = json.Unmarshal(dataJSON, &data)
