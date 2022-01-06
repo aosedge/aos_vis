@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_common/visprotocol"
 	"github.com/aoscloud/aos_common/wsclient"
 	log "github.com/sirupsen/logrus"
@@ -118,7 +119,7 @@ func TestMain(m *testing.M) {
 	dataprovider.RegisterPlugin("testadapter", func(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
 		baseAdapter, err := dataprovider.NewBaseAdapter()
 		if err != nil {
-			return nil, err
+			return nil, aoserrors.Wrap(err)
 		}
 
 		var sensors struct {
@@ -128,7 +129,7 @@ func TestMain(m *testing.M) {
 		decoder := json.NewDecoder(bytes.NewReader(configJSON))
 		decoder.UseNumber()
 		if err = decoder.Decode(&sensors); err != nil {
-			return nil, err
+			return nil, aoserrors.Wrap(err)
 		}
 
 		baseAdapter.Data = sensors.Data

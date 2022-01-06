@@ -27,6 +27,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_vis/dataprovider"
 )
 
@@ -65,7 +66,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	}
 
 	if err = json.Unmarshal(configJSON, &localAdapter.config); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	vin, err := ioutil.ReadFile(localAdapter.config.FilePath)
@@ -75,7 +76,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 		log.Warnf("Can't read VIN: %s. Generate new one: %s", err, string(vin))
 
 		if err = ioutil.WriteFile(localAdapter.config.FilePath, vin, 0o644); err != nil {
-			return nil, err
+			return nil, aoserrors.Wrap(err)
 		}
 	}
 

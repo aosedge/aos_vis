@@ -26,6 +26,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_vis/dataprovider"
 )
 
@@ -66,7 +67,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	}
 
 	if err = json.Unmarshal(configJSON, &localAdapter.config); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	if err = localAdapter.readUsers(); err != nil {
@@ -144,7 +145,7 @@ func (adapter *usersAdapter) SetData(data map[string]interface{}) (err error) {
 			}
 
 			if err = adapter.writeUsers(); err != nil {
-				return err
+				return aoserrors.Wrap(err)
 			}
 		} else {
 			return fmt.Errorf("path %s doesn't exits", path)
@@ -199,7 +200,7 @@ func (adapter *usersAdapter) UnsubscribeAll() (err error) {
 func (adapter *usersAdapter) readUsers() (err error) {
 	file, err := os.Open(adapter.config.FilePath)
 	if err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 	defer file.Close()
 
@@ -217,7 +218,7 @@ func (adapter *usersAdapter) readUsers() (err error) {
 func (adapter *usersAdapter) writeUsers() (err error) {
 	file, err := os.Create(adapter.config.FilePath)
 	if err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 	defer file.Close()
 
@@ -227,5 +228,5 @@ func (adapter *usersAdapter) writeUsers() (err error) {
 		fmt.Fprintln(writer, claim)
 	}
 
-	return writer.Flush()
+	return aoserrors.Wrap(writer.Flush())
 }

@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_common/visprotocol"
 	"github.com/aoscloud/aos_common/wsserver"
 	"github.com/gorilla/websocket"
@@ -90,11 +91,11 @@ func New(config *config.Config, permissionProvider PermissionProvider) (server *
 	server = &Server{clients: make(map[*wsserver.Client]*clientInfo), permissionProvider: permissionProvider}
 
 	if server.dataProvider, err = dataprovider.New(config); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	if server.wsServer, err = wsserver.New("VIS", config.ServerURL, config.VISCert, config.VISKey, server); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	return server, nil
@@ -152,7 +153,7 @@ func (server *Server) ProcessMessage(wsClient *wsserver.Client, messageType int,
 	var header visprotocol.MessageHeader
 
 	if err = json.Unmarshal(message, &header); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	var responseItf interface{}
@@ -181,11 +182,11 @@ func (server *Server) ProcessMessage(wsClient *wsserver.Client, messageType int,
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	if response, err = json.Marshal(responseItf); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	return response, nil
@@ -204,7 +205,7 @@ func (client *clientInfo) processGetRequest(requestJSON []byte) (response *vispr
 	var request visprotocol.GetRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	response = &visprotocol.GetResponse{
@@ -228,7 +229,7 @@ func (client *clientInfo) processSetRequest(requestJSON []byte) (response *vispr
 	var request visprotocol.SetRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	response = &visprotocol.SetResponse{
@@ -249,7 +250,7 @@ func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *visp
 	var request visprotocol.AuthRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	response = &visprotocol.AuthResponse{
@@ -280,7 +281,7 @@ func (client *clientInfo) processSubscribeRequest(requestJSON []byte) (responseI
 	var request visprotocol.SubscribeRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	if request.Filters != "" {
@@ -313,7 +314,7 @@ func (client *clientInfo) processUnsubscribeRequest(requestJSON []byte) (respons
 	var request visprotocol.UnsubscribeRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	response := visprotocol.UnsubscribeResponse{
@@ -345,7 +346,7 @@ func (client *clientInfo) processUnsubscribeAllRequest(requestJSON []byte) (resp
 	var request visprotocol.UnsubscribeAllRequest
 
 	if err = json.Unmarshal(requestJSON, &request); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	response := visprotocol.UnsubscribeAllResponse{
@@ -400,7 +401,7 @@ func (client *clientInfo) unsubscribeAll() (err error) {
 
 	client.subscribeChannels = make(map[uint64]<-chan interface{})
 
-	return err
+	return aoserrors.Wrap(err)
 }
 
 func createErrorInfo(err error) (errorInfo *visprotocol.ErrorInfo) {
