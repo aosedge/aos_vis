@@ -58,7 +58,9 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 
 	// Parse config
 	decoder := json.NewDecoder(bytes.NewReader(configJSON))
+
 	decoder.UseNumber()
+
 	if err = decoder.Decode(&sensors); err != nil {
 		return nil, err
 	}

@@ -159,10 +159,11 @@ func attributesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dataJSON, err := ioutil.ReadAll(r.Body)
-	r.Body.Close()
 	if err != nil {
 		log.Error(err)
+
 		w.WriteHeader(http.StatusBadRequest)
+
 		if _, err := w.Write([]byte(err.Error())); err != nil {
 			log.Errorf("Can't write response: %s", err)
 		}
@@ -170,9 +171,13 @@ func attributesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	r.Body.Close()
+
 	if err = json.Unmarshal(dataJSON, &emulatorData); err != nil {
 		log.Error(err)
+
 		w.WriteHeader(http.StatusBadRequest)
+
 		if _, err := w.Write([]byte(err.Error())); err != nil {
 			log.Errorf("Can't write response: %s", err)
 		}
@@ -194,6 +199,7 @@ func startHTTPServer() {
 
 	http.HandleFunc("/stats/", statsHandler)
 	http.HandleFunc("/attributes/", attributesHandler)
+
 	go func() {
 		if err := http.ListenAndServe("localhost:8801", nil); err != nil {
 			log.Errorf("Can't serve http server: %s", err)

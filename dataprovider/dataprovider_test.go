@@ -131,7 +131,7 @@ func TestMain(m *testing.M) {
  * Tests
  ******************************************************************************/
 
-func TestGetData(t *testing.T) {
+func TestGetData(t *testing.T) { // nolint:wsl
 	/*
 		client -> {
 			"action": "get",
@@ -307,11 +307,10 @@ func TestGetData(t *testing.T) {
 }
 
 func TestSetData(t *testing.T) {
-	// Set by full path
-
 	if err := provider.SetData("Signal.Body.Trunk.IsLocked", true, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
+
 	value, err := provider.GetData("Signal.Body.Trunk.IsLocked", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
@@ -512,36 +511,46 @@ func TestSubscribe(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
+
 			if len(data1) != 4 {
 				t.Errorf("Wrong data size: %d", len(data1))
 			}
+
 			if data1["Signal.Cabin.Door.Row1.Right.IsLocked"] != true {
 				t.Errorf("Data mistmatch: %v", false)
 			}
+
 			if data1["Signal.Cabin.Door.Row1.Left.IsLocked"] != true {
 				t.Errorf("Data mistmatch: %v", false)
 			}
+
 			if data1["Signal.Cabin.Door.Row2.Right.IsLocked"] != true {
 				t.Errorf("Data mistmatch: %v", false)
 			}
+
 			if data1["Signal.Cabin.Door.Row2.Left.IsLocked"] != true {
 				t.Errorf("Data mistmatch: %v", false)
 			}
+
 			eventChannel1 = true
 		case data := <-channel2:
 			data2, err := arrayToMap(data)
 			if err != nil {
 				t.Error(err)
 			}
+
 			if len(data2) != 2 {
 				t.Errorf("Wrong data size: %d", len(data2))
 			}
+
 			if data2["Signal.Cabin.Door.Row1.Right.IsLocked"] != true {
 				t.Errorf("Data mistmatch: %v", false)
 			}
+
 			if data2["Signal.Cabin.Door.Row1.Left.IsLocked"] != true {
 				t.Errorf("Data mistmatch: %v", false)
 			}
+
 			eventChannel2 = true
 		case <-time.After(100 * time.Millisecond):
 			timeout = true
@@ -584,11 +593,13 @@ func TestSubscribe(t *testing.T) {
 			if ok {
 				t.Error("Unexpected data received")
 			}
+
 			eventChannel1 = true
 		case _, ok := <-channel2:
 			if !ok {
 				t.Error("Channel should not be closed")
 			}
+
 			eventChannel2 = true
 		case <-time.After(100 * time.Millisecond):
 			timeout = true
@@ -630,11 +641,13 @@ func TestSubscribe(t *testing.T) {
 			if ok {
 				t.Error("Unexpected data received")
 			}
+
 			eventChannel1 = true
 		case _, ok := <-channel2:
 			if ok {
 				t.Error("Unexpected data received")
 			}
+
 			eventChannel2 = true
 		case <-time.After(100 * time.Millisecond):
 			timeout = true
@@ -733,6 +746,7 @@ func arrayToMap(data interface{}) (result map[string]interface{}, err error) {
 	}
 
 	result = make(map[string]interface{})
+
 	for _, arrayItem := range array {
 		for path, value := range arrayItem {
 			result[path] = value

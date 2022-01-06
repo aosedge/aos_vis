@@ -103,6 +103,7 @@ func (adapter *BaseAdapter) GetData(pathList []string) (data map[string]interfac
 		if _, ok := adapter.Data[path]; !ok {
 			return data, fmt.Errorf("path %s doesn't exits", path)
 		}
+
 		data[path] = adapter.Data[path].Value
 	}
 

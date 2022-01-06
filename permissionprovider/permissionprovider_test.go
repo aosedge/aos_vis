@@ -80,6 +80,7 @@ func TestGetPermissions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Can't create test server: %s", err)
 	}
+
 	defer server.close()
 
 	server.SetPermissions(secret, origPermissions)
@@ -88,6 +89,7 @@ func TestGetPermissions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Can't create permission provider: %s", err)
 	}
+
 	defer permissionProvider.Close()
 
 	permissions, err := permissionProvider.GetVisPermissionByToken(secret)
@@ -111,6 +113,7 @@ func newTestServer(url string) (server *testServer, err error) {
 	if err != nil {
 		return nil, err
 	}
+
 	server.grpcServer = grpc.NewServer()
 
 	pb.RegisterIAMPublicServiceServer(server.grpcServer, server)
