@@ -169,6 +169,7 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 			if adapterDataMap[sensor.adapter] == nil {
 				adapterDataMap[sensor.adapter] = make([]string, 0, 10)
 			}
+
 			adapterDataMap[sensor.adapter] = append(adapterDataMap[sensor.adapter], path)
 		}
 	}
@@ -181,6 +182,7 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 		if err != nil {
 			return data, err
 		}
+
 		for path, value := range result {
 			log.WithFields(log.Fields{"adapter": adapter.GetName(), "path": path, "value": value}).Debug("Data from adapter")
 
@@ -231,6 +233,7 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 	for path, sensor := range provider.sensors {
 		if filter.Match(path) {
 			var value interface{}
+
 			if len(suffixMap) != 0 {
 				// if there is suffix map, try to find proper path by suffix
 				for suffix, v := range suffixMap {
@@ -253,6 +256,7 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 				if adapterDataMap[sensor.adapter] == nil {
 					adapterDataMap[sensor.adapter] = make(map[string]interface{})
 				}
+
 				adapterDataMap[sensor.adapter][path] = value
 			}
 		}
@@ -306,6 +310,7 @@ func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uin
 			if subscribeMap[sensor.adapter] == nil {
 				subscribeMap[sensor.adapter] = make([]string, 0, 10)
 			}
+
 			subscribeMap[sensor.adapter] = append(subscribeMap[sensor.adapter], path)
 		}
 	}
@@ -346,7 +351,9 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 	if !ok {
 		return fmt.Errorf("subscribe id %v not found", id)
 	}
+
 	close(subscribeInfo.channel)
+
 	delete(provider.subscribeInfoMap, id)
 
 	// Create map of pathes grouped by adapter
@@ -362,6 +369,7 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 
 		for idElement := sensor.subscribeIds.Front(); idElement != nil; idElement = nextElement {
 			nextElement = idElement.Next()
+
 			if idElement.Value.(uint64) == id {
 				sensor.subscribeIds.Remove(idElement)
 			}
@@ -372,6 +380,7 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 			if unsubscribeMap[sensor.adapter] == nil {
 				unsubscribeMap[sensor.adapter] = make([]string, 0, 10)
 			}
+
 			unsubscribeMap[sensor.adapter] = append(unsubscribeMap[sensor.adapter], path)
 		}
 	}
@@ -495,9 +504,11 @@ func checkPermissions(adapter DataAdapter, path string, authInfo *AuthInfo, perm
 	if err != nil {
 		return err
 	}
+
 	if !authInfo.IsAuthorized && !isPublic {
 		return errors.New("client is not authorized")
 	}
+
 	if isPublic {
 		return nil
 	}
@@ -531,11 +542,13 @@ func convertData(requestedPath string, data map[string]interface{}) (result inte
 		if parentDataMap[parent] == nil {
 			parentDataMap[parent] = make(map[string]interface{})
 		}
+
 		parentDataMap[parent][path] = value
 	}
 
 	// make array from map
 	dataArray := make([]map[string]interface{}, 0, len(parentDataMap))
+
 	for _, value := range parentDataMap {
 		dataArray = append(dataArray, value)
 	}

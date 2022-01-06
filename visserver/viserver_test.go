@@ -383,6 +383,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 		if notification.Action != "subscription" || notification.SubscriptionID != subscriptionID || notification.Value.(float64) != 123.0 {
 			t.Fatalf("Unexpected value")
 		}
+
 		if notification.Error != nil {
 			t.Fatalf("Unexpected error for subscription: %s", notification.Error.Message)
 		}

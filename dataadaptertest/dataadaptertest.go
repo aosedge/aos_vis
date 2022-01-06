@@ -97,6 +97,7 @@ func GetSetData(adapterInfo *TestAdapterInfo) (err error) {
 	for path := range adapterInfo.SetData {
 		getPathList = append(getPathList, path)
 	}
+
 	getData, err := adapterInfo.Adapter.GetData(getPathList)
 	if err != nil {
 		return err

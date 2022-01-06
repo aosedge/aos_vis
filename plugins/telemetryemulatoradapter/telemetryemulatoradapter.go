@@ -92,6 +92,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	if err != nil {
 		return nil, err
 	}
+
 	for path, value := range data {
 		localAdapter.baseAdapter.Data[path] = &dataprovider.BaseData{Value: value}
 	}
@@ -162,6 +163,7 @@ func (adapter *TelemetryEmulatorAdapter) SetData(data map[string]interface{}) (e
 	if err != nil {
 		return err
 	}
+
 	if res.StatusCode != 201 {
 		return errors.New(res.Status)
 	}
@@ -251,10 +253,11 @@ func (adapter *TelemetryEmulatorAdapter) getDataFromTelemetryEmulator() (visData
 	}
 
 	data, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
 	if err != nil {
 		return visData, err
 	}
+
+	res.Body.Close()
 
 	log.WithField("url", address).Debugf("Get data from sensor emulator: %s", string(data))
 
@@ -263,6 +266,7 @@ func (adapter *TelemetryEmulatorAdapter) getDataFromTelemetryEmulator() (visData
 
 func (adapter *TelemetryEmulatorAdapter) processData() {
 	ticker := time.NewTicker(time.Duration(adapter.cfg.UpdatePeriod) * time.Millisecond)
+
 	for {
 		<-ticker.C
 
@@ -271,6 +275,7 @@ func (adapter *TelemetryEmulatorAdapter) processData() {
 			log.Errorf("Can't read data: %s", err)
 			continue
 		}
+
 		if err = adapter.baseAdapter.SetData(data); err != nil {
 			log.Errorf("Can't update data: %s", err)
 			continue

@@ -123,6 +123,7 @@ func (server *Server) ClientConnected(client *wsserver.Client) {
 	}
 
 	log.Info("GetPermissionProvider")
+
 	server.clients[client].permissionProvider = server.GetPermissionProvider()
 }
 
@@ -262,7 +263,9 @@ func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *visp
 
 	if client.authInfo.Permissions, err = client.permissionProvider.GetVisPermissionByToken(request.Tokens.Authorization); err != nil {
 		log.Error("err: ", err)
+
 		response.Error = createErrorInfo(errors.New("service not authorized"))
+
 		return response, nil
 	}
 

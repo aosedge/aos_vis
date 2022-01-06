@@ -189,6 +189,7 @@ func (adapter *RenesasSimulatorAdapter) handleConnection(w http.ResponseWriter, 
 				!strings.Contains(err.Error(), "use of closed network connection") {
 				log.Errorf("Error reading socket: %s", err)
 			}
+
 			break
 		}
 
