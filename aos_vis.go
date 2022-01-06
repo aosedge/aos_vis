@@ -59,7 +59,8 @@ func init() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableTimestamp: false,
 		TimestampFormat:  "2006-01-02 15:04:05.000",
-		FullTimestamp:    true})
+		FullTimestamp:    true,
+	})
 	log.SetLevel(log.InfoLevel)
 	log.SetOutput(os.Stdout)
 }
@@ -77,7 +78,8 @@ func newJournalHook() (hook *journalHook) {
 			log.ErrorLevel: journal.PriErr,
 			log.FatalLevel: journal.PriCrit,
 			log.PanicLevel: journal.PriEmerg,
-		}}
+		},
+	}
 
 	return hook
 }

@@ -84,7 +84,8 @@ func init() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableTimestamp: false,
 		TimestampFormat:  "2006-01-02 15:04:05.000",
-		FullTimestamp:    true})
+		FullTimestamp:    true,
+	})
 	log.SetLevel(log.DebugLevel)
 	log.SetOutput(os.Stdout)
 }
@@ -126,7 +127,9 @@ func TestMain(m *testing.M) {
 			"Signal.Cabin.Door.Row1.Left.IsLocked",
 			"Signal.Cabin.Door.Row1.Left.Window.Position",
 			"Signal.Body.Mirrors.Left.Pan",
-			"Signal.Body.Trunk.IsOpen"}}
+			"Signal.Body.Trunk.IsOpen",
+		},
+	}
 
 	time.Sleep(1 * time.Second)
 
