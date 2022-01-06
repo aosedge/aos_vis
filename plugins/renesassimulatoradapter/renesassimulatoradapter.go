@@ -27,7 +27,7 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
-	"aos_vis/dataprovider"
+	"github.com/aoscloud/aos_vis/dataprovider"
 )
 
 /*******************************************************************************
