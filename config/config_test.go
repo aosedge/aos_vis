@@ -48,7 +48,7 @@ func createConfigFile() (err error) {
 "PermissionServerURL": "aosiam:8090"
 }`
 
-	if err := ioutil.WriteFile(path.Join("tmp", "visconfig.json"), []byte(configContent), 0644); err != nil {
+	if err := ioutil.WriteFile(path.Join("tmp", "visconfig.json"), []byte(configContent), 0o644); err != nil {
 		return err
 	}
 
@@ -56,7 +56,7 @@ func createConfigFile() (err error) {
 }
 
 func setup() (err error) {
-	if err := os.MkdirAll("tmp", 0755); err != nil {
+	if err := os.MkdirAll("tmp", 0o755); err != nil {
 		return err
 	}
 
@@ -122,7 +122,6 @@ func TestGetCredentials(t *testing.T) {
 
 func TestAdapters(t *testing.T) {
 	config, err := config.New("tmp/visconfig.json")
-
 	if err != nil {
 		t.Fatalf("Error opening config file: %s", err)
 	}

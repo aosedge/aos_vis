@@ -49,7 +49,8 @@ func init() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableTimestamp: false,
 		TimestampFormat:  "2006-01-02 15:04:05.000",
-		FullTimestamp:    true})
+		FullTimestamp:    true,
+	})
 	log.SetLevel(log.DebugLevel)
 	log.SetOutput(os.Stdout)
 }
@@ -133,7 +134,7 @@ func TestExistingVIN(t *testing.T) {
 	vinFile := path.Join(tmpDir, "vin.txt")
 	originVin := "TEST_VIN"
 
-	if err := ioutil.WriteFile(vinFile, []byte(originVin), 0644); err != nil {
+	if err := ioutil.WriteFile(vinFile, []byte(originVin), 0o644); err != nil {
 		t.Fatalf("Can't create VIN file: %s", err)
 	}
 

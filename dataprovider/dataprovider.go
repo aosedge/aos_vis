@@ -512,7 +512,8 @@ func checkPermissions(adapter DataAdapter, path string, authInfo *AuthInfo, perm
 		if filter.Match(path) && strings.Contains(strings.ToLower(value), strings.ToLower(permissions)) {
 			log.WithFields(log.Fields{
 				"path":        path,
-				"permissions": value}).Debug("Data permissions")
+				"permissions": value,
+			}).Debug("Data permissions")
 
 			return nil
 		}

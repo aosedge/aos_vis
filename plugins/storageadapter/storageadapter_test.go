@@ -31,9 +31,7 @@ import (
  * Var
  ******************************************************************************/
 
-var (
-	adapterInfo dataadaptertest.TestAdapterInfo
-)
+var adapterInfo dataadaptertest.TestAdapterInfo
 
 /*******************************************************************************
  * Init
@@ -43,7 +41,8 @@ func init() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableTimestamp: false,
 		TimestampFormat:  "2006-01-02 15:04:05.000",
-		FullTimestamp:    true})
+		FullTimestamp:    true,
+	})
 	log.SetLevel(log.DebugLevel)
 	log.SetOutput(os.Stdout)
 }
@@ -90,7 +89,8 @@ func TestMain(m *testing.M) {
 			"Signal.Cabin.Door.Row2.Right.IsLocked":        true,
 			"Signal.Cabin.Door.Row2.Right.Window.Position": 400,
 			"Signal.Cabin.Door.Row2.Left.IsLocked":         false,
-			"Signal.Cabin.Door.Row2.Left.Window.Position":  50},
+			"Signal.Cabin.Door.Row2.Left.Window.Position":  50,
+		},
 		SubscribeList: []string{
 			"Signal.Cabin.Door.Row1.Right.IsLocked",
 			"Signal.Cabin.Door.Row1.Right.Window.Position",
@@ -99,7 +99,8 @@ func TestMain(m *testing.M) {
 			"Signal.Cabin.Door.Row2.Right.IsLocked",
 			"Signal.Cabin.Door.Row2.Right.Window.Position",
 			"Signal.Cabin.Door.Row2.Left.IsLocked",
-			"Signal.Cabin.Door.Row2.Left.Window.Position"},
+			"Signal.Cabin.Door.Row2.Left.Window.Position",
+		},
 		SetSubscribeData: map[string]interface{}{
 			"Signal.Cabin.Door.Row1.Right.IsLocked":        false,
 			"Signal.Cabin.Door.Row1.Right.Window.Position": 100,
@@ -108,7 +109,8 @@ func TestMain(m *testing.M) {
 			"Signal.Cabin.Door.Row2.Right.IsLocked":        false,
 			"Signal.Cabin.Door.Row2.Right.Window.Position": 60,
 			"Signal.Cabin.Door.Row2.Left.IsLocked":         true,
-			"Signal.Cabin.Door.Row2.Left.Window.Position":  70},
+			"Signal.Cabin.Door.Row2.Left.Window.Position":  70,
+		},
 	}
 
 	ret := m.Run()

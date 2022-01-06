@@ -35,11 +35,12 @@ import (
 	"github.com/aoscloud/aos_vis/visserver"
 )
 
-const serverURL = "wss://localhost:443"
-const caCert = "../data/rootCA.pem"
+const (
+	serverURL = "wss://localhost:443"
+	caCert    = "../data/rootCA.pem"
+)
 
-type permissionProvider struct {
-}
+type permissionProvider struct{}
 
 /*******************************************************************************
  * Init
@@ -49,7 +50,8 @@ func init() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableTimestamp: false,
 		TimestampFormat:  "2006-01-02 15:04:05.000",
-		FullTimestamp:    true})
+		FullTimestamp:    true,
+	})
 	log.SetLevel(log.DebugLevel)
 	log.SetOutput(os.Stdout)
 }
@@ -66,7 +68,6 @@ func (provider *permissionProvider) GetVisPermissionByToken(token string) (permi
  ******************************************************************************/
 
 func TestMain(m *testing.M) {
-
 	permissionProvider := permissionProvider{}
 
 	configJSON := `{
@@ -165,8 +166,10 @@ func TestGetNoAuth(t *testing.T) {
 	getRequest := visprotocol.GetRequest{
 		MessageHeader: visprotocol.MessageHeader{
 			Action:    visprotocol.ActionGet,
-			RequestID: "8765"},
-		Path: "Attribute.Vehicle.VehicleIdentification.VIN"}
+			RequestID: "8765",
+		},
+		Path: "Attribute.Vehicle.VehicleIdentification.VIN",
+	}
 	getResponse := visprotocol.GetResponse{}
 
 	if err = client.SendRequest("RequestID", getRequest.RequestID, &getRequest, &getResponse); err != nil {
@@ -192,8 +195,10 @@ func TestGet(t *testing.T) {
 	getRequest := visprotocol.GetRequest{
 		MessageHeader: visprotocol.MessageHeader{
 			Action:    visprotocol.ActionGet,
-			RequestID: "8755"},
-		Path: "Signal.Drivetrain.InternalCombustionEngine.RPM"}
+			RequestID: "8755",
+		},
+		Path: "Signal.Drivetrain.InternalCombustionEngine.RPM",
+	}
 	getResponse := visprotocol.GetResponse{}
 
 	if err = client.SendRequest("RequestID", getRequest.RequestID, &getRequest, &getResponse); err != nil {
@@ -207,9 +212,12 @@ func TestGet(t *testing.T) {
 	authRequest := visprotocol.AuthRequest{
 		MessageHeader: visprotocol.MessageHeader{
 			Action:    visprotocol.ActionAuth,
-			RequestID: "12345"},
+			RequestID: "12345",
+		},
 		Tokens: visprotocol.Tokens{
-			Authorization: "appUID"}}
+			Authorization: "appUID",
+		},
+	}
 	authResponse := visprotocol.AuthResponse{}
 
 	if err = client.SendRequest("RequestID", authRequest.RequestID, &authRequest, &authResponse); err != nil {
@@ -243,9 +251,12 @@ func TestSet(t *testing.T) {
 	authRequest := visprotocol.AuthRequest{
 		MessageHeader: visprotocol.MessageHeader{
 			Action:    visprotocol.ActionAuth,
-			RequestID: "12345"},
+			RequestID: "12345",
+		},
 		Tokens: visprotocol.Tokens{
-			Authorization: "appUID"}}
+			Authorization: "appUID",
+		},
+	}
 	authResponse := visprotocol.AuthResponse{}
 
 	if err = client.SendRequest("RequestID", authRequest.RequestID, &authRequest, &authResponse); err != nil {
@@ -259,13 +270,16 @@ func TestSet(t *testing.T) {
 	setRequest := visprotocol.SetRequest{
 		MessageHeader: visprotocol.MessageHeader{
 			Action:    visprotocol.ActionSet,
-			RequestID: "8888"},
+			RequestID: "8888",
+		},
 		Path: "Signal.Cabin.Door.Row1.*",
 		Value: []interface{}{
 			map[string]interface{}{"Right.IsLocked": true},
 			map[string]interface{}{"Right.Window.Position": 100},
 			map[string]interface{}{"Left.IsLocked": true},
-			map[string]interface{}{"Left.Window.Position": 250}}}
+			map[string]interface{}{"Left.Window.Position": 250},
+		},
+	}
 	setResponse := visprotocol.GetResponse{}
 
 	if err = client.SendRequest("RequestID", setRequest.RequestID, &setRequest, &setResponse); err != nil {
@@ -301,9 +315,12 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	authRequest := visprotocol.AuthRequest{
 		MessageHeader: visprotocol.MessageHeader{
 			Action:    visprotocol.ActionAuth,
-			RequestID: "12345"},
+			RequestID: "12345",
+		},
 		Tokens: visprotocol.Tokens{
-			Authorization: "appUID"}}
+			Authorization: "appUID",
+		},
+	}
 	authResponse := visprotocol.AuthResponse{}
 
 	if err = client.SendRequest("RequestID", authRequest.RequestID, &authRequest, &authResponse); err != nil {
@@ -319,8 +336,10 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	subscribeRequest := visprotocol.SubscribeRequest{
 		MessageHeader: visprotocol.MessageHeader{
 			Action:    visprotocol.ActionSubscribe,
-			RequestID: "1004"},
-		Path: "Signal.Cabin.Door.Row1.Right.Window.Position"}
+			RequestID: "1004",
+		},
+		Path: "Signal.Cabin.Door.Row1.Right.Window.Position",
+	}
 	subscribeResponse := visprotocol.SubscribeResponse{}
 
 	if err = client.SendRequest("RequestID", subscribeRequest.RequestID, &subscribeRequest, &subscribeResponse); err != nil {
@@ -342,9 +361,11 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	setRequest := visprotocol.SetRequest{
 		MessageHeader: visprotocol.MessageHeader{
 			Action:    visprotocol.ActionSet,
-			RequestID: "1004"},
+			RequestID: "1004",
+		},
 		Path:  "Signal.Cabin.Door.Row1.Right.Window.Position",
-		Value: 123}
+		Value: 123,
+	}
 	setResponse := visprotocol.GetResponse{}
 
 	if err = client.SendRequest("RequestID", setRequest.RequestID, &setRequest, &setResponse); err != nil {
@@ -375,8 +396,10 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	unsubscribeRequest := visprotocol.UnsubscribeRequest{
 		MessageHeader: visprotocol.MessageHeader{
 			Action:    visprotocol.ActionUnsubscribe,
-			RequestID: "1004"},
-		SubscriptionID: "1"}
+			RequestID: "1004",
+		},
+		SubscriptionID: "1",
+	}
 	unsubscribeResponse := visprotocol.UnsubscribeResponse{}
 
 	if err = client.SendRequest("RequestID", unsubscribeRequest.RequestID, &unsubscribeRequest, &unsubscribeResponse); err != nil {
@@ -404,7 +427,9 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 
 	unsubscribeAllRequest := visprotocol.UnsubscribeAllRequest{
 		MessageHeader: visprotocol.MessageHeader{
-			Action: visprotocol.ActionUnsubscribeAll}}
+			Action: visprotocol.ActionUnsubscribeAll,
+		},
+	}
 	unsubscribeAllResponse := visprotocol.UnsubscribeAllResponse{}
 
 	if err = client.SendRequest("RequestID", unsubscribeAllRequest.RequestID, &unsubscribeAllRequest, &unsubscribeAllResponse); err != nil {
@@ -414,5 +439,4 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 	if unsubscribeAllResponse.Error != nil {
 		t.Fatalf("Unsubscribe all request error: %s", setResponse.Error.Message)
 	}
-
 }

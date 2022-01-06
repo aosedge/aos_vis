@@ -48,7 +48,8 @@ func init() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableTimestamp: false,
 		TimestampFormat:  "2006-01-02 15:04:05.000",
-		FullTimestamp:    true})
+		FullTimestamp:    true,
+	})
 	log.SetLevel(log.DebugLevel)
 	log.SetOutput(os.Stdout)
 }
@@ -74,19 +75,23 @@ func TestMain(m *testing.M) {
 			"Attribute.Emulator.rectangle_lat0":  34.12,
 			"Attribute.Emulator.rectangle_long1": 36.87,
 			"Attribute.Emulator.rectangle_lat1":  39.21,
-			"Attribute.Emulator.to_rectangle":    true},
+			"Attribute.Emulator.to_rectangle":    true,
+		},
 		SubscribeList: []string{
 			"Attribute.Emulator.rectangle_long0",
 			"Attribute.Emulator.rectangle_lat0",
 			"Attribute.Emulator.rectangle_long1",
 			"Attribute.Emulator.rectangle_lat1",
-			"Attribute.Emulator.to_rectangle"},
+			"Attribute.Emulator.to_rectangle",
+		},
 		SetSubscribeData: map[string]interface{}{
 			"Attribute.Emulator.rectangle_long0": 26.56,
 			"Attribute.Emulator.rectangle_lat0":  38.12,
 			"Attribute.Emulator.rectangle_long1": 40.87,
 			"Attribute.Emulator.rectangle_lat1":  55.21,
-			"Attribute.Emulator.to_rectangle":    false}}
+			"Attribute.Emulator.to_rectangle":    false,
+		},
+	}
 
 	ret := m.Run()
 
@@ -184,7 +189,8 @@ func startHTTPServer() {
 		"rectangle_lat1":  nil,
 		"rectangle_long0": nil,
 		"rectangle_long1": nil,
-		"to_rectangle":    nil}
+		"to_rectangle":    nil,
+	}
 
 	http.HandleFunc("/stats/", statsHandler)
 	http.HandleFunc("/attributes/", attributesHandler)

@@ -41,7 +41,8 @@ func init() {
 	log.SetFormatter(&log.TextFormatter{
 		DisableTimestamp: false,
 		TimestampFormat:  "2006-01-02 15:04:05.000",
-		FullTimestamp:    true})
+		FullTimestamp:    true,
+	})
 	log.SetLevel(log.DebugLevel)
 	log.SetOutput(os.Stdout)
 }
@@ -340,7 +341,8 @@ func TestSetData(t *testing.T) {
 		map[string]interface{}{"Row1.Right.IsLocked": true},
 		map[string]interface{}{"Row1.Left.IsLocked": true},
 		map[string]interface{}{"Row2.Right.IsLocked": true},
-		map[string]interface{}{"Row2.Left.IsLocked": true}}, nil); err != nil {
+		map[string]interface{}{"Row2.Left.IsLocked": true},
+	}, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	} else if value, err = provider.GetData("Signal.Cabin.Door.*.IsLocked", nil); err != nil {
 		t.Errorf("Can't get data: %s", err)
@@ -468,7 +470,8 @@ func TestSubscribe(t *testing.T) {
 		map[string]interface{}{"Row1.Right.IsLocked": false},
 		map[string]interface{}{"Row1.Left.IsLocked": false},
 		map[string]interface{}{"Row2.Right.IsLocked": false},
-		map[string]interface{}{"Row2.Left.IsLocked": false}}, nil); err != nil {
+		map[string]interface{}{"Row2.Left.IsLocked": false},
+	}, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
 
@@ -493,7 +496,8 @@ func TestSubscribe(t *testing.T) {
 		map[string]interface{}{"Row1.Right.IsLocked": true},
 		map[string]interface{}{"Row1.Left.IsLocked": true},
 		map[string]interface{}{"Row2.Right.IsLocked": true},
-		map[string]interface{}{"Row2.Left.IsLocked": true}}, nil); err != nil {
+		map[string]interface{}{"Row2.Left.IsLocked": true},
+	}, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
 
@@ -567,7 +571,8 @@ func TestSubscribe(t *testing.T) {
 		map[string]interface{}{"Row1.Right.IsLocked": false},
 		map[string]interface{}{"Row1.Left.IsLocked": false},
 		map[string]interface{}{"Row2.Right.IsLocked": false},
-		map[string]interface{}{"Row2.Left.IsLocked": false}}, nil); err != nil {
+		map[string]interface{}{"Row2.Left.IsLocked": false},
+	}, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
 
@@ -612,7 +617,8 @@ func TestSubscribe(t *testing.T) {
 		map[string]interface{}{"Row1.Right.IsLocked": true},
 		map[string]interface{}{"Row1.Left.IsLocked": true},
 		map[string]interface{}{"Row2.Right.IsLocked": true},
-		map[string]interface{}{"Row2.Left.IsLocked": true}}, nil); err != nil {
+		map[string]interface{}{"Row2.Left.IsLocked": true},
+	}, nil); err != nil {
 		t.Errorf("Can't set data: %s", err)
 	}
 
