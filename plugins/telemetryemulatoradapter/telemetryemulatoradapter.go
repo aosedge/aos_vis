@@ -30,6 +30,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_vis/dataprovider"
 )
 
@@ -68,7 +69,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	// Parse config
 	err = json.Unmarshal(configJSON, &cfg)
 	if err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	if cfg.SensorURL == "" {
@@ -78,11 +79,11 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	localAdapter := &TelemetryEmulatorAdapter{cfg: cfg}
 
 	if localAdapter.sensorURL, err = url.Parse(localAdapter.cfg.SensorURL); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	if localAdapter.baseAdapter, err = dataprovider.NewBaseAdapter(); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	localAdapter.baseAdapter.Name = "TelemetryEmulatorAdapter"
@@ -90,7 +91,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	// Create data map
 	data, err := localAdapter.getDataFromTelemetryEmulator()
 	if err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	for path, value := range data {
@@ -125,7 +126,12 @@ func (adapter *TelemetryEmulatorAdapter) GetName() (name string) {
 
 // GetPathList returns list of all pathes for this adapter
 func (adapter *TelemetryEmulatorAdapter) GetPathList() (pathList []string, err error) {
-	return adapter.baseAdapter.GetPathList()
+	pathList, err = adapter.baseAdapter.GetPathList()
+	if err != nil {
+		return pathList, aoserrors.Wrap(err)
+	}
+
+	return pathList, nil
 }
 
 // IsPathPublic returns true if requested data accessible without authorization
@@ -140,19 +146,24 @@ func (adapter *TelemetryEmulatorAdapter) IsPathPublic(path string) (result bool,
 
 // GetData returns data by path
 func (adapter *TelemetryEmulatorAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
-	return adapter.baseAdapter.GetData(pathList)
+	data, err = adapter.baseAdapter.GetData(pathList)
+	if err != nil {
+		return data, aoserrors.Wrap(err)
+	}
+
+	return data, nil
 }
 
 // SetData sets data by pathes
 func (adapter *TelemetryEmulatorAdapter) SetData(data map[string]interface{}) (err error) {
 	sendData, err := convertVisFormatToData(data)
 	if err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	path, err := url.Parse("attributes/")
 	if err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	address := adapter.sensorURL.ResolveReference(path).String()
@@ -161,14 +172,14 @@ func (adapter *TelemetryEmulatorAdapter) SetData(data map[string]interface{}) (e
 
 	res, err := http.Post(address, "application/json", bytes.NewReader(sendData))
 	if err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	if res.StatusCode != 201 {
 		return errors.New(res.Status)
 	}
 
-	return adapter.baseAdapter.SetData(data)
+	return aoserrors.Wrap(adapter.baseAdapter.SetData(data))
 }
 
 // GetSubscribeChannel returns channel on which data changes will be sent
@@ -178,17 +189,17 @@ func (adapter *TelemetryEmulatorAdapter) GetSubscribeChannel() (channel <-chan m
 
 // Subscribe subscribes for data changes
 func (adapter *TelemetryEmulatorAdapter) Subscribe(pathList []string) (err error) {
-	return adapter.baseAdapter.Subscribe(pathList)
+	return aoserrors.Wrap(adapter.baseAdapter.Subscribe(pathList))
 }
 
 // Unsubscribe unsubscribes from data changes
 func (adapter *TelemetryEmulatorAdapter) Unsubscribe(pathList []string) (err error) {
-	return adapter.baseAdapter.Unsubscribe(pathList)
+	return aoserrors.Wrap(adapter.baseAdapter.Unsubscribe(pathList))
 }
 
 // UnsubscribeAll unsubscribes from all data changes
 func (adapter *TelemetryEmulatorAdapter) UnsubscribeAll() (err error) {
-	return adapter.baseAdapter.UnsubscribeAll()
+	return aoserrors.Wrap(adapter.baseAdapter.UnsubscribeAll())
 }
 
 /*******************************************************************************
@@ -231,7 +242,7 @@ func (adapter *TelemetryEmulatorAdapter) convertDataToVisFormat(dataJSON []byte)
 
 	err = json.Unmarshal(dataJSON, &data)
 	if err != nil {
-		return visData, err
+		return visData, aoserrors.Wrap(err)
 	}
 
 	visData = adapter.parseNode(adapter.cfg.PathPrefix, data)
@@ -242,26 +253,31 @@ func (adapter *TelemetryEmulatorAdapter) convertDataToVisFormat(dataJSON []byte)
 func (adapter *TelemetryEmulatorAdapter) getDataFromTelemetryEmulator() (visData map[string]interface{}, err error) {
 	path, err := url.Parse("stats")
 	if err != nil {
-		return visData, err
+		return visData, aoserrors.Wrap(err)
 	}
 
 	address := adapter.sensorURL.ResolveReference(path).String()
 
 	res, err := http.Get(address)
 	if err != nil {
-		return visData, err
+		return visData, aoserrors.Wrap(err)
 	}
 
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return visData, err
+		return visData, aoserrors.Wrap(err)
 	}
 
 	res.Body.Close()
 
 	log.WithField("url", address).Debugf("Get data from sensor emulator: %s", string(data))
 
-	return adapter.convertDataToVisFormat(data)
+	visData, err = adapter.convertDataToVisFormat(data)
+	if err != nil {
+		return nil, aoserrors.Wrap(err)
+	}
+
+	return visData, nil
 }
 
 func (adapter *TelemetryEmulatorAdapter) processData() {
@@ -297,7 +313,7 @@ func convertVisFormatToData(visData map[string]interface{}) (dataJSON []byte, er
 
 	dataJSON, err = json.Marshal(&sendData)
 	if err != nil {
-		return dataJSON, err
+		return dataJSON, aoserrors.Wrap(err)
 	}
 
 	return dataJSON, nil

@@ -25,6 +25,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_vis/dataprovider"
 )
 
@@ -63,7 +64,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	}
 
 	if err = json.Unmarshal(configJSON, &localAdapter.config); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	boardModel, err := ioutil.ReadFile(localAdapter.config.FilePath)
@@ -71,7 +72,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 		log.Warnf("Can't read board model: %s. Use default one: %s", err, defaultBoardModel)
 
 		if err = ioutil.WriteFile(localAdapter.config.FilePath, []byte(defaultBoardModel), 0o644); err != nil {
-			return nil, err
+			return nil, aoserrors.Wrap(err)
 		}
 
 		boardModel = []byte(defaultBoardModel)
