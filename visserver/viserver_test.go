@@ -30,9 +30,9 @@ import (
 	"github.com/aoscloud/aos_common/wsclient"
 	log "github.com/sirupsen/logrus"
 
-	"aos_vis/config"
-	"aos_vis/dataprovider"
-	"aos_vis/visserver"
+	"github.com/aoscloud/aos_vis/config"
+	"github.com/aoscloud/aos_vis/dataprovider"
+	"github.com/aoscloud/aos_vis/visserver"
 )
 
 const serverURL = "wss://localhost:443"

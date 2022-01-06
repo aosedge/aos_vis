@@ -31,7 +31,7 @@ import (
 	"github.com/aoscloud/aos_common/visprotocol"
 	log "github.com/sirupsen/logrus"
 
-	"aos_vis/plugins/usersadapter"
+	"github.com/aoscloud/aos_vis/plugins/usersadapter"
 )
 
 /*******************************************************************************

@@ -30,10 +30,10 @@ import (
 	"github.com/coreos/go-systemd/journal"
 	log "github.com/sirupsen/logrus"
 
-	"aos_vis/config"
-	"aos_vis/permissionprovider"
-	_ "aos_vis/plugins"
-	"aos_vis/visserver"
+	"github.com/aoscloud/aos_vis/config"
+	"github.com/aoscloud/aos_vis/permissionprovider"
+	_ "github.com/aoscloud/aos_vis/plugins"
+	"github.com/aoscloud/aos_vis/visserver"
 )
 
 /*******************************************************************************

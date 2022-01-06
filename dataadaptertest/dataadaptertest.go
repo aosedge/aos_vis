@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"time"
 
-	"aos_vis/dataprovider"
+	"github.com/aoscloud/aos_vis/dataprovider"
 )
 
 /*******************************************************************************

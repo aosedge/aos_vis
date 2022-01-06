@@ -24,7 +24,7 @@ import (
 	"path"
 	"testing"
 
-	"aos_vis/config"
+	"github.com/aoscloud/aos_vis/config"
 )
 
 /*******************************************************************************
