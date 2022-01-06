@@ -28,6 +28,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_common/visprotocol"
 	log "github.com/sirupsen/logrus"
 
@@ -283,7 +284,7 @@ func generateConfig(visPath, filePath string) (config []byte) {
 func writeUsers(usersFile string, users []string) (err error) {
 	file, err := os.Create(usersFile)
 	if err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 	defer file.Close()
 
@@ -293,5 +294,5 @@ func writeUsers(usersFile string, users []string) (err error) {
 		fmt.Fprintln(writer, claim)
 	}
 
-	return writer.Flush()
+	return aoserrors.Wrap(writer.Flush())
 }

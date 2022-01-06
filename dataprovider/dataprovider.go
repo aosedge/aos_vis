@@ -27,6 +27,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_vis/config"
 )
 
@@ -128,7 +129,7 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 
 		adapter, err := provider.createAdapter(adapterCfg.Plugin, adapterCfg.Params)
 		if err != nil {
-			return nil, err
+			return nil, aoserrors.Wrap(err)
 		}
 
 		provider.adapters = append(provider.adapters, adapter)
@@ -180,7 +181,7 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 	for adapter, pathList := range adapterDataMap {
 		result, err := adapter.GetData(pathList)
 		if err != nil {
-			return data, err
+			return data, aoserrors.Wrap(err)
 		}
 
 		for path, value := range result {
@@ -203,7 +204,7 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 
 	filter, err := CreatePathFilter(path)
 	if err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	// Create map from data. According to VIS spec data could be array of map,
@@ -250,7 +251,7 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 			if value != nil {
 				// Set data to adapterDataMap
 				if err = checkPermissions(sensor.adapter, path, authInfo, "w"); err != nil {
-					return err
+					return aoserrors.Wrap(err)
 				}
 
 				if adapterDataMap[sensor.adapter] == nil {
@@ -274,7 +275,7 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 		}
 
 		if err = adapter.SetData(visData); err != nil {
-			return err
+			return aoserrors.Wrap(err)
 		}
 	}
 
@@ -326,7 +327,7 @@ func (provider *DataProvider) Subscribe(path string, authInfo *AuthInfo) (id uin
 		}
 
 		if err = adapter.Subscribe(pathList); err != nil {
-			return id, channel, err
+			return id, channel, aoserrors.Wrap(err)
 		}
 	}
 
@@ -392,7 +393,7 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 		}
 
 		if err = adapter.Unsubscribe(pathList); err != nil {
-			return err
+			return aoserrors.Wrap(err)
 		}
 	}
 
@@ -425,12 +426,12 @@ func (provider *DataProvider) createAdapter(plugin string, params json.RawMessag
 
 	adapter, err = newFunc(params)
 	if err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	pathList, err := adapter.GetPathList()
 	if err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	for _, path := range pathList {
@@ -502,7 +503,7 @@ func checkPermissions(adapter DataAdapter, path string, authInfo *AuthInfo, perm
 
 	isPublic, err := adapter.IsPathPublic(path)
 	if err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	if !authInfo.IsAuthorized && !isPublic {
@@ -517,7 +518,7 @@ func checkPermissions(adapter DataAdapter, path string, authInfo *AuthInfo, perm
 	for mask, value := range authInfo.Permissions {
 		filter, err := CreatePathFilter(mask)
 		if err != nil {
-			return err
+			return aoserrors.Wrap(err)
 		}
 
 		if filter.Match(path) && strings.Contains(strings.ToLower(value), strings.ToLower(permissions)) {

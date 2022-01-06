@@ -23,6 +23,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_vis/dataprovider"
 )
 
@@ -47,7 +48,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 
 	localAdapter.baseAdapter, err = dataprovider.NewBaseAdapter()
 	if err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	localAdapter.baseAdapter.Name = "StorageAdapter"
@@ -62,7 +63,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	decoder.UseNumber()
 
 	if err = decoder.Decode(&sensors); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	localAdapter.baseAdapter.Data = sensors.Data
@@ -84,22 +85,37 @@ func (adapter *StorageAdapter) GetName() (name string) {
 
 // GetPathList returns list of all pathes for this adapter
 func (adapter *StorageAdapter) GetPathList() (pathList []string, err error) {
-	return adapter.baseAdapter.GetPathList()
+	pathList, err = adapter.baseAdapter.GetPathList()
+	if err != nil {
+		return pathList, aoserrors.Wrap(err)
+	}
+
+	return pathList, nil
 }
 
 // IsPathPublic returns true if requested data accessible without authorization
 func (adapter *StorageAdapter) IsPathPublic(path string) (result bool, err error) {
-	return adapter.baseAdapter.IsPathPublic(path)
+	result, err = adapter.baseAdapter.IsPathPublic(path)
+	if err != nil {
+		return result, aoserrors.Wrap(err)
+	}
+
+	return result, nil
 }
 
 // GetData returns data by path
 func (adapter *StorageAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
-	return adapter.baseAdapter.GetData(pathList)
+	data, err = adapter.baseAdapter.GetData(pathList)
+	if err != nil {
+		return data, aoserrors.Wrap(err)
+	}
+
+	return data, nil
 }
 
 // SetData sets data by pathes
 func (adapter *StorageAdapter) SetData(data map[string]interface{}) (err error) {
-	return adapter.baseAdapter.SetData(data)
+	return aoserrors.Wrap(adapter.baseAdapter.SetData(data))
 }
 
 // GetSubscribeChannel returns channel on which data changes will be sent
@@ -109,15 +125,15 @@ func (adapter *StorageAdapter) GetSubscribeChannel() (channel <-chan map[string]
 
 // Subscribe subscribes for data changes
 func (adapter *StorageAdapter) Subscribe(pathList []string) (err error) {
-	return adapter.baseAdapter.Subscribe(pathList)
+	return aoserrors.Wrap(adapter.baseAdapter.Subscribe(pathList))
 }
 
 // Unsubscribe unsubscribes from data changes
 func (adapter *StorageAdapter) Unsubscribe(pathList []string) (err error) {
-	return adapter.baseAdapter.Unsubscribe(pathList)
+	return aoserrors.Wrap(adapter.baseAdapter.Unsubscribe(pathList))
 }
 
 // UnsubscribeAll unsubscribes from all data changes
 func (adapter *StorageAdapter) UnsubscribeAll() (err error) {
-	return adapter.baseAdapter.UnsubscribeAll()
+	return aoserrors.Wrap(adapter.baseAdapter.UnsubscribeAll())
 }

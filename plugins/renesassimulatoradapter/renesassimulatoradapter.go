@@ -27,6 +27,7 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_vis/dataprovider"
 )
 
@@ -67,13 +68,13 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	// Parse config
 	err = json.Unmarshal(configJSON, &config)
 	if err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	localAdapter.signalMap = config.SignalMap
 
 	if localAdapter.baseAdapter, err = dataprovider.NewBaseAdapter(); err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	localAdapter.baseAdapter.Name = "RenesasSimulatorAdapter"
@@ -121,7 +122,12 @@ func (adapter *RenesasSimulatorAdapter) GetName() (name string) {
 
 // GetPathList returns list of all pathes for this adapter
 func (adapter *RenesasSimulatorAdapter) GetPathList() (pathList []string, err error) {
-	return adapter.baseAdapter.GetPathList()
+	pathList, err = adapter.baseAdapter.GetPathList()
+	if err != nil {
+		return pathList, aoserrors.Wrap(err)
+	}
+
+	return pathList, nil
 }
 
 // IsPathPublic returns true if requested data accessible without authorization
@@ -136,7 +142,12 @@ func (adapter *RenesasSimulatorAdapter) IsPathPublic(path string) (result bool, 
 
 // GetData returns data by path
 func (adapter *RenesasSimulatorAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
-	return adapter.baseAdapter.GetData(pathList)
+	data, err = adapter.baseAdapter.GetData(pathList)
+	if err != nil {
+		return data, aoserrors.Wrap(err)
+	}
+
+	return data, nil
 }
 
 // SetData sets data by pathes
@@ -151,17 +162,17 @@ func (adapter *RenesasSimulatorAdapter) GetSubscribeChannel() (channel <-chan ma
 
 // Subscribe subscribes for data changes
 func (adapter *RenesasSimulatorAdapter) Subscribe(pathList []string) (err error) {
-	return adapter.baseAdapter.Subscribe(pathList)
+	return aoserrors.Wrap(adapter.baseAdapter.Subscribe(pathList))
 }
 
 // Unsubscribe unsubscribes from data changes
 func (adapter *RenesasSimulatorAdapter) Unsubscribe(pathList []string) (err error) {
-	return adapter.baseAdapter.Unsubscribe(pathList)
+	return aoserrors.Wrap(adapter.baseAdapter.Unsubscribe(pathList))
 }
 
 // UnsubscribeAll unsubscribes from all data changes
 func (adapter *RenesasSimulatorAdapter) UnsubscribeAll() (err error) {
-	return adapter.baseAdapter.UnsubscribeAll()
+	return aoserrors.Wrap(adapter.baseAdapter.UnsubscribeAll())
 }
 
 /*******************************************************************************
@@ -263,7 +274,7 @@ func (adapter *RenesasSimulatorAdapter) handleSimulatorData(prefix string, data 
 
 	for key, value := range keyMap {
 		if err = adapter.handleSimulatorData(prefix+key, value, result); err != nil {
-			return err
+			return aoserrors.Wrap(err)
 		}
 	}
 

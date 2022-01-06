@@ -28,6 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	pb "github.com/aoscloud/aos_common/api/iamanager/v1"
 
 	"github.com/aoscloud/aos_vis/config"
@@ -111,7 +112,7 @@ func newTestServer(url string) (server *testServer, err error) {
 
 	listener, err := net.Listen("tcp", url)
 	if err != nil {
-		return nil, err
+		return nil, aoserrors.Wrap(err)
 	}
 
 	server.grpcServer = grpc.NewServer()

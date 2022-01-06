@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	pb "github.com/aoscloud/aos_common/api/iamanager/v1"
 	"github.com/aoscloud/aos_common/utils/cryptutils"
 
@@ -82,7 +83,7 @@ func (provider *PermissionProvider) GetVisPermissionByToken(token string) (permi
 
 	response, err := provider.iamClient.GetPermissions(ctx, req)
 	if err != nil {
-		return permissions, err
+		return permissions, aoserrors.Wrap(err)
 	}
 
 	return response.Permissions.Permissions, nil
@@ -110,14 +111,14 @@ func (provider *PermissionProvider) connect() (err error) {
 	} else {
 		tlsConfig, err := cryptutils.GetClientTLSConfig(provider.rootCert)
 		if err != nil {
-			return err
+			return aoserrors.Wrap(err)
 		}
 
 		secureOpt = grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig))
 	}
 
 	if provider.connection, err = grpc.DialContext(ctx, provider.serverURL, secureOpt, grpc.WithBlock()); err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	provider.iamClient = pb.NewIAMPublicServiceClient(provider.connection)

@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_vis/dataprovider"
 )
 
@@ -57,7 +58,7 @@ func GetName(adapterInfo *TestAdapterInfo) (err error) {
 func GetPathList(adapterInfo *TestAdapterInfo) (err error) {
 	pathList, err := adapterInfo.Adapter.GetPathList()
 	if err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	if adapterInfo.PathListLen != 0 && len(pathList) != adapterInfo.PathListLen {
@@ -73,7 +74,7 @@ func PublicPath(adapterInfo *TestAdapterInfo) (err error) {
 	for _, path := range pathList {
 		_, err := adapterInfo.Adapter.IsPathPublic(path)
 		if err != nil {
-			return err
+			return aoserrors.Wrap(err)
 		}
 	}
 
@@ -89,7 +90,7 @@ func GetSetData(adapterInfo *TestAdapterInfo) (err error) {
 	// set data
 	err = adapterInfo.Adapter.SetData(adapterInfo.SetData)
 	if err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	// get data
@@ -100,7 +101,7 @@ func GetSetData(adapterInfo *TestAdapterInfo) (err error) {
 
 	getData, err := adapterInfo.Adapter.GetData(getPathList)
 	if err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	// check data
@@ -121,16 +122,16 @@ func SubscribeUnsubscribe(adapterInfo *TestAdapterInfo) (err error) {
 
 	err = adapterInfo.Adapter.SetData(adapterInfo.SetData)
 	if err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	// subscribe
 	if err = adapterInfo.Adapter.Subscribe(adapterInfo.SubscribeList); err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	if err = adapterInfo.Adapter.SetData(adapterInfo.SetSubscribeData); err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	select {
@@ -147,7 +148,7 @@ func SubscribeUnsubscribe(adapterInfo *TestAdapterInfo) (err error) {
 
 	// unsubscribe
 	if err = adapterInfo.Adapter.Unsubscribe(adapterInfo.SubscribeList); err != nil {
-		return err
+		return aoserrors.Wrap(err)
 	}
 
 	return nil
