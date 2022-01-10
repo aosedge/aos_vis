@@ -132,7 +132,7 @@ func TestExistingVIN(t *testing.T) {
 	vinFile := path.Join(tmpDir, "vin.txt")
 	originVin := "TEST_VIN"
 
-	if err := ioutil.WriteFile(vinFile, []byte(originVin), 0o644); err != nil {
+	if err := ioutil.WriteFile(vinFile, []byte(originVin), 0o600); err != nil {
 		t.Fatalf("Can't create VIN file: %s", err)
 	}
 
