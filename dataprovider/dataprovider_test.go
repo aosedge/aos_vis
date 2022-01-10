@@ -173,12 +173,12 @@ func TestGetData(t *testing.T) { // nolint:wsl
 	data, err = provider.GetData("Signal.Drivetrain.InternalCombustionEngine.*", nil)
 	if err != nil {
 		t.Errorf("Can't get data: %s", err)
-	} else if value, ok := data.(map[string]interface{}); !ok {
-		t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
-	} else if len(value) != 1 {
-		t.Errorf("Wrong map size: %d", len(value))
 	} else {
-		if _, ok = value["Signal.Drivetrain.InternalCombustionEngine.RPM"]; !ok {
+		if value, ok := data.(map[string]interface{}); !ok {
+			t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
+		} else if len(value) != 1 {
+			t.Errorf("Wrong map size: %d", len(value))
+		} else if _, ok = value["Signal.Drivetrain.InternalCombustionEngine.RPM"]; !ok {
 			t.Error("Wrong map item")
 		}
 	}
@@ -204,10 +204,8 @@ func TestGetData(t *testing.T) { // nolint:wsl
 		t.Errorf("Can't get data: %s", err)
 	} else if value, ok := data.(map[string]interface{}); !ok {
 		t.Errorf("Wrong data type: %s", reflect.TypeOf(data))
-	} else {
-		if len(value) != 2 {
-			t.Errorf("Wrong map size: %d", len(value))
-		}
+	} else if len(value) != 2 {
+		t.Errorf("Wrong map size: %d", len(value))
 	}
 
 	/*
