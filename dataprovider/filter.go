@@ -25,7 +25,7 @@ import (
  * Types
  ******************************************************************************/
 
-// PathFilter path filter structure
+// PathFilter path filter structure.
 type PathFilter struct {
 	mask []string
 }
@@ -34,12 +34,12 @@ type PathFilter struct {
  * Private
  ******************************************************************************/
 
-// CreatePathFilter creates path filter
+// CreatePathFilter creates path filter.
 func CreatePathFilter(path string) (filter *PathFilter, err error) {
 	return &PathFilter{mask: strings.Split(path, ".")}, nil
 }
 
-// Match returns true is path matches the filter
+// Match returns true is path matches the filter.
 func (filter *PathFilter) Match(path string) (result bool) {
 	maskIndex, pathIndex := 0, 0
 	pathSlice := strings.Split(path, ".")

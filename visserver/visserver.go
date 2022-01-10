@@ -48,7 +48,7 @@ type PermissionProvider interface {
  * Consts
  ******************************************************************************/
 
-// VIS actions
+// VIS actions.
 const (
 	ActionGet            = "get"
 	ActionSet            = "set"
@@ -63,7 +63,7 @@ const (
  * Types
  ******************************************************************************/
 
-// Server update manager server structure
+// Server update manager server structure.
 type Server struct {
 	sync.Mutex
 	wsServer           *wsserver.Server
@@ -84,7 +84,7 @@ type clientInfo struct {
  * Public
  ******************************************************************************/
 
-// New creates new Web socket server
+// New creates new Web socket server.
 func New(config *config.Config, permissionProvider PermissionProvider) (server *Server, err error) {
 	log.Debug("Create VIS server")
 
@@ -101,7 +101,7 @@ func New(config *config.Config, permissionProvider PermissionProvider) (server *
 	return server, nil
 }
 
-// Close closes web socket server and all connections
+// Close closes web socket server and all connections.
 func (server *Server) Close() {
 	server.Lock()
 	defer server.Unlock()
@@ -110,7 +110,7 @@ func (server *Server) Close() {
 	server.dataProvider.Close()
 }
 
-// ClientConnected connect client notification
+// ClientConnected connect client notification.
 func (server *Server) ClientConnected(client *wsserver.Client) {
 	server.Lock()
 	defer server.Unlock()
@@ -128,7 +128,7 @@ func (server *Server) ClientConnected(client *wsserver.Client) {
 	server.clients[client].permissionProvider = server.GetPermissionProvider()
 }
 
-// ClientDisconnected disconnect client notification
+// ClientDisconnected disconnect client notification.
 func (server *Server) ClientDisconnected(client *wsserver.Client) {
 	server.Lock()
 	defer server.Unlock()
@@ -136,7 +136,7 @@ func (server *Server) ClientDisconnected(client *wsserver.Client) {
 	delete(server.clients, client)
 }
 
-// ProcessMessage proccess incoming messages
+// ProcessMessage proccess incoming messages.
 func (server *Server) ProcessMessage(
 	wsClient *wsserver.Client, messageType int, message []byte) (response []byte, err error) {
 	server.Lock()
@@ -201,7 +201,7 @@ func (server *Server) GetPermissionProvider() (permissionProvider PermissionProv
  * Private
  ******************************************************************************/
 
-// process Get request
+// process Get request.
 func (client *clientInfo) processGetRequest(requestJSON []byte) (response *visprotocol.GetResponse, err error) {
 	var request visprotocol.GetRequest
 
@@ -225,7 +225,7 @@ func (client *clientInfo) processGetRequest(requestJSON []byte) (response *vispr
 	return response, nil
 }
 
-// process Set request
+// process Set request.
 func (client *clientInfo) processSetRequest(requestJSON []byte) (response *visprotocol.SetResponse, err error) {
 	var request visprotocol.SetRequest
 
@@ -246,7 +246,7 @@ func (client *clientInfo) processSetRequest(requestJSON []byte) (response *vispr
 	return response, nil
 }
 
-// process Auth request
+// process Auth request.
 func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *visprotocol.AuthResponse, err error) {
 	var request visprotocol.AuthRequest
 
@@ -278,7 +278,7 @@ func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *visp
 	return response, nil
 }
 
-// process Subscribe request
+// process Subscribe request.
 func (client *clientInfo) processSubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
 	var request visprotocol.SubscribeRequest
 
@@ -311,7 +311,7 @@ func (client *clientInfo) processSubscribeRequest(requestJSON []byte) (responseI
 	return &response, nil
 }
 
-// process Unsubscribe request
+// process Unsubscribe request.
 func (client *clientInfo) processUnsubscribeRequest(requestJSON []byte) (responseItf interface{}, err error) {
 	var request visprotocol.UnsubscribeRequest
 
@@ -343,7 +343,7 @@ func (client *clientInfo) processUnsubscribeRequest(requestJSON []byte) (respons
 	return &response, nil
 }
 
-// process UnsubscribeAll request
+// process UnsubscribeAll request.
 func (client *clientInfo) processUnsubscribeAllRequest(requestJSON []byte) (responseItf interface{}, err error) {
 	var request visprotocol.UnsubscribeAllRequest
 

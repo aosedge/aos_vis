@@ -53,7 +53,7 @@ type adapterConfig struct {
  * Public
  ******************************************************************************/
 
-// New creates adapter instance
+// New creates adapter instance.
 func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
 	log.Info("Create BoardModel adapter")
 
@@ -85,27 +85,27 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	return localAdapter, nil
 }
 
-// Close closes adapter
+// Close closes adapter.
 func (adapter *boardModelAdapter) Close() {
 	log.Info("Close BoardModel adapter")
 }
 
-// GetName returns adapter name
+// GetName returns adapter name.
 func (adapter *boardModelAdapter) GetName() (name string) {
 	return "boardmodeladapter"
 }
 
-// GetPathList returns list of all pathes for this adapter
+// GetPathList returns list of all pathes for this adapter.
 func (adapter *boardModelAdapter) GetPathList() (pathList []string, err error) {
 	return []string{adapter.config.VISPath}, nil
 }
 
-// IsPathPublic returns true if requested data accessible without authorization
+// IsPathPublic returns true if requested data accessible without authorization.
 func (adapter *boardModelAdapter) IsPathPublic(path string) (result bool, err error) {
 	return true, nil
 }
 
-// GetData returns data by path
+// GetData returns data by path.
 func (adapter *boardModelAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
 	data = make(map[string]interface{})
 
@@ -120,7 +120,7 @@ func (adapter *boardModelAdapter) GetData(pathList []string) (data map[string]in
 	return data, nil
 }
 
-// SetData sets data by pathes
+// SetData sets data by pathes.
 func (adapter *boardModelAdapter) SetData(data map[string]interface{}) (err error) {
 	if len(data) == 0 {
 		return nil
@@ -135,22 +135,22 @@ func (adapter *boardModelAdapter) SetData(data map[string]interface{}) (err erro
 	return fmt.Errorf("signal %s cannot be set since it is a read only attribute", adapter.config.VISPath)
 }
 
-// GetSubscribeChannel returns channel on which data changes will be sent
+// GetSubscribeChannel returns channel on which data changes will be sent.
 func (adapter *boardModelAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
 	return nil
 }
 
-// Subscribe subscribes for data changes
+// Subscribe subscribes for data changes.
 func (adapter *boardModelAdapter) Subscribe(pathList []string) (err error) {
 	return nil
 }
 
-// Unsubscribe unsubscribes from data changes
+// Unsubscribe unsubscribes from data changes.
 func (adapter *boardModelAdapter) Unsubscribe(pathList []string) (err error) {
 	return nil
 }
 
-// UnsubscribeAll unsubscribes from all data changes
+// UnsubscribeAll unsubscribes from all data changes.
 func (adapter *boardModelAdapter) UnsubscribeAll() (err error) {
 	return nil
 }

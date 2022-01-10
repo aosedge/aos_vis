@@ -35,7 +35,7 @@ import (
  * Types
  ******************************************************************************/
 
-// PermissionProvider vis permission provider
+// PermissionProvider vis permission provider.
 type PermissionProvider struct {
 	serverURL  string
 	rootCert   string
@@ -58,7 +58,7 @@ const visFunctionalServerId = "vis"
  * Public
  ******************************************************************************/
 
-// New creates new permission provider
+// New creates new permission provider.
 func New(config *config.Config, insecure bool) (provider *PermissionProvider, err error) {
 	provider = &PermissionProvider{
 		serverURL: config.PermissionServerURL,
@@ -68,7 +68,7 @@ func New(config *config.Config, insecure bool) (provider *PermissionProvider, er
 	return provider, nil
 }
 
-// GetVisPermissionByToken get vis permission by token
+// GetVisPermissionByToken get vis permission by token.
 func (provider *PermissionProvider) GetVisPermissionByToken(token string) (permissions map[string]string, err error) {
 	if provider.connection == nil {
 		if err = provider.connect(); err != nil {
@@ -89,7 +89,7 @@ func (provider *PermissionProvider) GetVisPermissionByToken(token string) (permi
 	return response.Permissions.Permissions, nil
 }
 
-// Close close connection with permission provider grpc server
+// Close close connection with permission provider grpc server.
 func (provider *PermissionProvider) Close() {
 	if provider.connection != nil {
 		provider.connection.Close()

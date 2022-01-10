@@ -41,7 +41,7 @@ const subscribeChannelSize = 32
  * Types
  ******************************************************************************/
 
-// DataProvider interface for geeting vehicle data
+// DataProvider interface for geeting vehicle data.
 type DataProvider struct {
 	sensors          map[string]*sensorDescription
 	currentSubsID    uint64
@@ -50,13 +50,13 @@ type DataProvider struct {
 	adapters []DataAdapter
 }
 
-// AuthInfo authorization info
+// AuthInfo authorization info.
 type AuthInfo struct {
 	IsAuthorized bool
 	Permissions  map[string]string
 }
 
-// DataAdapter interface to data adapter
+// DataAdapter interface to data adapter.
 type DataAdapter interface {
 	// Close closes adapter
 	Close()
@@ -80,7 +80,7 @@ type DataAdapter interface {
 	UnsubscribeAll() (err error)
 }
 
-// NewPlugin plugin new function
+// NewPlugin plugin new function.
 type NewPlugin func(configJSON json.RawMessage) (adapter DataAdapter, err error)
 
 type sensorDescription struct {
@@ -103,14 +103,14 @@ var plugins = make(map[string]NewPlugin)
  * Public
  ******************************************************************************/
 
-// RegisterPlugin registers data adapter plugin
+// RegisterPlugin registers data adapter plugin.
 func RegisterPlugin(plugin string, newFunc NewPlugin) {
 	log.WithField("plugin", plugin).Info("Register plugin")
 
 	plugins[plugin] = newFunc
 }
 
-// New returns pointer to DataProvider
+// New returns pointer to DataProvider.
 func New(config *config.Config) (provider *DataProvider, err error) {
 	log.Debug("Create data provider")
 
@@ -142,14 +142,14 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	return provider, nil
 }
 
-// Close closes data provider
+// Close closes data provider.
 func (provider *DataProvider) Close() {
 	for _, adapter := range provider.adapters {
 		adapter.Close()
 	}
 }
 
-// GetData returns VIS data
+// GetData returns VIS data.
 func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data interface{}, err error) {
 	log.WithField("path", path).Debug("Get data")
 
@@ -198,7 +198,7 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 	return convertData(path, commonData), nil
 }
 
-// SetData sets VIS data
+// SetData sets VIS data.
 func (provider *DataProvider) SetData(path string, data interface{}, authInfo *AuthInfo) (err error) {
 	log.WithFields(log.Fields{"path": path, "data": data}).Debug("Set data")
 
@@ -282,7 +282,7 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 	return nil
 }
 
-// Subscribe subscribes for data change
+// Subscribe subscribes for data change.
 func (provider *DataProvider) Subscribe(
 	path string, authInfo *AuthInfo) (id uint64, channel <-chan interface{}, err error) {
 	provider.Lock()
@@ -342,7 +342,7 @@ func (provider *DataProvider) Subscribe(
 	return id, dataChannel, nil
 }
 
-// Unsubscribe unsubscribes from data change
+// Unsubscribe unsubscribes from data change.
 func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err error) {
 	provider.Lock()
 	defer provider.Unlock()
@@ -401,7 +401,7 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 	return nil
 }
 
-// GetSubscribeIDs returns list of active subscribe ID
+// GetSubscribeIDs returns list of active subscribe ID.
 func (provider *DataProvider) GetSubscribeIDs() (result []uint64) {
 	provider.Lock()
 	defer provider.Unlock()

@@ -42,7 +42,7 @@ const (
 	defaultUpdatePeriod = 500
 )
 
-// TelemetryEmulatorAdapter sensor emulator adapter
+// TelemetryEmulatorAdapter sensor emulator adapter.
 type TelemetryEmulatorAdapter struct {
 	sensorURL   *url.URL
 	cfg         config
@@ -60,7 +60,7 @@ type config struct {
  * Public
  ******************************************************************************/
 
-// New creates adapter instance
+// New creates adapter instance.
 func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
 	log.Info("Create telemetry emulator adapter")
 
@@ -112,19 +112,19 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	return localAdapter, nil
 }
 
-// Close closes adapter
+// Close closes adapter.
 func (adapter *TelemetryEmulatorAdapter) Close() {
 	log.Info("Close telemetry emulator adapter")
 
 	adapter.baseAdapter.Close()
 }
 
-// GetName returns adapter name
+// GetName returns adapter name.
 func (adapter *TelemetryEmulatorAdapter) GetName() (name string) {
 	return adapter.baseAdapter.GetName()
 }
 
-// GetPathList returns list of all pathes for this adapter
+// GetPathList returns list of all pathes for this adapter.
 func (adapter *TelemetryEmulatorAdapter) GetPathList() (pathList []string, err error) {
 	pathList, err = adapter.baseAdapter.GetPathList()
 	if err != nil {
@@ -134,7 +134,7 @@ func (adapter *TelemetryEmulatorAdapter) GetPathList() (pathList []string, err e
 	return pathList, nil
 }
 
-// IsPathPublic returns true if requested data accessible without authorization
+// IsPathPublic returns true if requested data accessible without authorization.
 func (adapter *TelemetryEmulatorAdapter) IsPathPublic(path string) (result bool, err error) {
 	adapter.baseAdapter.Mutex.Lock()
 	defer adapter.baseAdapter.Mutex.Unlock()
@@ -144,7 +144,7 @@ func (adapter *TelemetryEmulatorAdapter) IsPathPublic(path string) (result bool,
 	return true, nil
 }
 
-// GetData returns data by path
+// GetData returns data by path.
 func (adapter *TelemetryEmulatorAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
 	data, err = adapter.baseAdapter.GetData(pathList)
 	if err != nil {
@@ -154,7 +154,7 @@ func (adapter *TelemetryEmulatorAdapter) GetData(pathList []string) (data map[st
 	return data, nil
 }
 
-// SetData sets data by pathes
+// SetData sets data by pathes.
 func (adapter *TelemetryEmulatorAdapter) SetData(data map[string]interface{}) (err error) {
 	sendData, err := convertVisFormatToData(data)
 	if err != nil {
@@ -182,22 +182,22 @@ func (adapter *TelemetryEmulatorAdapter) SetData(data map[string]interface{}) (e
 	return aoserrors.Wrap(adapter.baseAdapter.SetData(data))
 }
 
-// GetSubscribeChannel returns channel on which data changes will be sent
+// GetSubscribeChannel returns channel on which data changes will be sent.
 func (adapter *TelemetryEmulatorAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
 	return adapter.baseAdapter.SubscribeChannel
 }
 
-// Subscribe subscribes for data changes
+// Subscribe subscribes for data changes.
 func (adapter *TelemetryEmulatorAdapter) Subscribe(pathList []string) (err error) {
 	return aoserrors.Wrap(adapter.baseAdapter.Subscribe(pathList))
 }
 
-// Unsubscribe unsubscribes from data changes
+// Unsubscribe unsubscribes from data changes.
 func (adapter *TelemetryEmulatorAdapter) Unsubscribe(pathList []string) (err error) {
 	return aoserrors.Wrap(adapter.baseAdapter.Unsubscribe(pathList))
 }
 
-// UnsubscribeAll unsubscribes from all data changes
+// UnsubscribeAll unsubscribes from all data changes.
 func (adapter *TelemetryEmulatorAdapter) UnsubscribeAll() (err error) {
 	return aoserrors.Wrap(adapter.baseAdapter.UnsubscribeAll())
 }

@@ -29,7 +29,7 @@ import (
  * Types
  ******************************************************************************/
 
-// Config instance
+// Config instance.
 type Config struct {
 	ServerURL           string          `json:"serverURL"`
 	CACert              string          `json:"caCert"`
@@ -39,7 +39,7 @@ type Config struct {
 	PermissionServerURL string          `json:"permissionServerURL"`
 }
 
-// AdapterConfig adapter configuration
+// AdapterConfig adapter configuration.
 type AdapterConfig struct {
 	Plugin   string          `json:"plugin"`
 	Disabled bool            `json:"disabled"`
@@ -50,7 +50,7 @@ type AdapterConfig struct {
  * Public
  ******************************************************************************/
 
-// New creates new config object
+// New creates new config object.
 func New(fileName string) (config *Config, err error) {
 	file, err := os.Open(fileName)
 	if err != nil {
