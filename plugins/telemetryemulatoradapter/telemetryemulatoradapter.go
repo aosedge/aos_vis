@@ -137,7 +137,7 @@ func (adapter *TelemetryEmulatorAdapter) IsPathPublic(path string) (result bool,
 	adapter.baseAdapter.Mutex.Lock()
 	defer adapter.baseAdapter.Mutex.Unlock()
 
-	// TODO: return false, once authorization is integrated
+	// return false, once authorization is integrated
 
 	return true, nil
 }
