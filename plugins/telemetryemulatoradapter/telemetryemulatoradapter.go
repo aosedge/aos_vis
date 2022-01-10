@@ -168,7 +168,8 @@ func (adapter *TelemetryEmulatorAdapter) SetData(data map[string]interface{}) (e
 
 	log.WithField("url", address).Debugf("Set data to sensor emulator: %s", string(sendData))
 
-	res, err := http.Post(address, "application/json", bytes.NewReader(sendData))
+	res, err := http.Post(address, "application/json", bytes.NewReader(sendData)) // nolint:gosec
+	// url is a parameter of the adapter
 	if err != nil {
 		return aoserrors.Wrap(err)
 	}
@@ -258,7 +259,7 @@ func (adapter *TelemetryEmulatorAdapter) getDataFromTelemetryEmulator() (visData
 
 	address := adapter.sensorURL.ResolveReference(path).String()
 
-	res, err := http.Get(address)
+	res, err := http.Get(address) // nolint:gosec // url is a parameter of the adapter
 	if err != nil {
 		return visData, aoserrors.Wrap(err)
 	}
