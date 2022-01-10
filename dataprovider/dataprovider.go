@@ -20,8 +20,6 @@ package dataprovider
 import (
 	"container/list"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -136,7 +134,7 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	}
 
 	if len(provider.adapters) == 0 {
-		return nil, errors.New("no valid adapter info provided")
+		return nil, aoserrors.New("no valid adapter info provided")
 	}
 
 	return provider, nil
@@ -192,7 +190,7 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 	}
 
 	if len(commonData) == 0 {
-		return data, errors.New("specified data path does not exist")
+		return data, aoserrors.New("specified data path does not exist")
 	}
 
 	return convertData(path, commonData), nil
@@ -265,7 +263,7 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 
 	// If adapterMap is empty: no path found
 	if len(adapterDataMap) == 0 {
-		return errors.New("server is unable to fulfil the client request because the request is malformed")
+		return aoserrors.New("server is unable to fulfil the client request because the request is malformed")
 	}
 
 	// Everything ok: try to set to adapter
@@ -318,7 +316,7 @@ func (provider *DataProvider) Subscribe(
 	}
 
 	if len(subscribeMap) == 0 {
-		return id, channel, errors.New("specified data path does not exist")
+		return id, channel, aoserrors.New("specified data path does not exist")
 	}
 
 	// Subscribe for adapter data changes
@@ -351,7 +349,7 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 
 	subscribeInfo, ok := provider.subscribeInfoMap[id]
 	if !ok {
-		return fmt.Errorf("subscribe id %v not found", id)
+		return aoserrors.Errorf("subscribe id %v not found", id)
 	}
 
 	close(subscribeInfo.channel)
@@ -422,7 +420,7 @@ func (provider *DataProvider) GetSubscribeIDs() (result []uint64) {
 func (provider *DataProvider) createAdapter(plugin string, params json.RawMessage) (adapter DataAdapter, err error) {
 	newFunc, ok := plugins[plugin]
 	if !ok {
-		return nil, fmt.Errorf("plugin %s not found", plugin)
+		return nil, aoserrors.Errorf("plugin %s not found", plugin)
 	}
 
 	adapter, err = newFunc(params)
@@ -508,7 +506,7 @@ func checkPermissions(adapter DataAdapter, path string, authInfo *AuthInfo, perm
 	}
 
 	if !authInfo.IsAuthorized && !isPublic {
-		return errors.New("client is not authorized")
+		return aoserrors.New("client is not authorized")
 	}
 
 	if isPublic {
@@ -532,7 +530,7 @@ func checkPermissions(adapter DataAdapter, path string, authInfo *AuthInfo, perm
 		}
 	}
 
-	return errors.New("client does not have permissions")
+	return aoserrors.New("client does not have permissions")
 }
 
 func convertData(requestedPath string, data map[string]interface{}) (result interface{}) {

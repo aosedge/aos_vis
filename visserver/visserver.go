@@ -19,8 +19,6 @@ package visserver
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -143,12 +141,12 @@ func (server *Server) ProcessMessage(
 	defer server.Unlock()
 
 	if messageType != websocket.TextMessage {
-		return nil, errors.New("incoming message in unsupported format")
+		return nil, aoserrors.New("incoming message in unsupported format")
 	}
 
 	client, ok := server.clients[wsClient]
 	if !ok {
-		return nil, errors.New("message from unknown client")
+		return nil, aoserrors.New("message from unknown client")
 	}
 
 	var header visprotocol.MessageHeader
@@ -179,7 +177,7 @@ func (server *Server) ProcessMessage(
 		responseItf, err = client.processUnsubscribeAllRequest(message)
 
 	default:
-		err = fmt.Errorf("unsupported action type: %s", header.Action)
+		err = aoserrors.Errorf("unsupported action type: %s", header.Action)
 	}
 
 	if err != nil {
@@ -259,7 +257,7 @@ func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *visp
 	}
 
 	if request.Tokens.Authorization == "" {
-		response.Error = createErrorInfo(errors.New("empty token authorization"))
+		response.Error = createErrorInfo(aoserrors.New("empty token authorization"))
 		return response, nil
 	}
 
@@ -267,7 +265,7 @@ func (client *clientInfo) processAuthRequest(requestJSON []byte) (response *visp
 		err = client.permissionProvider.GetVisPermissionByToken(request.Tokens.Authorization); err != nil {
 		log.Error("err: ", err)
 
-		response.Error = createErrorInfo(errors.New("service not authorized"))
+		response.Error = createErrorInfo(aoserrors.New("service not authorized"))
 
 		return response, nil
 	}
