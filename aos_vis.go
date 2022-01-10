@@ -169,7 +169,7 @@ func main() {
 	}
 
 	// handle SIGTERM
-	c := make(chan os.Signal, 2)
+	c := make(chan os.Signal, 2) // nolint:gomnd
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 	server.Close()
