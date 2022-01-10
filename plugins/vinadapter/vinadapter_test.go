@@ -167,8 +167,8 @@ func TestExistingVIN(t *testing.T) {
 
 func generateConfig(visPath, filePath string) (config []byte) {
 	type adapterConfig struct {
-		VISPath  string `json:"VISPath"`
-		FilePath string `json:"FilePath"`
+		VISPath  string `json:"visPath"`
+		FilePath string `json:"filePath"`
 	}
 
 	var err error
