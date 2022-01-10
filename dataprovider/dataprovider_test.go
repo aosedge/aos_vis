@@ -261,7 +261,7 @@ func TestGetData(t *testing.T) { // nolint:wsl
 	*/
 
 	/*
-		TODO: This case is unclear as Window.Position is subnode of Door.Row1.Right. We should define
+		This case is unclear as Window.Position is subnode of Door.Row1.Right. We should define
 		how to combine results in one map.
 	*/
 
