@@ -173,6 +173,7 @@ func (adapter *TelemetryEmulatorAdapter) SetData(data map[string]interface{}) (e
 	if err != nil {
 		return aoserrors.Wrap(err)
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusCreated {
 		return aoserrors.New(res.Status)
