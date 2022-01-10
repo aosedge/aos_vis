@@ -20,7 +20,6 @@ package dataprovider_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -747,7 +746,7 @@ func arrayToMap(data interface{}) (result map[string]interface{}, err error) {
 	// Create map from array
 	array, ok := data.([]map[string]interface{})
 	if !ok {
-		return result, fmt.Errorf("wrong data type: %s", reflect.TypeOf(data))
+		return result, aoserrors.Errorf("wrong data type: %s", reflect.TypeOf(data))
 	}
 
 	result = make(map[string]interface{})

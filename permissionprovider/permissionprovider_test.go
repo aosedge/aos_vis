@@ -19,7 +19,6 @@ package permissionprovider_test
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"os"
 	"reflect"
@@ -141,12 +140,12 @@ func (server *testServer) GetPermissions(
 	rsp = &pb.PermissionsResponse{}
 
 	if req.FunctionalServerId != visFunctionalServerID {
-		return rsp, fmt.Errorf("incorrect functional server ID: %s", req.FunctionalServerId)
+		return rsp, aoserrors.Errorf("incorrect functional server ID: %s", req.FunctionalServerId)
 	}
 
 	servicePermissions, ok := server.permissions[req.Secret]
 	if !ok {
-		return rsp, fmt.Errorf("secret not found")
+		return rsp, aoserrors.New("secret not found")
 	}
 
 	rsp.Permissions = &pb.Permissions{Permissions: servicePermissions}
