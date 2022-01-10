@@ -100,7 +100,7 @@ type subscribeInfo struct {
  * Vars
  ******************************************************************************/
 
-var plugins = make(map[string]NewPlugin)
+var plugins = make(map[string]NewPlugin) // nolint:gochecknoglobals //by design
 
 /*******************************************************************************
  * Public
