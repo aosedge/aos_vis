@@ -210,60 +210,45 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 		return aoserrors.Wrap(err)
 	}
 
-	// Create map from data. According to VIS spec data could be array of map,
-	// map or simple value. Convert array of map to map and keep map as is.
-	suffixMap := make(map[string]interface{})
-
-	switch data := data.(type) {
-	// convert array of map to map
-	case []interface{}:
-		for _, arrayItem := range data {
-			arrayMap, ok := arrayItem.(map[string]interface{})
-			if ok {
-				for path, value := range arrayMap {
-					suffixMap[path] = value
-				}
-			}
-		}
-
-	// keep map as is
-	case map[string]interface{}:
-		suffixMap = data
-	}
+	suffixMap := provider.getSuffixMap(data)
 
 	// adapterDataMap contains VIS data grouped by adapters
 	adapterDataMap := make(map[DataAdapter]map[string]interface{})
 
 	for path, sensor := range provider.sensors {
-		if filter.Match(path) {
-			var value interface{}
-
-			if len(suffixMap) != 0 {
-				// if there is suffix map, try to find proper path by suffix
-				for suffix, v := range suffixMap {
-					if strings.HasSuffix(path, suffix) {
-						value = v
-						break
-					}
-				}
-			} else {
-				// For simple value set data
-				value = data
-			}
-
-			if value != nil {
-				// Set data to adapterDataMap
-				if err = checkPermissions(sensor.adapter, path, authInfo, "w"); err != nil {
-					return aoserrors.Wrap(err)
-				}
-
-				if adapterDataMap[sensor.adapter] == nil {
-					adapterDataMap[sensor.adapter] = make(map[string]interface{})
-				}
-
-				adapterDataMap[sensor.adapter][path] = value
-			}
+		if !filter.Match(path) {
+			continue
 		}
+
+		var value interface{}
+
+		if len(suffixMap) != 0 {
+			// if there is suffix map, try to find proper path by suffix
+			for suffix, v := range suffixMap {
+				if strings.HasSuffix(path, suffix) {
+					value = v
+					break
+				}
+			}
+		} else {
+			// For simple value set data
+			value = data
+		}
+
+		if value == nil {
+			continue
+		}
+
+		// Set data to adapterDataMap
+		if err = checkPermissions(sensor.adapter, path, authInfo, "w"); err != nil {
+			return aoserrors.Wrap(err)
+		}
+
+		if adapterDataMap[sensor.adapter] == nil {
+			adapterDataMap[sensor.adapter] = make(map[string]interface{})
+		}
+
+		adapterDataMap[sensor.adapter][path] = value
 	}
 
 	// If adapterMap is empty: no path found
@@ -271,10 +256,12 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 		return aoserrors.New("server is unable to fulfil the client request because the request is malformed")
 	}
 
-	// Everything ok: try to set to adapter
 	for adapter, visData := range adapterDataMap {
 		for path, value := range visData {
-			log.WithFields(log.Fields{"adapter": adapter.GetName(), "path": path, "value": value}).Debug("Set data to adapter")
+			log.WithFields(log.Fields{
+				"adapter": adapter.GetName(),
+				"path":    path, "value": value,
+			}).Debug("Set data to adapter")
 		}
 
 		if err = adapter.SetData(visData); err != nil {
@@ -585,4 +572,31 @@ func convertData(requestedPath string, data map[string]interface{}) (result inte
 	}
 	// return array of different parents
 	return dataArray
+}
+
+// Create map from data. According to VIS spec data could be array of map,
+// map or simple value. Convert array of map to map and keep map as is.
+func (provider *DataProvider) getSuffixMap(data interface{}) (suffixMap map[string]interface{}) {
+	suffixMap = make(map[string]interface{})
+
+	switch data := data.(type) {
+	// convert array of map to map
+	case []interface{}:
+		for _, arrayItem := range data {
+			arrayMap, ok := arrayItem.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			for path, value := range arrayMap {
+				suffixMap[path] = value
+			}
+		}
+
+	// keep map as is
+	case map[string]interface{}:
+		suffixMap = data
+	}
+
+	return suffixMap
 }
