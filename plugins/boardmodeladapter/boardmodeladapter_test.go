@@ -96,7 +96,7 @@ func TestGetBoardModel(t *testing.T) {
 	boardModelFile := path.Join(tmpDir, "boardmodel.txt")
 	originBoardModel := "TEST_BOARD_MODEL"
 
-	if err := ioutil.WriteFile(boardModelFile, []byte(originBoardModel), 0o644); err != nil {
+	if err := ioutil.WriteFile(boardModelFile, []byte(originBoardModel), 0o600); err != nil {
 		t.Fatalf("Can't create boardModel file: %s", err)
 	}
 

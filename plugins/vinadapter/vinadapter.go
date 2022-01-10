@@ -73,7 +73,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 
 		log.Warnf("Can't read VIN: %s. Generate new one: %s", err, string(vin))
 
-		if err = ioutil.WriteFile(localAdapter.config.FilePath, vin, 0o644); err != nil {
+		if err = ioutil.WriteFile(localAdapter.config.FilePath, vin, 0o600); err != nil {
 			return nil, aoserrors.Wrap(err)
 		}
 	}
@@ -167,7 +167,7 @@ func generateVIN() (vin []byte) {
 	rand.Seed(time.Now().UnixNano())
 
 	for i := range vin {
-		vin[i] = vinSymbols[rand.Intn(len(vinSymbols))]
+		vin[i] = vinSymbols[rand.Intn(len(vinSymbols))] // nolint:gosec // test implementation
 	}
 
 	return vin
