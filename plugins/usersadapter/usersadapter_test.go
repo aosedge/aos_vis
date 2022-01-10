@@ -87,7 +87,7 @@ func TestMain(m *testing.M) {
  ******************************************************************************/
 
 func TestGetName(t *testing.T) {
-	adapter, err := usersadapter.New(generateConfig(usersVISPath, path.Join(tmpDir, "user.txt")))
+	adapter, err := usersadapter.New(generateConfig(path.Join(tmpDir, "user.txt")))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
@@ -104,7 +104,7 @@ func TestEmptyUser(t *testing.T) {
 		t.Fatalf("Can't remove Users file: %s", err)
 	}
 
-	adapter, err := usersadapter.New(generateConfig(usersVISPath, userFile))
+	adapter, err := usersadapter.New(generateConfig(userFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
@@ -137,7 +137,7 @@ func TestExistingUser(t *testing.T) {
 		t.Fatalf("Can't create users file: %s", err)
 	}
 
-	adapter, err := usersadapter.New(generateConfig(usersVISPath, userFile))
+	adapter, err := usersadapter.New(generateConfig(userFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
@@ -168,7 +168,7 @@ func TestSetUser(t *testing.T) {
 		t.Fatalf("Can't remove Users file: %s", err)
 	}
 
-	adapter, err := usersadapter.New(generateConfig(usersVISPath, usersFile))
+	adapter, err := usersadapter.New(generateConfig(usersFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
@@ -212,7 +212,7 @@ func TestSetUserFromJson(t *testing.T) {
 		t.Fatalf("Can't remove Users file: %s", err)
 	}
 
-	adapter, err := usersadapter.New(generateConfig(usersVISPath, usersFile))
+	adapter, err := usersadapter.New(generateConfig(usersFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
@@ -264,7 +264,7 @@ func TestSetUserFromJson(t *testing.T) {
  * Private
  ******************************************************************************/
 
-func generateConfig(visPath, filePath string) (config []byte) {
+func generateConfig(filePath string) (config []byte) {
 	type adapterConfig struct {
 		VISPath  string `json:"visPath"`
 		FilePath string `json:"filePath"`
@@ -272,7 +272,7 @@ func generateConfig(visPath, filePath string) (config []byte) {
 
 	var err error
 
-	if config, err = json.Marshal(&adapterConfig{VISPath: visPath, FilePath: filePath}); err != nil {
+	if config, err = json.Marshal(&adapterConfig{VISPath: usersVISPath, FilePath: filePath}); err != nil {
 		log.Fatalf("Can't marshal config: %s", err)
 	}
 
