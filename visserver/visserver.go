@@ -38,6 +38,7 @@ import (
  * Types
  ******************************************************************************/
 
+// PermissionProvider interface to get permissions.
 type PermissionProvider interface {
 	GetVisPermissionByToken(token string) (permissions map[string]string, err error)
 }
@@ -191,6 +192,7 @@ func (server *Server) ProcessMessage(
 	return response, nil
 }
 
+// GetPermissionProvider returns permission provider interface.
 func (server *Server) GetPermissionProvider() (permissionProvider PermissionProvider) {
 	return server.permissionProvider
 }

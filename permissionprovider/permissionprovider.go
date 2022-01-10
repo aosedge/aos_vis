@@ -52,7 +52,7 @@ const (
 	iamRequestTimeout = 30 * time.Second
 )
 
-const visFunctionalServerId = "vis"
+const visFunctionalServerID = "vis"
 
 /*******************************************************************************
  * Public
@@ -79,7 +79,7 @@ func (provider *PermissionProvider) GetVisPermissionByToken(token string) (permi
 	ctx, cancel := context.WithTimeout(context.Background(), iamRequestTimeout)
 	defer cancel()
 
-	req := &pb.PermissionsRequest{Secret: token, FunctionalServerId: visFunctionalServerId}
+	req := &pb.PermissionsRequest{Secret: token, FunctionalServerId: visFunctionalServerID}
 
 	response, err := provider.iamClient.GetPermissions(ctx, req)
 	if err != nil {
