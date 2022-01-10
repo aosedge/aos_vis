@@ -135,7 +135,7 @@ func (server *Server) ClientDisconnected(client *wsserver.Client) {
 	delete(server.clients, client)
 }
 
-// ProcessMessage proccess incoming messages.
+// ProcessMessage processes incoming messages.
 func (server *Server) ProcessMessage(
 	wsClient *wsserver.Client, messageType int, message []byte) (response []byte, err error) {
 	server.Lock()
@@ -158,7 +158,7 @@ func (server *Server) ProcessMessage(
 
 	var responseItf interface{}
 
-	switch string(header.Action) {
+	switch header.Action {
 	case ActionGet:
 		responseItf, err = client.processGetRequest(message)
 
