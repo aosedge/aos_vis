@@ -115,7 +115,7 @@ func TestMain(m *testing.M) {
 
 	ret := m.Run()
 
-	os.Exit(ret)
+	defer os.Exit(ret)
 }
 
 /*******************************************************************************
