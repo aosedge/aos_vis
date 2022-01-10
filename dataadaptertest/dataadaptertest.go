@@ -26,6 +26,12 @@ import (
 )
 
 /*******************************************************************************
+ * Consts
+ ******************************************************************************/
+
+const subscribeWaitTimeout = 100 * time.Millisecond
+
+/*******************************************************************************
  * Types
  ******************************************************************************/
 
@@ -141,7 +147,7 @@ func SubscribeUnsubscribe(adapterInfo *TestAdapterInfo) (err error) {
 				return aoserrors.Errorf("wrong path: %s value: %v", path, data)
 			}
 		}
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(subscribeWaitTimeout):
 		return aoserrors.Errorf("waiting for adapter %s data timeout", adapterInfo.Name)
 	}
 
