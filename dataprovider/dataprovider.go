@@ -567,7 +567,7 @@ func convertData(requestedPath string, data map[string]interface{}) (result inte
 	// * map[path]value if result belongs to same parent
 	// * []map[path]value if result belongs to different parents
 	//
-	// TODO: It is unclear from spec how to combine results in one map.
+	// It is unclear from spec how to combine results in one map.
 	// By which criteria we should put data to one map or to array element.
 	// For now it is combined by parent node.
 

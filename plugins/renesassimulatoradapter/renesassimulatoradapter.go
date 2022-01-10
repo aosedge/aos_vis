@@ -141,7 +141,7 @@ func (adapter *RenesasSimulatorAdapter) IsPathPublic(path string) (result bool, 
 	adapter.baseAdapter.Lock()
 	defer adapter.baseAdapter.Unlock()
 
-	// TODO: return false, once authorization is integrated
+	// return false, once authorization is integrated
 
 	return true, nil
 }
