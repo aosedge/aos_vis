@@ -45,8 +45,8 @@ type vinAdapter struct {
 }
 
 type adapterConfig struct {
-	VISPath  string `json:"VISPath"`
-	FilePath string `json:"FilePath"`
+	VISPath  string `json:"visPath"`
+	FilePath string `json:"filePath"`
 }
 
 /*******************************************************************************
