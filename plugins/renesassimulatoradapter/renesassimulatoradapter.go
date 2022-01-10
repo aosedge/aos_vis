@@ -35,7 +35,7 @@ import (
  * Types
  ******************************************************************************/
 
-// RenesasSimulatorAdapter Renesas simulator adapter
+// RenesasSimulatorAdapter Renesas simulator adapter.
 type RenesasSimulatorAdapter struct {
 	httpServer  *http.Server
 	upgrader    websocket.Upgrader
@@ -57,7 +57,7 @@ type simulatorMessage struct {
  * Public
  ******************************************************************************/
 
-// New creates adapter instance
+// New creates adapter instance.
 func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
 	log.Info("Create Renesas simulator adapter")
 
@@ -107,7 +107,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	return localAdapter, nil
 }
 
-// Close closes adapter
+// Close closes adapter.
 func (adapter *RenesasSimulatorAdapter) Close() {
 	log.Info("Close Renesas simulator adapter")
 
@@ -115,12 +115,12 @@ func (adapter *RenesasSimulatorAdapter) Close() {
 	adapter.baseAdapter.Close()
 }
 
-// GetName returns adapter name
+// GetName returns adapter name.
 func (adapter *RenesasSimulatorAdapter) GetName() (name string) {
 	return adapter.baseAdapter.GetName()
 }
 
-// GetPathList returns list of all pathes for this adapter
+// GetPathList returns list of all pathes for this adapter.
 func (adapter *RenesasSimulatorAdapter) GetPathList() (pathList []string, err error) {
 	pathList, err = adapter.baseAdapter.GetPathList()
 	if err != nil {
@@ -130,7 +130,7 @@ func (adapter *RenesasSimulatorAdapter) GetPathList() (pathList []string, err er
 	return pathList, nil
 }
 
-// IsPathPublic returns true if requested data accessible without authorization
+// IsPathPublic returns true if requested data accessible without authorization.
 func (adapter *RenesasSimulatorAdapter) IsPathPublic(path string) (result bool, err error) {
 	adapter.baseAdapter.Lock()
 	defer adapter.baseAdapter.Unlock()
@@ -140,7 +140,7 @@ func (adapter *RenesasSimulatorAdapter) IsPathPublic(path string) (result bool, 
 	return true, nil
 }
 
-// GetData returns data by path
+// GetData returns data by path.
 func (adapter *RenesasSimulatorAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
 	data, err = adapter.baseAdapter.GetData(pathList)
 	if err != nil {
@@ -150,27 +150,27 @@ func (adapter *RenesasSimulatorAdapter) GetData(pathList []string) (data map[str
 	return data, nil
 }
 
-// SetData sets data by pathes
+// SetData sets data by pathes.
 func (adapter *RenesasSimulatorAdapter) SetData(data map[string]interface{}) (err error) {
 	return errors.New("operation is not supported")
 }
 
-// GetSubscribeChannel returns channel on which data changes will be sent
+// GetSubscribeChannel returns channel on which data changes will be sent.
 func (adapter *RenesasSimulatorAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
 	return adapter.baseAdapter.SubscribeChannel
 }
 
-// Subscribe subscribes for data changes
+// Subscribe subscribes for data changes.
 func (adapter *RenesasSimulatorAdapter) Subscribe(pathList []string) (err error) {
 	return aoserrors.Wrap(adapter.baseAdapter.Subscribe(pathList))
 }
 
-// Unsubscribe unsubscribes from data changes
+// Unsubscribe unsubscribes from data changes.
 func (adapter *RenesasSimulatorAdapter) Unsubscribe(pathList []string) (err error) {
 	return aoserrors.Wrap(adapter.baseAdapter.Unsubscribe(pathList))
 }
 
-// UnsubscribeAll unsubscribes from all data changes
+// UnsubscribeAll unsubscribes from all data changes.
 func (adapter *RenesasSimulatorAdapter) UnsubscribeAll() (err error) {
 	return aoserrors.Wrap(adapter.baseAdapter.UnsubscribeAll())
 }

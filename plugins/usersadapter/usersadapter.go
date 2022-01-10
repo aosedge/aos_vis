@@ -56,7 +56,7 @@ type adapterConfig struct {
  * Public
  ******************************************************************************/
 
-// New creates adapter instance
+// New creates adapter instance.
 func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
 	log.Info("Create Users adapter")
 
@@ -81,27 +81,27 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	return localAdapter, nil
 }
 
-// Close closes adapter
+// Close closes adapter.
 func (adapter *usersAdapter) Close() {
 	log.Info("Close Users adapter")
 }
 
-// GetName returns adapter name
+// GetName returns adapter name.
 func (adapter *usersAdapter) GetName() (name string) {
 	return "usersadapter"
 }
 
-// GetPathList returns list of all pathes for this adapter
+// GetPathList returns list of all pathes for this adapter.
 func (adapter *usersAdapter) GetPathList() (pathList []string, err error) {
 	return []string{adapter.config.VISPath}, nil
 }
 
-// IsPathPublic returns true if requested data accessible without authorization
+// IsPathPublic returns true if requested data accessible without authorization.
 func (adapter *usersAdapter) IsPathPublic(path string) (result bool, err error) {
 	return true, nil
 }
 
-// GetData returns data by path
+// GetData returns data by path.
 func (adapter *usersAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
 	log.WithField("users", adapter.users).Debug("Get Users")
 
@@ -118,7 +118,7 @@ func (adapter *usersAdapter) GetData(pathList []string) (data map[string]interfa
 	return data, nil
 }
 
-// SetData sets data by pathes
+// SetData sets data by pathes.
 func (adapter *usersAdapter) SetData(data map[string]interface{}) (err error) {
 	for path, value := range data {
 		if path == adapter.config.VISPath {
@@ -155,12 +155,12 @@ func (adapter *usersAdapter) SetData(data map[string]interface{}) (err error) {
 	return nil
 }
 
-// GetSubscribeChannel returns channel on which data changes will be sent
+// GetSubscribeChannel returns channel on which data changes will be sent.
 func (adapter *usersAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
 	return adapter.subscribeChannel
 }
 
-// Subscribe subscribes for data changes
+// Subscribe subscribes for data changes.
 func (adapter *usersAdapter) Subscribe(pathList []string) (err error) {
 	for _, path := range pathList {
 		if path == adapter.config.VISPath {
@@ -173,7 +173,7 @@ func (adapter *usersAdapter) Subscribe(pathList []string) (err error) {
 	return nil
 }
 
-// Unsubscribe unsubscribes from data changes
+// Unsubscribe unsubscribes from data changes.
 func (adapter *usersAdapter) Unsubscribe(pathList []string) (err error) {
 	for _, path := range pathList {
 		if path == adapter.config.VISPath {
@@ -186,7 +186,7 @@ func (adapter *usersAdapter) Unsubscribe(pathList []string) (err error) {
 	return nil
 }
 
-// UnsubscribeAll unsubscribes from all data changes
+// UnsubscribeAll unsubscribes from all data changes.
 func (adapter *usersAdapter) UnsubscribeAll() (err error) {
 	adapter.subscribed = false
 
