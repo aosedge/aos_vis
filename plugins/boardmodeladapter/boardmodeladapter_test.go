@@ -87,9 +87,7 @@ func TestGetName(t *testing.T) {
 	}
 	defer adapter.Close()
 
-	name := adapter.GetName()
-
-	if name != "boardmodeladapter" {
+	if name := adapter.GetName(); name != "boardmodeladapter" {
 		t.Errorf("Wrong adapter name: %s", name)
 	}
 }
