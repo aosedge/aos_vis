@@ -19,8 +19,6 @@ package vinadapter
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"time"
@@ -62,7 +60,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	localAdapter := new(vinAdapter)
 
 	if configJSON == nil {
-		return nil, errors.New("config should be set")
+		return nil, aoserrors.New("config should be set")
 	}
 
 	if err = json.Unmarshal(configJSON, &localAdapter.config); err != nil {
@@ -115,7 +113,7 @@ func (adapter *vinAdapter) GetData(pathList []string) (data map[string]interface
 		if path == adapter.config.VISPath {
 			data[path] = adapter.vin
 		} else {
-			return nil, fmt.Errorf("path %s doesn't exits", path)
+			return nil, aoserrors.Errorf("path %s doesn't exits", path)
 		}
 	}
 
@@ -130,11 +128,11 @@ func (adapter *vinAdapter) SetData(data map[string]interface{}) (err error) {
 
 	for _, path := range data {
 		if path != adapter.config.VISPath {
-			return fmt.Errorf("path %s doesn't exits", path)
+			return aoserrors.Errorf("path %s doesn't exits", path)
 		}
 	}
 
-	return fmt.Errorf("signal %s cannot be set since it is a read only signal", adapter.config.VISPath)
+	return aoserrors.Errorf("signal %s cannot be set since it is a read only signal", adapter.config.VISPath)
 }
 
 // GetSubscribeChannel returns channel on which data changes will be sent.

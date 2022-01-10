@@ -98,7 +98,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	go func() {
 		log.WithField("address", config.ServerURL).Debug("Listen for Renesas simulator")
 
-		if err := localAdapter.httpServer.ListenAndServe(); err != http.ErrServerClosed {
+		if err := localAdapter.httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
 			log.Error("Server listening error: ", err)
 			return
 		}
@@ -152,7 +152,7 @@ func (adapter *RenesasSimulatorAdapter) GetData(pathList []string) (data map[str
 
 // SetData sets data by pathes.
 func (adapter *RenesasSimulatorAdapter) SetData(data map[string]interface{}) (err error) {
-	return errors.New("operation is not supported")
+	return aoserrors.New("operation is not supported")
 }
 
 // GetSubscribeChannel returns channel on which data changes will be sent.

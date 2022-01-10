@@ -20,7 +20,6 @@ package usersadapter
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 
@@ -63,7 +62,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	localAdapter := &usersAdapter{subscribeChannel: make(chan map[string]interface{}, subscribeChannelSize)}
 
 	if configJSON == nil {
-		return nil, errors.New("config should be set")
+		return nil, aoserrors.New("config should be set")
 	}
 
 	if err = json.Unmarshal(configJSON, &localAdapter.config); err != nil {
@@ -111,7 +110,7 @@ func (adapter *usersAdapter) GetData(pathList []string) (data map[string]interfa
 		if path == adapter.config.VISPath {
 			data[path] = adapter.users
 		} else {
-			return nil, fmt.Errorf("path %s doesn't exits", path)
+			return nil, aoserrors.Errorf("path %s doesn't exits", path)
 		}
 	}
 
@@ -124,7 +123,7 @@ func (adapter *usersAdapter) SetData(data map[string]interface{}) (err error) {
 		if path == adapter.config.VISPath {
 			users, ok := value.([]interface{})
 			if !ok {
-				return fmt.Errorf("wrong value type for path %s", path)
+				return aoserrors.Errorf("wrong value type for path %s", path)
 			}
 
 			adapter.users = []string{}
@@ -132,7 +131,7 @@ func (adapter *usersAdapter) SetData(data map[string]interface{}) (err error) {
 			for _, user := range users {
 				userStr, ok := user.(string)
 				if !ok {
-					return fmt.Errorf("wrong element type for path %s", path)
+					return aoserrors.Errorf("wrong element type for path %s", path)
 				}
 
 				adapter.users = append(adapter.users, userStr)
@@ -148,7 +147,7 @@ func (adapter *usersAdapter) SetData(data map[string]interface{}) (err error) {
 				return aoserrors.Wrap(err)
 			}
 		} else {
-			return fmt.Errorf("path %s doesn't exits", path)
+			return aoserrors.Errorf("path %s doesn't exits", path)
 		}
 	}
 
@@ -166,7 +165,7 @@ func (adapter *usersAdapter) Subscribe(pathList []string) (err error) {
 		if path == adapter.config.VISPath {
 			adapter.subscribed = true
 		} else {
-			return fmt.Errorf("path %s doesn't exits", path)
+			return aoserrors.Errorf("path %s doesn't exits", path)
 		}
 	}
 
@@ -179,7 +178,7 @@ func (adapter *usersAdapter) Unsubscribe(pathList []string) (err error) {
 		if path == adapter.config.VISPath {
 			adapter.subscribed = false
 		} else {
-			return fmt.Errorf("path %s doesn't exits", path)
+			return aoserrors.Errorf("path %s doesn't exits", path)
 		}
 	}
 

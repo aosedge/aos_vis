@@ -19,8 +19,6 @@ package boardmodeladapter
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io/ioutil"
 
 	log "github.com/sirupsen/logrus"
@@ -60,7 +58,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	localAdapter := new(boardModelAdapter)
 
 	if configJSON == nil {
-		return nil, errors.New("config should be set")
+		return nil, aoserrors.New("config should be set")
 	}
 
 	if err = json.Unmarshal(configJSON, &localAdapter.config); err != nil {
@@ -113,7 +111,7 @@ func (adapter *boardModelAdapter) GetData(pathList []string) (data map[string]in
 		if path == adapter.config.VISPath {
 			data[path] = adapter.boardModel
 		} else {
-			return nil, fmt.Errorf("path %s doesn't exits", path)
+			return nil, aoserrors.Errorf("path %s doesn't exits", path)
 		}
 	}
 
@@ -128,11 +126,11 @@ func (adapter *boardModelAdapter) SetData(data map[string]interface{}) (err erro
 
 	for _, path := range data {
 		if path != adapter.config.VISPath {
-			return fmt.Errorf("path %s doesn't exits", path)
+			return aoserrors.Errorf("path %s doesn't exits", path)
 		}
 	}
 
-	return fmt.Errorf("signal %s cannot be set since it is a read only attribute", adapter.config.VISPath)
+	return aoserrors.Errorf("signal %s cannot be set since it is a read only attribute", adapter.config.VISPath)
 }
 
 // GetSubscribeChannel returns channel on which data changes will be sent.

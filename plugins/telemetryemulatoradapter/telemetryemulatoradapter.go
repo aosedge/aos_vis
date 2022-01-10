@@ -20,8 +20,6 @@ package telemetryemulatoradapter
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -73,7 +71,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	}
 
 	if cfg.SensorURL == "" {
-		return nil, errors.New("sensor URL should be defined")
+		return nil, aoserrors.New("sensor URL should be defined")
 	}
 
 	localAdapter := &TelemetryEmulatorAdapter{cfg: cfg}
@@ -176,7 +174,7 @@ func (adapter *TelemetryEmulatorAdapter) SetData(data map[string]interface{}) (e
 	}
 
 	if res.StatusCode != 201 {
-		return errors.New(res.Status)
+		return aoserrors.New(res.Status)
 	}
 
 	return aoserrors.Wrap(adapter.baseAdapter.SetData(data))
@@ -309,7 +307,7 @@ func convertVisFormatToData(visData map[string]interface{}) (dataJSON []byte, er
 			path = strings.TrimPrefix(path, "Attribute.Emulator.")
 			sendData[path] = value
 		} else {
-			return dataJSON, fmt.Errorf("path %s does not exist", path)
+			return dataJSON, aoserrors.Errorf("path %s does not exist", path)
 		}
 	}
 
