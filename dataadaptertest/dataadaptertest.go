@@ -30,7 +30,7 @@ import (
  * Types
  ******************************************************************************/
 
-// TestAdapterInfo contains info for adapter test
+// TestAdapterInfo contains info for adapter test.
 type TestAdapterInfo struct {
 	Adapter          dataprovider.DataAdapter
 	Name             string
@@ -44,7 +44,7 @@ type TestAdapterInfo struct {
  * Public
  ******************************************************************************/
 
-// GetName tests GetName adapter method
+// GetName tests GetName adapter method.
 func GetName(adapterInfo *TestAdapterInfo) (err error) {
 	name := adapterInfo.Adapter.GetName()
 	if name != adapterInfo.Name {
@@ -54,7 +54,7 @@ func GetName(adapterInfo *TestAdapterInfo) (err error) {
 	return nil
 }
 
-// GetPathList tests GetPathList adapter method
+// GetPathList tests GetPathList adapter method.
 func GetPathList(adapterInfo *TestAdapterInfo) (err error) {
 	pathList, err := adapterInfo.Adapter.GetPathList()
 	if err != nil {
@@ -68,7 +68,7 @@ func GetPathList(adapterInfo *TestAdapterInfo) (err error) {
 	return nil
 }
 
-// PublicPath tests IsPathPublic adapter method
+// PublicPath tests IsPathPublic adapter method.
 func PublicPath(adapterInfo *TestAdapterInfo) (err error) {
 	pathList, _ := adapterInfo.Adapter.GetPathList()
 	for _, path := range pathList {
@@ -81,7 +81,7 @@ func PublicPath(adapterInfo *TestAdapterInfo) (err error) {
 	return nil
 }
 
-// GetSetData tests Get and Set adapter methods
+// GetSetData tests Get and Set adapter methods.
 func GetSetData(adapterInfo *TestAdapterInfo) (err error) {
 	if adapterInfo.SetData == nil {
 		return nil
@@ -114,7 +114,7 @@ func GetSetData(adapterInfo *TestAdapterInfo) (err error) {
 	return nil
 }
 
-// SubscribeUnsubscribe tests Subscribe and Unsubscribe adapter methods
+// SubscribeUnsubscribe tests Subscribe and Unsubscribe adapter methods.
 func SubscribeUnsubscribe(adapterInfo *TestAdapterInfo) (err error) {
 	if adapterInfo.SetData == nil {
 		return nil

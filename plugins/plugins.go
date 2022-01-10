@@ -18,7 +18,7 @@
 package plugins
 
 import (
-	// include all supported plugins
+	// include all supported plugins.
 	_ "github.com/aoscloud/aos_vis/plugins/boardmodeladapter"
 	_ "github.com/aoscloud/aos_vis/plugins/renesassimulatoradapter"
 	_ "github.com/aoscloud/aos_vis/plugins/storageadapter"

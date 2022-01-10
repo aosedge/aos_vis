@@ -27,7 +27,7 @@ import (
  * Types
  ******************************************************************************/
 
-// BaseAdapter base adapter
+// BaseAdapter base adapter.
 type BaseAdapter struct {
 	Name string
 	Data map[string]*BaseData
@@ -35,7 +35,7 @@ type BaseAdapter struct {
 	SubscribeChannel chan map[string]interface{}
 }
 
-// BaseData base data type
+// BaseData base data type.
 type BaseData struct {
 	Public    bool
 	ReadOnly  bool
@@ -47,7 +47,7 @@ type BaseData struct {
  * Private
  ******************************************************************************/
 
-// NewBaseAdapter creates base adapter
+// NewBaseAdapter creates base adapter.
 func NewBaseAdapter() (adapter *BaseAdapter, err error) {
 	adapter = new(BaseAdapter)
 
@@ -57,16 +57,16 @@ func NewBaseAdapter() (adapter *BaseAdapter, err error) {
 	return adapter, nil
 }
 
-// Close closes adapter
+// Close closes adapter.
 func (adapter *BaseAdapter) Close() {
 }
 
-// GetName returns adapter name
+// GetName returns adapter name.
 func (adapter *BaseAdapter) GetName() (name string) {
 	return adapter.Name
 }
 
-// GetPathList returns list of all pathes for this adapter
+// GetPathList returns list of all pathes for this adapter.
 func (adapter *BaseAdapter) GetPathList() (pathList []string, err error) {
 	adapter.Lock()
 	defer adapter.Unlock()
@@ -80,7 +80,7 @@ func (adapter *BaseAdapter) GetPathList() (pathList []string, err error) {
 	return pathList, nil
 }
 
-// IsPathPublic returns true if requested data accessible without authorization
+// IsPathPublic returns true if requested data accessible without authorization.
 func (adapter *BaseAdapter) IsPathPublic(path string) (result bool, err error) {
 	adapter.Lock()
 	defer adapter.Unlock()
@@ -92,7 +92,7 @@ func (adapter *BaseAdapter) IsPathPublic(path string) (result bool, err error) {
 	return adapter.Data[path].Public, nil
 }
 
-// GetData returns data by path
+// GetData returns data by path.
 func (adapter *BaseAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
 	adapter.Lock()
 	defer adapter.Unlock()
@@ -110,7 +110,7 @@ func (adapter *BaseAdapter) GetData(pathList []string) (data map[string]interfac
 	return data, nil
 }
 
-// SetData sets data by pathes
+// SetData sets data by pathes.
 func (adapter *BaseAdapter) SetData(data map[string]interface{}) (err error) {
 	adapter.Lock()
 	defer adapter.Unlock()
@@ -141,12 +141,12 @@ func (adapter *BaseAdapter) SetData(data map[string]interface{}) (err error) {
 	return nil
 }
 
-// GetSubscribeChannel returns channel on which data changes will be sent
+// GetSubscribeChannel returns channel on which data changes will be sent.
 func (adapter *BaseAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
 	return adapter.SubscribeChannel
 }
 
-// Subscribe subscribes for data changes
+// Subscribe subscribes for data changes.
 func (adapter *BaseAdapter) Subscribe(pathList []string) (err error) {
 	adapter.Lock()
 	defer adapter.Unlock()
@@ -162,7 +162,7 @@ func (adapter *BaseAdapter) Subscribe(pathList []string) (err error) {
 	return nil
 }
 
-// Unsubscribe unsubscribes from data changes
+// Unsubscribe unsubscribes from data changes.
 func (adapter *BaseAdapter) Unsubscribe(pathList []string) (err error) {
 	adapter.Lock()
 	defer adapter.Unlock()
@@ -178,7 +178,7 @@ func (adapter *BaseAdapter) Unsubscribe(pathList []string) (err error) {
 	return nil
 }
 
-// UnsubscribeAll unsubscribes from all data changes
+// UnsubscribeAll unsubscribes from all data changes.
 func (adapter *BaseAdapter) UnsubscribeAll() (err error) {
 	adapter.Lock()
 	defer adapter.Unlock()
