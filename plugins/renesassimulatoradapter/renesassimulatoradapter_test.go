@@ -135,13 +135,14 @@ func TestMain(m *testing.M) {
 
 	connection, _, err = websocket.DefaultDialer.Dial("ws://localhost:9000", nil)
 	if err != nil {
-		log.Fatalf("Can't connect to simulator adapter: %s", err)
+		log.Errorf("Can't connect to simulator adapter: %s", err)
+		return
 	}
 	defer connection.Close()
 
 	ret := m.Run()
 
-	os.Exit(ret)
+	defer os.Exit(ret)
 }
 
 /*******************************************************************************
