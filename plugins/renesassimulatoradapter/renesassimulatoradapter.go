@@ -32,6 +32,12 @@ import (
 )
 
 /*******************************************************************************
+ * Consts
+ ******************************************************************************/
+
+const kbSize = 1024
+
+/*******************************************************************************
  * Types
  ******************************************************************************/
 
@@ -86,8 +92,8 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	}
 
 	localAdapter.upgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
+		ReadBufferSize:  kbSize,
+		WriteBufferSize: kbSize,
 	}
 
 	serveMux := http.NewServeMux()

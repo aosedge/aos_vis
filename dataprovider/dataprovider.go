@@ -35,6 +35,11 @@ import (
 
 const subscribeChannelSize = 32
 
+const (
+	numPreallocatedAdapters = 8
+	numPreallocatedPathes   = 10
+)
+
 /*******************************************************************************
  * Types
  ******************************************************************************/
@@ -117,7 +122,7 @@ func New(config *config.Config) (provider *DataProvider, err error) {
 	provider.sensors = make(map[string]*sensorDescription)
 	provider.subscribeInfoMap = make(map[uint64]*subscribeInfo)
 
-	provider.adapters = make([]DataAdapter, 0, 8)
+	provider.adapters = make([]DataAdapter, 0, numPreallocatedAdapters)
 
 	for _, adapterCfg := range config.Adapters {
 		if adapterCfg.Disabled {
@@ -166,7 +171,7 @@ func (provider *DataProvider) GetData(path string, authInfo *AuthInfo) (data int
 			}
 
 			if adapterDataMap[sensor.adapter] == nil {
-				adapterDataMap[sensor.adapter] = make([]string, 0, 10)
+				adapterDataMap[sensor.adapter] = make([]string, 0, numPreallocatedPathes)
 			}
 
 			adapterDataMap[sensor.adapter] = append(adapterDataMap[sensor.adapter], path)
@@ -308,7 +313,7 @@ func (provider *DataProvider) Subscribe(
 
 			// Add path to subscribeMap
 			if subscribeMap[sensor.adapter] == nil {
-				subscribeMap[sensor.adapter] = make([]string, 0, 10)
+				subscribeMap[sensor.adapter] = make([]string, 0, numPreallocatedPathes)
 			}
 
 			subscribeMap[sensor.adapter] = append(subscribeMap[sensor.adapter], path)
@@ -378,7 +383,7 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 		if sensor.subscribeIds.Len() == 0 {
 			// Add path to unsubscribeMap
 			if unsubscribeMap[sensor.adapter] == nil {
-				unsubscribeMap[sensor.adapter] = make([]string, 0, 10)
+				unsubscribeMap[sensor.adapter] = make([]string, 0, numPreallocatedPathes)
 			}
 
 			unsubscribeMap[sensor.adapter] = append(unsubscribeMap[sensor.adapter], path)

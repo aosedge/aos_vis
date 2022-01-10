@@ -427,5 +427,5 @@ func createErrorInfo(err error) (errorInfo *visprotocol.ErrorInfo) {
 }
 
 func getCurTime() int64 {
-	return time.Now().UnixNano() / 1000000
+	return time.Now().UnixNano() / 1000000 // nolint:gomnd
 }

@@ -69,7 +69,8 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	if err != nil {
 		log.Warnf("Can't read board model: %s. Use default one: %s", err, defaultBoardModel)
 
-		if err = ioutil.WriteFile(localAdapter.config.FilePath, []byte(defaultBoardModel), 0o644); err != nil {
+		if err = ioutil.WriteFile(localAdapter.config.FilePath,
+			[]byte(defaultBoardModel), 0o644); err != nil {
 			return nil, aoserrors.Wrap(err)
 		}
 
