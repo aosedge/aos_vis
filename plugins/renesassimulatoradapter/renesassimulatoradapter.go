@@ -220,35 +220,39 @@ func (adapter *RenesasSimulatorAdapter) handleConnection(w http.ResponseWriter, 
 				continue
 			}
 
-			switch simulatorMessage.Command {
-			case "data":
-				result := make(map[string]interface{})
-
-				if err := adapter.handleSimulatorData("", simulatorMessage.Argument, result); err != nil {
-					log.Errorf("Can't parse simulator data: %s", err)
-				}
-
-				// Multiply longitude by -1, fix for Renesas simulator
-				longitude, ok := result["Signal.Cabin.Infotainment.Navigation.CurrentLocation.Longitude"]
-				if ok {
-					floatLongitude, ok := longitude.(float64)
-					if ok {
-						result["Signal.Cabin.Infotainment.Navigation.CurrentLocation.Longitude"] = -1 * floatLongitude
-					}
-				}
-
-				if len(result) != 0 {
-					if err = adapter.baseAdapter.SetData(result); err != nil {
-						log.Errorf("Can't set data to adapter: %s", err)
-					}
-				}
-
-			default:
-				log.WithField("command", simulatorMessage.Command).Warning("Unsupported command received")
-			}
+			adapter.processCommand(simulatorMessage)
 		} else {
 			log.WithField("format", messageType).Warning("Incoming message in unsupported format")
 		}
+	}
+}
+
+func (adapter *RenesasSimulatorAdapter) processCommand(simulatorMessage simulatorMessage) {
+	switch simulatorMessage.Command {
+	case "data":
+		result := make(map[string]interface{})
+
+		if err := adapter.handleSimulatorData("", simulatorMessage.Argument, result); err != nil {
+			log.Errorf("Can't parse simulator data: %s", err)
+		}
+
+		// Multiply longitude by -1, fix for Renesas simulator
+		longitude, ok := result["Signal.Cabin.Infotainment.Navigation.CurrentLocation.Longitude"]
+		if ok {
+			floatLongitude, ok := longitude.(float64)
+			if ok {
+				result["Signal.Cabin.Infotainment.Navigation.CurrentLocation.Longitude"] = -1 * floatLongitude
+			}
+		}
+
+		if len(result) != 0 {
+			if err := adapter.baseAdapter.SetData(result); err != nil {
+				log.Errorf("Can't set data to adapter: %s", err)
+			}
+		}
+
+	default:
+		log.WithField("command", simulatorMessage.Command).Warning("Unsupported command received")
 	}
 }
 
