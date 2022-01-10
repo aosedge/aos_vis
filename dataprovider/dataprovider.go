@@ -471,7 +471,11 @@ func (provider *DataProvider) handleSubscribeChannel(adapter DataAdapter) {
 
 		for path, value := range changes {
 			for idElement := provider.sensors[path].subscribeIds.Front(); idElement != nil; idElement = idElement.Next() {
-				id := idElement.Value.(uint64)
+				id, ok := idElement.Value.(uint64)
+				if !ok {
+					log.Error("Wrong subscribe ID type")
+					break
+				}
 
 				if subscribeDataMap[id] == nil {
 					subscribeDataMap[id] = make(map[string]interface{})
