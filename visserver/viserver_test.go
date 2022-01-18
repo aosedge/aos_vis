@@ -80,7 +80,7 @@ func TestMain(m *testing.M) {
 				"Params": {
 					"Data" : {
 						"Attribute.Vehicle.VehicleIdentification.VIN":    {"Value": "TestVIN", "Public": true,"ReadOnly": true},
-						"Attribute.Vehicle.UserIdentification.Users":     {"Value": ["User1", "Provider1"], "Public": true},
+						"Attribute.Vehicle.SubjectIdentification.Subjects":     {"Value": ["Subject1", "Provider1"], "Public": true},
 		
 						"Signal.Drivetrain.InternalCombustionEngine.RPM": {"Value": 1000, "ReadOnly": true},
 			
