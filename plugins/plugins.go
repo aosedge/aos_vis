@@ -22,7 +22,7 @@ import (
 	_ "github.com/aoscloud/aos_vis/plugins/boardmodeladapter"
 	_ "github.com/aoscloud/aos_vis/plugins/renesassimulatoradapter"
 	_ "github.com/aoscloud/aos_vis/plugins/storageadapter"
+	_ "github.com/aoscloud/aos_vis/plugins/subjectsadapter"
 	_ "github.com/aoscloud/aos_vis/plugins/telemetryemulatoradapter"
-	_ "github.com/aoscloud/aos_vis/plugins/usersadapter"
 	_ "github.com/aoscloud/aos_vis/plugins/vinadapter"
 )
