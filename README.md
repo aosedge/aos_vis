@@ -42,7 +42,7 @@ Specify parameters in visconfig.json file:
 			"Params": {
 				"Data" : {
 					"Attribute.Vehicle.VehicleIdentification.VIN": {"Value": "TestVIN", "Public": true, "ReadOnly": true},
-					"Attribute.Vehicle.UserIdentification.Users":  {"Value": ["User1", "Provider1"], "Public": true},
+					"Attribute.Vehicle.SubjectIdentification.Subjects":  {"Value": ["Subject1", "Provider1"], "Public": true},
 					"Attribute.Car.Message":  {"Public": true}
 				}
 			}

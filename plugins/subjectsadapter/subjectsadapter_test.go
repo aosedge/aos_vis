@@ -38,7 +38,7 @@ import (
  * Consts
  ******************************************************************************/
 
-const usersVISPath = "Attribute.Vehicle.VehicleIdentification.Users"
+const subjectsVISPath = "Attribute.Vehicle.VehicleIdentification.Subjects"
 
 /*******************************************************************************
  * Vars
@@ -109,16 +109,16 @@ func TestEmptyUser(t *testing.T) {
 	}
 	defer adapter.Close()
 
-	data, err := adapter.GetData([]string{usersVISPath})
+	data, err := adapter.GetData([]string{subjectsVISPath})
 	if err != nil {
 		t.Fatalf("Can't get data: %s", err)
 	}
 
-	if _, ok := data[usersVISPath]; !ok {
+	if _, ok := data[subjectsVISPath]; !ok {
 		t.Fatal("User not found in data")
 	}
 
-	users, ok := data[usersVISPath].([]string)
+	users, ok := data[subjectsVISPath].([]string)
 	if !ok {
 		t.Fatal("Wrong Users data type")
 	}
@@ -142,16 +142,16 @@ func TestExistingUser(t *testing.T) {
 	}
 	defer adapter.Close()
 
-	data, err := adapter.GetData([]string{usersVISPath})
+	data, err := adapter.GetData([]string{subjectsVISPath})
 	if err != nil {
 		t.Fatalf("Can't get data: %s", err)
 	}
 
-	if _, ok := data[usersVISPath]; !ok {
+	if _, ok := data[subjectsVISPath]; !ok {
 		t.Fatal("Users not found in data")
 	}
 
-	users, ok := data[usersVISPath].([]string)
+	users, ok := data[subjectsVISPath].([]string)
 	if !ok {
 		t.Fatal("Wrong Users data type")
 	}
@@ -179,7 +179,7 @@ func TestSetUser(t *testing.T) {
 		{},
 	}
 
-	if err = adapter.Subscribe([]string{usersVISPath}); err != nil {
+	if err = adapter.Subscribe([]string{subjectsVISPath}); err != nil {
 		t.Fatalf("Subscribe error: %s", err)
 	}
 
@@ -189,13 +189,13 @@ func TestSetUser(t *testing.T) {
 			setUsers[i] = v
 		}
 
-		if err = adapter.SetData(map[string]interface{}{usersVISPath: setUsers}); err != nil {
+		if err = adapter.SetData(map[string]interface{}{subjectsVISPath: setUsers}); err != nil {
 			t.Fatalf("Set data error: %s", err)
 		}
 
 		select {
 		case data := <-adapter.GetSubscribeChannel():
-			if !reflect.DeepEqual(data[usersVISPath], setUsers) {
+			if !reflect.DeepEqual(data[subjectsVISPath], setUsers) {
 				t.Errorf("Wrong Users value: %s", setUsers)
 			}
 
@@ -221,7 +221,7 @@ func TestSetUserFromJson(t *testing.T) {
 	setRequest := `{
 		"action": "set",
 		"requestId": "d1d735bf-40ae-4ac3-a68c-d1d60368c83b",
-		"path": "Attribute.Vehicle.UserIdentification.Users",
+		"path": "Attribute.Vehicle.SubjectIdentification.Subjects",
 		"value": ["428efde9-76e7-4532-9024-50b6b292fea6"]
 	}`
 
@@ -231,21 +231,21 @@ func TestSetUserFromJson(t *testing.T) {
 		t.Fatalf("Can't unmarshall request: %s", err)
 	}
 
-	if err := adapter.SetData(map[string]interface{}{usersVISPath: request.Value}); err != nil {
+	if err := adapter.SetData(map[string]interface{}{subjectsVISPath: request.Value}); err != nil {
 		t.Fatalf("Can't set data: %s", err)
 	}
 
-	data, err := adapter.GetData([]string{usersVISPath})
+	data, err := adapter.GetData([]string{subjectsVISPath})
 	if err != nil {
 		t.Fatalf("Can't get data: %s", err)
 	}
 
-	_, ok := data[usersVISPath]
+	_, ok := data[subjectsVISPath]
 	if !ok {
 		t.Fatal("Users not found in data")
 	}
 
-	users, ok := data[usersVISPath].([]string)
+	users, ok := data[subjectsVISPath].([]string)
 	if !ok {
 		t.Fatal("Wrong Users data type")
 	}
@@ -271,7 +271,7 @@ func generateConfig(filePath string) (config []byte) {
 
 	var err error
 
-	if config, err = json.Marshal(&adapterConfig{VISPath: usersVISPath, FilePath: filePath}); err != nil {
+	if config, err = json.Marshal(&adapterConfig{VISPath: subjectsVISPath, FilePath: filePath}); err != nil {
 		log.Fatalf("Can't marshal config: %s", err)
 	}
 
