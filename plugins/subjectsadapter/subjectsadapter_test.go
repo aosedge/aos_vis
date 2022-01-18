@@ -86,7 +86,7 @@ func TestMain(m *testing.M) {
  ******************************************************************************/
 
 func TestGetName(t *testing.T) {
-	adapter, err := subjectsadapter.New(generateConfig(path.Join(tmpDir, "user.txt")))
+	adapter, err := subjectsadapter.New(generateConfig(path.Join(tmpDir, "subject.txt")))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
@@ -97,13 +97,13 @@ func TestGetName(t *testing.T) {
 	}
 }
 
-func TestEmptyUser(t *testing.T) {
-	userFile := path.Join(tmpDir, "users.txt")
-	if err := os.RemoveAll(userFile); err != nil {
-		t.Fatalf("Can't remove Users file: %s", err)
+func TestEmptysubject(t *testing.T) {
+	subjectFile := path.Join(tmpDir, "subjects.txt")
+	if err := os.RemoveAll(subjectFile); err != nil {
+		t.Fatalf("Can't remove Subjects file: %s", err)
 	}
 
-	adapter, err := subjectsadapter.New(generateConfig(userFile))
+	adapter, err := subjectsadapter.New(generateConfig(subjectFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
@@ -115,28 +115,28 @@ func TestEmptyUser(t *testing.T) {
 	}
 
 	if _, ok := data[subjectsVISPath]; !ok {
-		t.Fatal("User not found in data")
+		t.Fatal("Subject not found in data")
 	}
 
-	users, ok := data[subjectsVISPath].([]string)
+	subjects, ok := data[subjectsVISPath].([]string)
 	if !ok {
-		t.Fatal("Wrong Users data type")
+		t.Fatal("Wrong subjects data type")
 	}
 
-	if !reflect.DeepEqual(users, []string{}) {
-		t.Errorf("Wrong Users value: %s", users)
+	if !reflect.DeepEqual(subjects, []string{}) {
+		t.Errorf("Wrong subjects value: %s", subjects)
 	}
 }
 
-func TestExistingUser(t *testing.T) {
-	userFile := path.Join(tmpDir, "users.txt")
-	originUsers := []string{"claim0", "claim1", "claim2"}
+func TestExistingSubject(t *testing.T) {
+	subjectFile := path.Join(tmpDir, "subjects.txt")
+	originSubjects := []string{"claim0", "claim1", "claim2"}
 
-	if err := writeUsers(userFile, originUsers); err != nil {
-		t.Fatalf("Can't create users file: %s", err)
+	if err := writeSubjects(subjectFile, originSubjects); err != nil {
+		t.Fatalf("Can't create subjects file: %s", err)
 	}
 
-	adapter, err := subjectsadapter.New(generateConfig(userFile))
+	adapter, err := subjectsadapter.New(generateConfig(subjectFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
@@ -148,32 +148,32 @@ func TestExistingUser(t *testing.T) {
 	}
 
 	if _, ok := data[subjectsVISPath]; !ok {
-		t.Fatal("Users not found in data")
+		t.Fatal("Subjects not found in data")
 	}
 
-	users, ok := data[subjectsVISPath].([]string)
+	subjects, ok := data[subjectsVISPath].([]string)
 	if !ok {
-		t.Fatal("Wrong Users data type")
+		t.Fatal("Wrong subjects data type")
 	}
 
-	if !reflect.DeepEqual(originUsers, users) {
-		t.Errorf("Wrong Users value: %s", users)
+	if !reflect.DeepEqual(originSubjects, subjects) {
+		t.Errorf("Wrong Subjects value: %s", subjects)
 	}
 }
 
-func TestSetUser(t *testing.T) {
-	usersFile := path.Join(tmpDir, "users.txt")
-	if err := os.RemoveAll(usersFile); err != nil {
-		t.Fatalf("Can't remove Users file: %s", err)
+func TestSetSubject(t *testing.T) {
+	subjectsFile := path.Join(tmpDir, "subjects.txt")
+	if err := os.RemoveAll(subjectsFile); err != nil {
+		t.Fatalf("Can't remove subjects file: %s", err)
 	}
 
-	adapter, err := subjectsadapter.New(generateConfig(usersFile))
+	adapter, err := subjectsadapter.New(generateConfig(subjectsFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
 	defer adapter.Close()
 
-	setUsersTestSet := [][]string{
+	setSubjectsTestSet := [][]string{
 		{"claim0", "claim1", "claim2"},
 		{"claim3"},
 		{},
@@ -183,20 +183,20 @@ func TestSetUser(t *testing.T) {
 		t.Fatalf("Subscribe error: %s", err)
 	}
 
-	for setIndex := range setUsersTestSet {
-		setUsers := make([]interface{}, len(setUsersTestSet[setIndex]))
-		for i, v := range setUsersTestSet[setIndex] {
-			setUsers[i] = v
+	for setIndex := range setSubjectsTestSet {
+		setSubjects := make([]interface{}, len(setSubjectsTestSet[setIndex]))
+		for i, v := range setSubjectsTestSet[setIndex] {
+			setSubjects[i] = v
 		}
 
-		if err = adapter.SetData(map[string]interface{}{subjectsVISPath: setUsers}); err != nil {
+		if err = adapter.SetData(map[string]interface{}{subjectsVISPath: setSubjects}); err != nil {
 			t.Fatalf("Set data error: %s", err)
 		}
 
 		select {
 		case data := <-adapter.GetSubscribeChannel():
-			if !reflect.DeepEqual(data[subjectsVISPath], setUsers) {
-				t.Errorf("Wrong Users value: %s", setUsers)
+			if !reflect.DeepEqual(data[subjectsVISPath], setSubjects) {
+				t.Errorf("Wrong subjects value: %s", setSubjects)
 			}
 
 		case <-time.After(5 * time.Second):
@@ -205,13 +205,13 @@ func TestSetUser(t *testing.T) {
 	}
 }
 
-func TestSetUserFromJson(t *testing.T) {
-	usersFile := path.Join(tmpDir, "users.txt")
-	if err := os.RemoveAll(usersFile); err != nil {
-		t.Fatalf("Can't remove Users file: %s", err)
+func TestSetSubjectFromJson(t *testing.T) {
+	subjectsFile := path.Join(tmpDir, "subjects.txt")
+	if err := os.RemoveAll(subjectsFile); err != nil {
+		t.Fatalf("Can't remove subjects file: %s", err)
 	}
 
-	adapter, err := subjectsadapter.New(generateConfig(usersFile))
+	adapter, err := subjectsadapter.New(generateConfig(subjectsFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
@@ -242,20 +242,20 @@ func TestSetUserFromJson(t *testing.T) {
 
 	_, ok := data[subjectsVISPath]
 	if !ok {
-		t.Fatal("Users not found in data")
+		t.Fatal("Subjects not found in data")
 	}
 
-	users, ok := data[subjectsVISPath].([]string)
+	subjects, ok := data[subjectsVISPath].([]string)
 	if !ok {
-		t.Fatal("Wrong Users data type")
+		t.Fatal("Wrong subjects data type")
 	}
 
-	if len(users) != 1 {
-		t.Errorf("Wrong count of Users")
+	if len(subjects) != 1 {
+		t.Errorf("Wrong count of subjects")
 	}
 
-	if users[0] != "428efde9-76e7-4532-9024-50b6b292fea6" {
-		t.Errorf("Wrong value of users")
+	if subjects[0] != "428efde9-76e7-4532-9024-50b6b292fea6" {
+		t.Errorf("Wrong value of subjects")
 	}
 }
 
@@ -278,8 +278,8 @@ func generateConfig(filePath string) (config []byte) {
 	return config
 }
 
-func writeUsers(usersFile string, users []string) (err error) {
-	file, err := os.Create(usersFile)
+func writeSubjects(subjectsFile string, subjects []string) (err error) {
+	file, err := os.Create(subjectsFile)
 	if err != nil {
 		return aoserrors.Wrap(err)
 	}
@@ -287,7 +287,7 @@ func writeUsers(usersFile string, users []string) (err error) {
 
 	writer := bufio.NewWriter(file)
 
-	for _, claim := range users {
+	for _, claim := range subjects {
 		fmt.Fprintln(writer, claim)
 	}
 
