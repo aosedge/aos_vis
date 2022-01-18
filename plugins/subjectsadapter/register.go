@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package usersadapter
+package subjectsadapter
 
 import (
 	"github.com/aoscloud/aos_vis/dataprovider"
@@ -26,5 +26,5 @@ import (
  ******************************************************************************/
 
 func init() {
-	dataprovider.RegisterPlugin("usersadapter", New)
+	dataprovider.RegisterPlugin("subjectsadapter", New)
 }
