@@ -41,7 +41,7 @@ const subscribeChannelSize = 2
  ******************************************************************************/
 
 type subjectsAdapter struct {
-	users            []string
+	subjects         []string
 	subscribed       bool
 	subscribeChannel chan map[string]interface{}
 	config           adapterConfig
@@ -58,7 +58,7 @@ type adapterConfig struct {
 
 // New creates adapter instance.
 func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
-	log.Info("Create Users adapter")
+	log.Info("Create Subjects adapter")
 
 	localAdapter := &subjectsAdapter{subscribeChannel: make(chan map[string]interface{}, subscribeChannelSize)}
 
@@ -70,24 +70,24 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 		return nil, aoserrors.Wrap(err)
 	}
 
-	if err = localAdapter.readUsers(); err != nil {
-		log.Warnf("Can't read users: %s. Empty users will be used", err)
+	if err = localAdapter.readSubjects(); err != nil {
+		log.Warnf("Can't read subjects: %s. Empty subjects will be used", err)
 
-		localAdapter.users = make([]string, 0)
+		localAdapter.subjects = make([]string, 0)
 
 		if err = os.MkdirAll(filepath.Dir(localAdapter.config.FilePath), 0o755); err != nil {
 			return nil, aoserrors.Wrap(err)
 		}
 	}
 
-	log.WithField("users", localAdapter.users).Debug("Users adapter")
+	log.WithField("subjects", localAdapter.subjects).Debug("Subjects adapter")
 
 	return localAdapter, nil
 }
 
 // Close closes adapter.
 func (adapter *subjectsAdapter) Close() {
-	log.Info("Close Users adapter")
+	log.Info("Close subjects adapter")
 }
 
 // GetName returns adapter name.
@@ -107,13 +107,13 @@ func (adapter *subjectsAdapter) IsPathPublic(path string) (result bool, err erro
 
 // GetData returns data by path.
 func (adapter *subjectsAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
-	log.WithField("users", adapter.users).Debug("Get Users")
+	log.WithField("subjects", adapter.subjects).Debug("Get subjects")
 
 	data = make(map[string]interface{})
 
 	for _, path := range pathList {
 		if path == adapter.config.VISPath {
-			data[path] = adapter.users
+			data[path] = adapter.subjects
 		} else {
 			return nil, aoserrors.Errorf("path %s doesn't exits", path)
 		}
@@ -126,29 +126,29 @@ func (adapter *subjectsAdapter) GetData(pathList []string) (data map[string]inte
 func (adapter *subjectsAdapter) SetData(data map[string]interface{}) (err error) {
 	for path, value := range data {
 		if path == adapter.config.VISPath {
-			users, ok := value.([]interface{})
+			subjects, ok := value.([]interface{})
 			if !ok {
 				return aoserrors.Errorf("wrong value type for path %s", path)
 			}
 
-			adapter.users = []string{}
+			adapter.subjects = []string{}
 
-			for _, user := range users {
-				userStr, ok := user.(string)
+			for _, subject := range subjects {
+				subjectStr, ok := subject.(string)
 				if !ok {
 					return aoserrors.Errorf("wrong element type for path %s", path)
 				}
 
-				adapter.users = append(adapter.users, userStr)
+				adapter.subjects = append(adapter.subjects, subjectStr)
 			}
 
-			log.WithField("users", adapter.users).Debug("Set Users")
+			log.WithField("subjects", adapter.subjects).Debug("Set subjects")
 
 			if adapter.subscribed {
-				adapter.subscribeChannel <- map[string]interface{}{path: users}
+				adapter.subscribeChannel <- map[string]interface{}{path: subjects}
 			}
 
-			if err = adapter.writeUsers(); err != nil {
+			if err = adapter.writeSubjects(); err != nil {
 				return aoserrors.Wrap(err)
 			}
 		} else {
@@ -201,7 +201,7 @@ func (adapter *subjectsAdapter) UnsubscribeAll() (err error) {
  * Private
  ******************************************************************************/
 
-func (adapter *subjectsAdapter) readUsers() (err error) {
+func (adapter *subjectsAdapter) readSubjects() (err error) {
 	file, err := os.Open(adapter.config.FilePath)
 	if err != nil {
 		return aoserrors.Wrap(err)
@@ -210,16 +210,16 @@ func (adapter *subjectsAdapter) readUsers() (err error) {
 
 	scanner := bufio.NewScanner(file)
 
-	adapter.users = nil
+	adapter.subjects = nil
 
 	for scanner.Scan() {
-		adapter.users = append(adapter.users, scanner.Text())
+		adapter.subjects = append(adapter.subjects, scanner.Text())
 	}
 
 	return nil
 }
 
-func (adapter *subjectsAdapter) writeUsers() (err error) {
+func (adapter *subjectsAdapter) writeSubjects() (err error) {
 	file, err := os.Create(adapter.config.FilePath)
 	if err != nil {
 		return aoserrors.Wrap(err)
@@ -228,7 +228,7 @@ func (adapter *subjectsAdapter) writeUsers() (err error) {
 
 	writer := bufio.NewWriter(file)
 
-	for _, claim := range adapter.users {
+	for _, claim := range adapter.subjects {
 		fmt.Fprintln(writer, claim)
 	}
 
