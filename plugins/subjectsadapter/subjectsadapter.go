@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package usersadapter
+package subjectsadapter
 
 import (
 	"bufio"
@@ -40,7 +40,7 @@ const subscribeChannelSize = 2
  * Types
  ******************************************************************************/
 
-type usersAdapter struct {
+type subjectsAdapter struct {
 	users            []string
 	subscribed       bool
 	subscribeChannel chan map[string]interface{}
@@ -60,7 +60,7 @@ type adapterConfig struct {
 func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
 	log.Info("Create Users adapter")
 
-	localAdapter := &usersAdapter{subscribeChannel: make(chan map[string]interface{}, subscribeChannelSize)}
+	localAdapter := &subjectsAdapter{subscribeChannel: make(chan map[string]interface{}, subscribeChannelSize)}
 
 	if configJSON == nil {
 		return nil, aoserrors.New("config should be set")
@@ -86,27 +86,27 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 }
 
 // Close closes adapter.
-func (adapter *usersAdapter) Close() {
+func (adapter *subjectsAdapter) Close() {
 	log.Info("Close Users adapter")
 }
 
 // GetName returns adapter name.
-func (adapter *usersAdapter) GetName() (name string) {
-	return "usersadapter"
+func (adapter *subjectsAdapter) GetName() (name string) {
+	return "subjectsadapter"
 }
 
 // GetPathList returns list of all pathes for this adapter.
-func (adapter *usersAdapter) GetPathList() (pathList []string, err error) {
+func (adapter *subjectsAdapter) GetPathList() (pathList []string, err error) {
 	return []string{adapter.config.VISPath}, nil
 }
 
 // IsPathPublic returns true if requested data accessible without authorization.
-func (adapter *usersAdapter) IsPathPublic(path string) (result bool, err error) {
+func (adapter *subjectsAdapter) IsPathPublic(path string) (result bool, err error) {
 	return true, nil
 }
 
 // GetData returns data by path.
-func (adapter *usersAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
+func (adapter *subjectsAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
 	log.WithField("users", adapter.users).Debug("Get Users")
 
 	data = make(map[string]interface{})
@@ -123,7 +123,7 @@ func (adapter *usersAdapter) GetData(pathList []string) (data map[string]interfa
 }
 
 // SetData sets data by pathes.
-func (adapter *usersAdapter) SetData(data map[string]interface{}) (err error) {
+func (adapter *subjectsAdapter) SetData(data map[string]interface{}) (err error) {
 	for path, value := range data {
 		if path == adapter.config.VISPath {
 			users, ok := value.([]interface{})
@@ -160,12 +160,12 @@ func (adapter *usersAdapter) SetData(data map[string]interface{}) (err error) {
 }
 
 // GetSubscribeChannel returns channel on which data changes will be sent.
-func (adapter *usersAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
+func (adapter *subjectsAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
 	return adapter.subscribeChannel
 }
 
 // Subscribe subscribes for data changes.
-func (adapter *usersAdapter) Subscribe(pathList []string) (err error) {
+func (adapter *subjectsAdapter) Subscribe(pathList []string) (err error) {
 	for _, path := range pathList {
 		if path == adapter.config.VISPath {
 			adapter.subscribed = true
@@ -178,7 +178,7 @@ func (adapter *usersAdapter) Subscribe(pathList []string) (err error) {
 }
 
 // Unsubscribe unsubscribes from data changes.
-func (adapter *usersAdapter) Unsubscribe(pathList []string) (err error) {
+func (adapter *subjectsAdapter) Unsubscribe(pathList []string) (err error) {
 	for _, path := range pathList {
 		if path == adapter.config.VISPath {
 			adapter.subscribed = false
@@ -191,7 +191,7 @@ func (adapter *usersAdapter) Unsubscribe(pathList []string) (err error) {
 }
 
 // UnsubscribeAll unsubscribes from all data changes.
-func (adapter *usersAdapter) UnsubscribeAll() (err error) {
+func (adapter *subjectsAdapter) UnsubscribeAll() (err error) {
 	adapter.subscribed = false
 
 	return nil
@@ -201,7 +201,7 @@ func (adapter *usersAdapter) UnsubscribeAll() (err error) {
  * Private
  ******************************************************************************/
 
-func (adapter *usersAdapter) readUsers() (err error) {
+func (adapter *subjectsAdapter) readUsers() (err error) {
 	file, err := os.Open(adapter.config.FilePath)
 	if err != nil {
 		return aoserrors.Wrap(err)
@@ -219,7 +219,7 @@ func (adapter *usersAdapter) readUsers() (err error) {
 	return nil
 }
 
-func (adapter *usersAdapter) writeUsers() (err error) {
+func (adapter *subjectsAdapter) writeUsers() (err error) {
 	file, err := os.Create(adapter.config.FilePath)
 	if err != nil {
 		return aoserrors.Wrap(err)

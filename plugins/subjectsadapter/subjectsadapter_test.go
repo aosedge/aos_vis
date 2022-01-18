@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package usersadapter_test
+package subjectsadapter_test
 
 import (
 	"bufio"
@@ -30,9 +30,8 @@ import (
 
 	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_common/visprotocol"
+	subjectsadapter "github.com/aoscloud/aos_vis/plugins/subjectsadapter"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/aoscloud/aos_vis/plugins/usersadapter"
 )
 
 /*******************************************************************************
@@ -87,13 +86,13 @@ func TestMain(m *testing.M) {
  ******************************************************************************/
 
 func TestGetName(t *testing.T) {
-	adapter, err := usersadapter.New(generateConfig(path.Join(tmpDir, "user.txt")))
+	adapter, err := subjectsadapter.New(generateConfig(path.Join(tmpDir, "user.txt")))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
 	defer adapter.Close()
 
-	if name := adapter.GetName(); name != "usersadapter" {
+	if name := adapter.GetName(); name != "subjectsadapter" {
 		t.Errorf("Wrong adapter name: %s", name)
 	}
 }
@@ -104,7 +103,7 @@ func TestEmptyUser(t *testing.T) {
 		t.Fatalf("Can't remove Users file: %s", err)
 	}
 
-	adapter, err := usersadapter.New(generateConfig(userFile))
+	adapter, err := subjectsadapter.New(generateConfig(userFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
@@ -137,7 +136,7 @@ func TestExistingUser(t *testing.T) {
 		t.Fatalf("Can't create users file: %s", err)
 	}
 
-	adapter, err := usersadapter.New(generateConfig(userFile))
+	adapter, err := subjectsadapter.New(generateConfig(userFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
@@ -168,7 +167,7 @@ func TestSetUser(t *testing.T) {
 		t.Fatalf("Can't remove Users file: %s", err)
 	}
 
-	adapter, err := usersadapter.New(generateConfig(usersFile))
+	adapter, err := subjectsadapter.New(generateConfig(usersFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
@@ -212,7 +211,7 @@ func TestSetUserFromJson(t *testing.T) {
 		t.Fatalf("Can't remove Users file: %s", err)
 	}
 
-	adapter, err := usersadapter.New(generateConfig(usersFile))
+	adapter, err := subjectsadapter.New(generateConfig(usersFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
