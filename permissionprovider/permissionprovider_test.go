@@ -28,7 +28,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/aoscloud/aos_common/aoserrors"
-	pb "github.com/aoscloud/aos_common/api/iamanager/v1"
+	pb "github.com/aoscloud/aos_common/api/iamanager/v2"
 
 	"github.com/aoscloud/aos_vis/config"
 	"github.com/aoscloud/aos_vis/permissionprovider"

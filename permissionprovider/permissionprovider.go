@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc/credentials"
 
 	"github.com/aoscloud/aos_common/aoserrors"
-	pb "github.com/aoscloud/aos_common/api/iamanager/v1"
+	pb "github.com/aoscloud/aos_common/api/iamanager/v2"
 	"github.com/aoscloud/aos_common/utils/cryptutils"
 
 	"github.com/aoscloud/aos_vis/config"
@@ -37,11 +37,12 @@ import (
 
 // PermissionProvider vis permission provider.
 type PermissionProvider struct {
-	serverURL  string
-	rootCert   string
-	insecure   bool
-	iamClient  pb.IAMPublicServiceClient
-	connection *grpc.ClientConn
+	serverURL     string
+	rootCert      string
+	insecure      bool
+	cryptoContext *cryptutils.CryptoContext
+	iamClient     pb.IAMPublicServiceClient
+	connection    *grpc.ClientConn
 }
 
 /*******************************************************************************
@@ -63,6 +64,10 @@ func New(config *config.Config, insecure bool) (provider *PermissionProvider, er
 	provider = &PermissionProvider{
 		serverURL: config.PermissionServerURL,
 		rootCert:  config.CACert, iamClient: nil, insecure: insecure, connection: nil,
+	}
+
+	if provider.cryptoContext, err = cryptutils.NewCryptoContext(config.CACert); err != nil {
+		return nil, aoserrors.Wrap(err)
 	}
 
 	return provider, nil
@@ -109,7 +114,7 @@ func (provider *PermissionProvider) connect() (err error) {
 	if provider.insecure {
 		secureOpt = grpc.WithInsecure()
 	} else {
-		tlsConfig, err := cryptutils.GetClientTLSConfig(provider.rootCert)
+		tlsConfig, err := provider.cryptoContext.GetClientTLSConfig()
 		if err != nil {
 			return aoserrors.Wrap(err)
 		}
