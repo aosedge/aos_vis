@@ -21,7 +21,7 @@ package visprotocol
  * Consts
  ******************************************************************************/
 
-// VIS actions
+// VIS actions.
 const (
 	ActionGet            = "get"
 	ActionGetMetadata    = "getMetadata"
@@ -37,45 +37,45 @@ const (
  * Types
  ******************************************************************************/
 
-// MessageHeader VIS message header
+// MessageHeader VIS message header.
 type MessageHeader struct {
 	Action    string `json:"action"`
 	RequestID string `json:"requestId"`
 }
 
-// ErrorInfo VIS error info
+// ErrorInfo VIS error info.
 type ErrorInfo struct {
 	Number  int    `json:"number"`
 	Reason  string `json:"reason"`
 	Message string `json:"message"`
 }
 
-// Tokens VIS authorize tokens
+// Tokens VIS authorize tokens.
 type Tokens struct {
 	Authorization    string `json:"authorization,omitempty"`
-	WwwVehicleDevice string `json:"www-vehicle-device,omitempty"`
+	WWWVehicleDevice string `json:"www-vehicle-device,omitempty"` // nolint:tagliatelle
 }
 
-// AuthRequest VIS authorize request
+// AuthRequest VIS authorize request.
 type AuthRequest struct {
 	MessageHeader
 	Tokens Tokens `json:"tokens"`
 }
 
-// AuthResponse VIS authorize success response
+// AuthResponse VIS authorize success response.
 type AuthResponse struct {
 	MessageHeader
 	Error *ErrorInfo `json:"error,omitempty"`
-	TTL   int64      `json:"TTL,omitempty"`
+	TTL   int64      `json:"ttl,omitempty"`
 }
 
-// VIS request for getMetadata
+// MetadataRequest VIS request for getMetadata.
 type MetadataRequest struct {
 	MessageHeader
 	Path string `json:"path"`
 }
 
-// VIS response for getMetadata
+// MetadataResponse VIS response for getMetadata.
 type MetadataResponse struct {
 	MessageHeader
 	Error     *ErrorInfo  `json:"error,omitempty"`
@@ -83,13 +83,13 @@ type MetadataResponse struct {
 	Timestamp int64       `json:"timestamp"`
 }
 
-// GetRequest VIS get request
+// GetRequest VIS get request.
 type GetRequest struct {
 	MessageHeader
 	Path string `json:"path"`
 }
 
-// GetResponse VIS get success response
+// GetResponse VIS get success response.
 type GetResponse struct {
 	MessageHeader
 	Error     *ErrorInfo  `json:"error,omitempty"`
@@ -97,28 +97,28 @@ type GetResponse struct {
 	Timestamp int64       `json:"timestamp"`
 }
 
-// SetRequest VIS set request
+// SetRequest VIS set request.
 type SetRequest struct {
 	MessageHeader
 	Path  string      `json:"path"`
 	Value interface{} `json:"value"`
 }
 
-// SetResponse VIS set success response
+// SetResponse VIS set success response.
 type SetResponse struct {
 	MessageHeader
 	Error     *ErrorInfo `json:"error,omitempty"`
 	Timestamp int64      `json:"timestamp,omitempty"`
 }
 
-// SubscribeRequest VIS subscribe request
+// SubscribeRequest VIS subscribe request.
 type SubscribeRequest struct {
 	MessageHeader
 	Path    string `json:"path"`
-	Filters string `json:"filters,omitempty"` //TODO: will be implemented later
+	Filters string `json:"filters,omitempty"`
 }
 
-// SubscribeResponse VIS subscribe success response
+// SubscribeResponse VIS subscribe success response.
 type SubscribeResponse struct {
 	MessageHeader
 	Error          *ErrorInfo `json:"error,omitempty"`
@@ -126,7 +126,7 @@ type SubscribeResponse struct {
 	Timestamp      int64      `json:"timestamp"`
 }
 
-// SubscriptionNotification VIS subscription notification
+// SubscriptionNotification VIS subscription notification.
 type SubscriptionNotification struct {
 	Error          *ErrorInfo  `json:"error,omitempty"`
 	Action         string      `json:"action"`
@@ -135,13 +135,13 @@ type SubscriptionNotification struct {
 	Timestamp      int64       `json:"timestamp"`
 }
 
-// UnsubscribeRequest VIS unsubscribe request
+// UnsubscribeRequest VIS unsubscribe request.
 type UnsubscribeRequest struct {
 	MessageHeader
 	SubscriptionID string `json:"subscriptionId"`
 }
 
-// UnsubscribeResponse VIS unsubscribe success response
+// UnsubscribeResponse VIS unsubscribe success response.
 type UnsubscribeResponse struct {
 	MessageHeader
 	Error          *ErrorInfo `json:"error,omitempty"`
@@ -149,12 +149,12 @@ type UnsubscribeResponse struct {
 	Timestamp      int64      `json:"timestamp"`
 }
 
-// UnsubscribeAllRequest VIS unsubscribe all request
+// UnsubscribeAllRequest VIS unsubscribe all request.
 type UnsubscribeAllRequest struct {
 	MessageHeader
 }
 
-// UnsubscribeAllResponse VIS unsubscribe all success response
+// UnsubscribeAllResponse VIS unsubscribe all success response.
 type UnsubscribeAllResponse struct {
 	MessageHeader
 	Error     *ErrorInfo `json:"error,omitempty"`
