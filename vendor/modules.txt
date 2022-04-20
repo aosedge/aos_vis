@@ -1,9 +1,12 @@
-# github.com/aoscloud/aos_common v0.0.0-20211220123623-d23b9d38e838
+# github.com/ThalesIgnite/crypto11 v1.2.5 => github.com/aoscloud/crypto11 v1.0.3-0.20220217163524-ddd0ace39e6f
+github.com/ThalesIgnite/crypto11
+# github.com/aoscloud/aos_common v0.0.0-20220519144115-e4d62a88d016
 ## explicit
 github.com/aoscloud/aos_common/aoserrors
-github.com/aoscloud/aos_common/api/iamanager/v1
+github.com/aoscloud/aos_common/api/iamanager/v2
+github.com/aoscloud/aos_common/api/visprotocol
+github.com/aoscloud/aos_common/tpmkey
 github.com/aoscloud/aos_common/utils/cryptutils
-github.com/aoscloud/aos_common/visprotocol
 github.com/aoscloud/aos_common/wsclient
 github.com/aoscloud/aos_common/wsserver
 # github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f
@@ -17,14 +20,24 @@ github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/empty
 github.com/golang/protobuf/ptypes/timestamp
+# github.com/google/go-tpm v0.3.2
+github.com/google/go-tpm/tpm2
+github.com/google/go-tpm/tpmutil
+github.com/google/go-tpm/tpmutil/tbs
 # github.com/google/uuid v1.3.0
 github.com/google/uuid
 # github.com/gorilla/websocket v1.4.2
 ## explicit
 github.com/gorilla/websocket
+# github.com/miekg/pkcs11 v1.0.3-0.20190429190417-a667d056470f
+github.com/miekg/pkcs11
+# github.com/pkg/errors v0.9.1
+github.com/pkg/errors
 # github.com/sirupsen/logrus v1.8.1
 ## explicit
 github.com/sirupsen/logrus
+# github.com/thales-e-security/pool v0.0.2
+github.com/thales-e-security/pool
 # golang.org/x/net v0.0.0-20210520170846-37e1c6afe023
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2
@@ -32,7 +45,7 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
+# golang.org/x/sys v0.0.0-20210816074244-15123e1e1f71
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
@@ -90,7 +103,7 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# google.golang.org/protobuf v1.27.1
+# google.golang.org/protobuf v1.28.0
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
@@ -122,3 +135,4 @@ google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/emptypb
 google.golang.org/protobuf/types/known/timestamppb
+# github.com/ThalesIgnite/crypto11 => github.com/aoscloud/crypto11 v1.0.3-0.20220217163524-ddd0ace39e6f
