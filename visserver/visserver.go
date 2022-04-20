@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/aoscloud/aos_common/aoserrors"
-	"github.com/aoscloud/aos_common/visprotocol"
+	"github.com/aoscloud/aos_common/api/visprotocol"
 	"github.com/aoscloud/aos_common/wsserver"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"

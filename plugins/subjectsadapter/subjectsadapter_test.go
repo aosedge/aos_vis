@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"github.com/aoscloud/aos_common/aoserrors"
-	"github.com/aoscloud/aos_common/visprotocol"
+	"github.com/aoscloud/aos_common/api/visprotocol"
 	subjectsadapter "github.com/aoscloud/aos_vis/plugins/subjectsadapter"
 	log "github.com/sirupsen/logrus"
 )
