@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -72,6 +74,10 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 		vin = generateVIN()
 
 		log.Warnf("Can't read VIN: %s. Generate new one: %s", err, string(vin))
+
+		if err = os.MkdirAll(filepath.Dir(localAdapter.config.FilePath), 0o755); err != nil {
+			return nil, aoserrors.Wrap(err)
+		}
 
 		if err = ioutil.WriteFile(localAdapter.config.FilePath, vin, 0o600); err != nil {
 			return nil, aoserrors.Wrap(err)

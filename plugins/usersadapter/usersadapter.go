@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
 
@@ -73,6 +74,10 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 		log.Warnf("Can't read users: %s. Empty users will be used", err)
 
 		localAdapter.users = make([]string, 0)
+
+		if err = os.MkdirAll(filepath.Dir(localAdapter.config.FilePath), 0o755); err != nil {
+			return nil, aoserrors.Wrap(err)
+		}
 	}
 
 	log.WithField("users", localAdapter.users).Debug("Users adapter")
