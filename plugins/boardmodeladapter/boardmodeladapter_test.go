@@ -33,7 +33,7 @@ import (
  * Consts
  ******************************************************************************/
 
-const boardModelVISPath = "Attribute.BoardIdentification.Model"
+const boardModelVISPath = "Attribute.Aos.BoardModel"
 
 /*******************************************************************************
  * Vars
