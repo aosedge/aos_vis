@@ -38,7 +38,7 @@ import (
  * Consts
  ******************************************************************************/
 
-const subjectsVISPath = "Attribute.Vehicle.VehicleIdentification.Subjects"
+const subjectsVISPath = "Attribute.Aos.Subjects"
 
 /*******************************************************************************
  * Vars
@@ -221,7 +221,7 @@ func TestSetSubjectFromJson(t *testing.T) {
 	setRequest := `{
 		"action": "set",
 		"requestId": "d1d735bf-40ae-4ac3-a68c-d1d60368c83b",
-		"path": "Attribute.Vehicle.SubjectIdentification.Subjects",
+		"path": "Attribute.Aos.Subjects",
 		"value": ["428efde9-76e7-4532-9024-50b6b292fea6"]
 	}`
 
