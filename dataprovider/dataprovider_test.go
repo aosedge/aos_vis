@@ -67,7 +67,7 @@ func TestMain(m *testing.M) {
 			"Params": {
 				"Data" : {
 					"Attribute.Vehicle.VehicleIdentification.VIN":    {"Value": "TestVIN", "Public": true,"ReadOnly": true},
-					"Attribute.Vehicle.SubjectIdentification.Subjects":     {"Value": ["Subject1", "Provider1"], "Public": true},
+					"Attribute.Aos.Subjects":     {"Value": ["Subject1", "Provider1"], "Public": true},
 
 					"Signal.Drivetrain.InternalCombustionEngine.RPM": {"Value": 1000, "ReadOnly": true},
 
@@ -97,7 +97,8 @@ func TestMain(m *testing.M) {
 	}
 
 	dataprovider.RegisterPlugin("testadapter", func(configJSON json.RawMessage) (
-		adapter dataprovider.DataAdapter, err error) {
+		adapter dataprovider.DataAdapter, err error,
+	) {
 		baseAdapter, err := dataprovider.NewBaseAdapter()
 		if err != nil {
 			return nil, aoserrors.Wrap(err)

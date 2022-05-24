@@ -54,7 +54,7 @@ func init() {
 func TestMain(m *testing.M) {
 	configJSON := `{"Data": {
 		"Attribute.Vehicle.VehicleIdentification.VIN":    {"Value": "TestVIN", "Public": true,"ReadOnly": true},
-		"Attribute.Vehicle.SubjectIdentification.Subjects":     {"Value": ["Subject1", "Provider1"], "Public": true},
+		"Attribute.Aos.Subjects":     {"Value": ["Subject1", "Provider1"], "Public": true},
 
 		"Signal.Drivetrain.InternalCombustionEngine.RPM": {"Value": 1000, "ReadOnly": true},
 
