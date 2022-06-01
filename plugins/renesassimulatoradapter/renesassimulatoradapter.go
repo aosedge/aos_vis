@@ -256,8 +256,9 @@ func (adapter *RenesasSimulatorAdapter) processCommand(simulatorMessage simulato
 	}
 }
 
-func (adapter *RenesasSimulatorAdapter) handleSimulatorData(prefix string, data interface{},
-	result map[string]interface{}) (err error) {
+func (adapter *RenesasSimulatorAdapter) handleSimulatorData(
+	prefix string, data interface{}, result map[string]interface{},
+) (err error) {
 	if data == nil {
 		log.Error("Nil data received")
 		return nil

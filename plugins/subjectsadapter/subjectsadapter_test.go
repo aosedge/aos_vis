@@ -240,8 +240,7 @@ func TestSetSubjectFromJson(t *testing.T) {
 		t.Fatalf("Can't get data: %s", err)
 	}
 
-	_, ok := data[subjectsVISPath]
-	if !ok {
+	if _, ok := data[subjectsVISPath]; !ok {
 		t.Fatal("Subjects not found in data")
 	}
 
