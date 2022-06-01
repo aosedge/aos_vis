@@ -23,6 +23,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/aoscloud/aos_common/aoserrors"
 	pb "github.com/aoscloud/aos_common/api/iamanager/v2"
@@ -112,7 +113,7 @@ func (provider *PermissionProvider) connect() (err error) {
 	var secureOpt grpc.DialOption
 
 	if provider.insecure {
-		secureOpt = grpc.WithInsecure()
+		secureOpt = grpc.WithTransportCredentials(insecure.NewCredentials())
 	} else {
 		tlsConfig, err := provider.cryptoContext.GetClientTLSConfig()
 		if err != nil {

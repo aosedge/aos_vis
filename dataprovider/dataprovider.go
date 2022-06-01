@@ -274,7 +274,8 @@ func (provider *DataProvider) SetData(path string, data interface{}, authInfo *A
 
 // Subscribe subscribes for data change.
 func (provider *DataProvider) Subscribe(
-	path string, authInfo *AuthInfo) (id uint64, channel <-chan interface{}, err error) {
+	path string, authInfo *AuthInfo,
+) (id uint64, channel <-chan interface{}, err error) {
 	provider.Lock()
 	defer provider.Unlock()
 
@@ -362,7 +363,7 @@ func (provider *DataProvider) Unsubscribe(id uint64, authInfo *AuthInfo) (err er
 		for idElement := sensor.subscribeIds.Front(); idElement != nil; idElement = nextElement {
 			nextElement = idElement.Next()
 
-			if idElement.Value.(uint64) == id {
+			if idElement.Value == id {
 				sensor.subscribeIds.Remove(idElement)
 			}
 		}
@@ -468,7 +469,7 @@ func (provider *DataProvider) handleSubscribeChannel(adapter DataAdapter) {
 					subscribeDataMap[id] = make(map[string]interface{})
 				}
 
-				subscribeDataMap[idElement.Value.(uint64)][path] = value
+				subscribeDataMap[id][path] = value
 			}
 		}
 

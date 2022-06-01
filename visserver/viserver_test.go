@@ -384,8 +384,14 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 
 	select {
 	case notification := <-notificationChannel:
-		if notification.Action != "subscription" || notification.SubscriptionID != subscriptionID ||
-			notification.Value.(float64) != 123.0 {
+		if notification.Action != "subscription" || notification.SubscriptionID != subscriptionID {
+			t.Fatalf("Unexpected value")
+		}
+
+		value, ok := notification.Value.(float64)
+		if !ok {
+			t.Fatalf("Unexpected value")
+		} else if value != 123.0 {
 			t.Fatalf("Unexpected value")
 		}
 

@@ -137,7 +137,8 @@ func (server *Server) ClientDisconnected(client *wsserver.Client) {
 
 // ProcessMessage processes incoming messages.
 func (server *Server) ProcessMessage(
-	wsClient *wsserver.Client, messageType int, message []byte) (response []byte, err error) {
+	wsClient *wsserver.Client, messageType int, message []byte,
+) (response []byte, err error) {
 	server.Lock()
 	defer server.Unlock()
 

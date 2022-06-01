@@ -26,9 +26,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aoscloud/aos_common/aoserrors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/aoscloud/aos_common/aoserrors"
 	"github.com/aoscloud/aos_vis/config"
 	"github.com/aoscloud/aos_vis/dataprovider"
 )
