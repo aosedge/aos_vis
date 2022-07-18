@@ -93,7 +93,7 @@ func New(name, url, cert, key string, handler ClientHandler) (server *Server, er
 	go func(crt, key string) {
 		log.WithFields(log.Fields{"address": url, "crt": crt, "key": key}).Debug("Listen for clients")
 
-		if err := server.httpServer.ListenAndServeTLS(crt, key); errors.Is(err, http.ErrServerClosed) {
+		if err := server.httpServer.ListenAndServeTLS(crt, key); !errors.Is(err, http.ErrServerClosed) {
 			log.Error("Server listening error: ", aoserrors.Wrap(err))
 
 			return
