@@ -196,7 +196,7 @@ func TestSetSubject(t *testing.T) {
 		select {
 		case data := <-adapter.GetSubscribeChannel():
 			if !reflect.DeepEqual(data[subjectsVISPath], setSubjects) {
-				t.Errorf("Wrong subjects value: %s", setSubjects)
+				t.Errorf("Wrong subjects value for %v", subjectsVISPath)
 			}
 
 		case <-time.After(5 * time.Second):
