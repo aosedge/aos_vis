@@ -19,6 +19,7 @@ package visserver
 
 import (
 	"encoding/json"
+	"errors"
 	"strconv"
 	"strings"
 	"sync"
@@ -128,11 +129,21 @@ func (server *Server) ClientConnected(client *wsserver.Client) {
 }
 
 // ClientDisconnected disconnect client notification.
-func (server *Server) ClientDisconnected(client *wsserver.Client) {
+func (server *Server) ClientDisconnected(wsClient *wsserver.Client) {
 	server.Lock()
 	defer server.Unlock()
 
-	delete(server.clients, client)
+	client, ok := server.clients[wsClient]
+	if !ok {
+		log.Error("Disconnect unknown client")
+		return
+	}
+
+	if err := client.unsubscribeAll(); err != nil {
+		log.Errorf("Can't unsubscribe on client disconnect: %v", err)
+	}
+
+	delete(server.clients, wsClient)
 }
 
 // ProcessMessage processes incoming messages.
@@ -385,6 +396,10 @@ func (client *clientInfo) processSubscribeChannel(id uint64, channel <-chan inte
 
 			if notificationJSON != nil {
 				if err := client.wsClient.SendMessage(websocket.TextMessage, notificationJSON); err != nil {
+					if errors.Is(err, websocket.ErrCloseSent) {
+						return
+					}
+
 					log.Errorf("Can't send message: %s", err)
 				}
 			}
