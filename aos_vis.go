@@ -175,6 +175,4 @@ func main() {
 	server.Close()
 
 	permissionsProvider.Close()
-
-	os.Exit(1)
 }

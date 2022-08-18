@@ -23,6 +23,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -99,7 +100,9 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	serveMux := http.NewServeMux()
 	serveMux.HandleFunc("/", localAdapter.handleConnection)
 
-	localAdapter.httpServer = &http.Server{Addr: config.ServerURL, Handler: serveMux}
+	localAdapter.httpServer = &http.Server{
+		Addr: config.ServerURL, Handler: serveMux, ReadHeaderTimeout: 5 * time.Second,
+	}
 
 	go func() {
 		log.WithField("address", config.ServerURL).Debug("Listen for Renesas simulator")
@@ -256,8 +259,9 @@ func (adapter *RenesasSimulatorAdapter) processCommand(simulatorMessage simulato
 	}
 }
 
-func (adapter *RenesasSimulatorAdapter) handleSimulatorData(prefix string, data interface{},
-	result map[string]interface{}) (err error) {
+func (adapter *RenesasSimulatorAdapter) handleSimulatorData(
+	prefix string, data interface{}, result map[string]interface{},
+) (err error) {
 	if data == nil {
 		log.Error("Nil data received")
 		return nil

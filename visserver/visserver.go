@@ -19,13 +19,14 @@ package visserver
 
 import (
 	"encoding/json"
+	"errors"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/aoscloud/aos_common/aoserrors"
-	"github.com/aoscloud/aos_common/visprotocol"
+	"github.com/aoscloud/aos_common/api/visprotocol"
 	"github.com/aoscloud/aos_common/wsserver"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
@@ -128,16 +129,27 @@ func (server *Server) ClientConnected(client *wsserver.Client) {
 }
 
 // ClientDisconnected disconnect client notification.
-func (server *Server) ClientDisconnected(client *wsserver.Client) {
+func (server *Server) ClientDisconnected(wsClient *wsserver.Client) {
 	server.Lock()
 	defer server.Unlock()
 
-	delete(server.clients, client)
+	client, ok := server.clients[wsClient]
+	if !ok {
+		log.Error("Disconnect unknown client")
+		return
+	}
+
+	if err := client.unsubscribeAll(); err != nil {
+		log.Errorf("Can't unsubscribe on client disconnect: %v", err)
+	}
+
+	delete(server.clients, wsClient)
 }
 
 // ProcessMessage processes incoming messages.
 func (server *Server) ProcessMessage(
-	wsClient *wsserver.Client, messageType int, message []byte) (response []byte, err error) {
+	wsClient *wsserver.Client, messageType int, message []byte,
+) (response []byte, err error) {
 	server.Lock()
 	defer server.Unlock()
 
@@ -384,6 +396,10 @@ func (client *clientInfo) processSubscribeChannel(id uint64, channel <-chan inte
 
 			if notificationJSON != nil {
 				if err := client.wsClient.SendMessage(websocket.TextMessage, notificationJSON); err != nil {
+					if errors.Is(err, websocket.ErrCloseSent) {
+						return
+					}
+
 					log.Errorf("Can't send message: %s", err)
 				}
 			}

@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/aoscloud/aos_common/aoserrors"
-	"github.com/aoscloud/aos_common/visprotocol"
+	"github.com/aoscloud/aos_common/api/visprotocol"
 	"github.com/aoscloud/aos_common/wsclient"
 	log "github.com/sirupsen/logrus"
 
@@ -80,7 +80,7 @@ func TestMain(m *testing.M) {
 				"Params": {
 					"Data" : {
 						"Attribute.Vehicle.VehicleIdentification.VIN":    {"Value": "TestVIN", "Public": true,"ReadOnly": true},
-						"Attribute.Vehicle.UserIdentification.Users":     {"Value": ["User1", "Provider1"], "Public": true},
+						"Attribute.Aos.Subjects":     {"Value": ["Subject1", "Provider1"], "Public": true},
 		
 						"Signal.Drivetrain.InternalCombustionEngine.RPM": {"Value": 1000, "ReadOnly": true},
 			
@@ -117,7 +117,8 @@ func TestMain(m *testing.M) {
 	cfg.ServerURL = url.Host
 
 	dataprovider.RegisterPlugin("testadapter", func(configJSON json.RawMessage) (
-		adapter dataprovider.DataAdapter, err error) {
+		adapter dataprovider.DataAdapter, err error,
+	) {
 		baseAdapter, err := dataprovider.NewBaseAdapter()
 		if err != nil {
 			return nil, aoserrors.Wrap(err)
@@ -383,8 +384,14 @@ func TestSubscribeUnsubscribe(t *testing.T) {
 
 	select {
 	case notification := <-notificationChannel:
-		if notification.Action != "subscription" || notification.SubscriptionID != subscriptionID ||
-			notification.Value.(float64) != 123.0 {
+		if notification.Action != "subscription" || notification.SubscriptionID != subscriptionID {
+			t.Fatalf("Unexpected value")
+		}
+
+		value, ok := notification.Value.(float64)
+		if !ok {
+			t.Fatalf("Unexpected value")
+		} else if value != 123.0 {
 			t.Fatalf("Unexpected value")
 		}
 
