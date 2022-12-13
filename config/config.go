@@ -31,7 +31,7 @@ import (
 
 // Config instance.
 type Config struct {
-	ServerURL           string          `json:"serverUrl"`
+	VISServerURL        string          `json:"visServerUrl"`
 	CACert              string          `json:"caCert"`
 	VISCert             string          `json:"visCert"`
 	VISKey              string          `json:"visKey"`

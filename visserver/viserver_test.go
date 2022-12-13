@@ -114,7 +114,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Can't parse url: %s", err)
 	}
 
-	cfg.ServerURL = url.Host
+	cfg.VISServerURL = url.Host
 
 	dataprovider.RegisterPlugin("testadapter", func(configJSON json.RawMessage) (
 		adapter dataprovider.DataAdapter, err error) {

@@ -35,19 +35,19 @@ import (
 
 func createConfigFile() (err error) {
 	configContent := `{
-"ServerUrl": "localhost:443",
-"CACert": "/etc/ssl/certs/rootCA.crt",
-"VISCert": "wwwivi.crt.pem",
-"VISKey": "wwwivi.key.pem",
-"Adapters":[{
+	"VISServerUrl": "localhost:443",
+	"CACert": "/etc/ssl/certs/rootCA.crt",
+	"VISCert": "wwwivi.crt.pem",
+	"VISKey": "wwwivi.key.pem",
+	"Adapters":[{
 		"Plugin": "test1",
 		"Disabled": true
-	}, {
+		}, {
 		"Plugin": "test2"
-	}, {
+		}, {
 		"Plugin": "test3"
 	}],
-"PermissionServerURL": "aosiam:8090"
+	"PermissionServerURL": "aosiam:8090"
 }`
 
 	if err := ioutil.WriteFile(path.Join("tmp", "visconfig.json"), []byte(configContent), 0o600); err != nil {
@@ -105,8 +105,8 @@ func TestGetCredentials(t *testing.T) {
 		t.Fatalf("Error opening config file: %s", err)
 	}
 
-	if config.ServerURL != "localhost:443" {
-		t.Errorf("Wrong ServerURL value: %s", config.ServerURL)
+	if config.VISServerURL != "localhost:443" {
+		t.Errorf("Wrong ServerURL value: %s", config.VISServerURL)
 	}
 
 	if config.VISCert != "wwwivi.crt.pem" {
@@ -150,6 +150,6 @@ func TestPermissionServerURL(t *testing.T) {
 	}
 
 	if config.PermissionServerURL != "aosiam:8090" {
-		t.Errorf("Wrong PermissionServerURL value: %s", config.ServerURL)
+		t.Errorf("Wrong PermissionServerURL value: %s", config.PermissionServerURL)
 	}
 }

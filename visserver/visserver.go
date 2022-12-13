@@ -93,7 +93,8 @@ func New(config *config.Config, permissionProvider PermissionProvider) (server *
 		return nil, aoserrors.Wrap(err)
 	}
 
-	if server.wsServer, err = wsserver.New("VIS", config.ServerURL, config.VISCert, config.VISKey, server); err != nil {
+	if server.wsServer, err = wsserver.New(
+		"VIS", config.VISServerURL, config.VISCert, config.VISKey, server); err != nil {
 		return nil, aoserrors.Wrap(err)
 	}
 
