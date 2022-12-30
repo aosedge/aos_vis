@@ -95,6 +95,9 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	localAdapter.upgrader = websocket.Upgrader{
 		ReadBufferSize:  kbSize,
 		WriteBufferSize: kbSize,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
 	}
 
 	serveMux := http.NewServeMux()
