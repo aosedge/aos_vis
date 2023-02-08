@@ -26,7 +26,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/aoscloud/aos_common/aoserrors"
-	pb "github.com/aoscloud/aos_common/api/iamanager/v2"
+	pb "github.com/aoscloud/aos_common/api/iamanager/v4"
 	"github.com/aoscloud/aos_common/utils/cryptutils"
 
 	"github.com/aoscloud/aos_vis/config"
@@ -42,7 +42,7 @@ type PermissionProvider struct {
 	rootCert      string
 	insecure      bool
 	cryptoContext *cryptutils.CryptoContext
-	iamClient     pb.IAMPublicServiceClient
+	iamClient     pb.IAMPublicPermissionsServiceClient
 	connection    *grpc.ClientConn
 }
 
@@ -127,7 +127,7 @@ func (provider *PermissionProvider) connect() (err error) {
 		return aoserrors.Wrap(err)
 	}
 
-	provider.iamClient = pb.NewIAMPublicServiceClient(provider.connection)
+	provider.iamClient = pb.NewIAMPublicPermissionsServiceClient(provider.connection)
 
 	return nil
 }

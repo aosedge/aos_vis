@@ -88,7 +88,7 @@ func New(name, url, cert, key string, handler ClientHandler) (server *Server, er
 	serveMux := http.NewServeMux()
 	serveMux.HandleFunc("/", server.handleConnection)
 
-	server.httpServer = &http.Server{Addr: url, Handler: serveMux}
+	server.httpServer = &http.Server{Addr: url, Handler: serveMux, ReadHeaderTimeout: time.Second}
 
 	go func(crt, key string) {
 		log.WithFields(log.Fields{"address": url, "crt": crt, "key": key}).Debug("Listen for clients")

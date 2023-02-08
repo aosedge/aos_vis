@@ -28,7 +28,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/aoscloud/aos_common/aoserrors"
-	pb "github.com/aoscloud/aos_common/api/iamanager/v2"
+	pb "github.com/aoscloud/aos_common/api/iamanager/v4"
 
 	"github.com/aoscloud/aos_vis/config"
 	"github.com/aoscloud/aos_vis/permissionprovider"
@@ -41,7 +41,7 @@ import (
 type testServer struct {
 	grpcServer  *grpc.Server
 	permissions map[string]map[string]string
-	pb.UnimplementedIAMPublicServiceServer
+	pb.UnimplementedIAMPublicPermissionsServiceServer
 }
 
 /*******************************************************************************
@@ -116,7 +116,7 @@ func newTestServer(url string) (server *testServer, err error) {
 
 	server.grpcServer = grpc.NewServer()
 
-	pb.RegisterIAMPublicServiceServer(server.grpcServer, server)
+	pb.RegisterIAMPublicPermissionsServiceServer(server.grpcServer, server)
 
 	go func() {
 		if err := server.grpcServer.Serve(listener); err != nil {
