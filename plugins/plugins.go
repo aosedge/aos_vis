@@ -19,10 +19,10 @@ package plugins
 
 import (
 	// include all supported plugins.
-	_ "github.com/aoscloud/aos_vis/plugins/boardmodeladapter"
 	_ "github.com/aoscloud/aos_vis/plugins/renesassimulatoradapter"
 	_ "github.com/aoscloud/aos_vis/plugins/storageadapter"
 	_ "github.com/aoscloud/aos_vis/plugins/subjectsadapter"
 	_ "github.com/aoscloud/aos_vis/plugins/telemetryemulatoradapter"
+	_ "github.com/aoscloud/aos_vis/plugins/unitmodeladapter"
 	_ "github.com/aoscloud/aos_vis/plugins/vinadapter"
 )

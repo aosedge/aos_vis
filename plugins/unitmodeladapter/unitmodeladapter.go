@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package boardmodeladapter
+package unitmodeladapter
 
 import (
 	"encoding/json"
@@ -31,15 +31,15 @@ import (
  * Consts
  ******************************************************************************/
 
-const defaultBoardModel = "board;1.0"
+const defaultUnitModel = "unit;1.0"
 
 /*******************************************************************************
  * Types
  ******************************************************************************/
 
-type boardModelAdapter struct {
-	boardModel string
-	config     adapterConfig
+type unitModelAdapter struct {
+	unitModel string
+	config    adapterConfig
 }
 
 type adapterConfig struct {
@@ -53,9 +53,9 @@ type adapterConfig struct {
 
 // New creates adapter instance.
 func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err error) {
-	log.Info("Create BoardModel adapter")
+	log.Info("Create unit model adapter")
 
-	localAdapter := new(boardModelAdapter)
+	localAdapter := new(unitModelAdapter)
 
 	if configJSON == nil {
 		return nil, aoserrors.New("config should be set")
@@ -65,52 +65,52 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 		return nil, aoserrors.Wrap(err)
 	}
 
-	boardModel, err := ioutil.ReadFile(localAdapter.config.FilePath)
+	unitModel, err := ioutil.ReadFile(localAdapter.config.FilePath)
 	if err != nil {
-		log.Warnf("Can't read board model: %s. Use default one: %s", err, defaultBoardModel)
+		log.Warnf("Can't read unit model: %s. Use default one: %s", err, defaultUnitModel)
 
 		if err = ioutil.WriteFile(localAdapter.config.FilePath,
-			[]byte(defaultBoardModel), 0o600); err != nil {
+			[]byte(defaultUnitModel), 0o600); err != nil {
 			return nil, aoserrors.Wrap(err)
 		}
 
-		boardModel = []byte(defaultBoardModel)
+		unitModel = []byte(defaultUnitModel)
 	}
 
-	localAdapter.boardModel = string(boardModel)
+	localAdapter.unitModel = string(unitModel)
 
-	log.WithField("Board model", localAdapter.boardModel).Debug("BoardModel adapter")
+	log.WithField("Unit model", localAdapter.unitModel).Debug("UnitModel adapter")
 
 	return localAdapter, nil
 }
 
 // Close closes adapter.
-func (adapter *boardModelAdapter) Close() {
-	log.Info("Close BoardModel adapter")
+func (adapter *unitModelAdapter) Close() {
+	log.Info("Close UnitModel adapter")
 }
 
 // GetName returns adapter name.
-func (adapter *boardModelAdapter) GetName() (name string) {
-	return "boardmodeladapter"
+func (adapter *unitModelAdapter) GetName() (name string) {
+	return "unitmodeladapter"
 }
 
-// GetPathList returns list of all pathes for this adapter.
-func (adapter *boardModelAdapter) GetPathList() (pathList []string, err error) {
+// GetPathList returns list of all paths for this adapter.
+func (adapter *unitModelAdapter) GetPathList() (pathList []string, err error) {
 	return []string{adapter.config.VISPath}, nil
 }
 
 // IsPathPublic returns true if requested data accessible without authorization.
-func (adapter *boardModelAdapter) IsPathPublic(path string) (result bool, err error) {
+func (adapter *unitModelAdapter) IsPathPublic(path string) (result bool, err error) {
 	return true, nil
 }
 
 // GetData returns data by path.
-func (adapter *boardModelAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
+func (adapter *unitModelAdapter) GetData(pathList []string) (data map[string]interface{}, err error) {
 	data = make(map[string]interface{})
 
 	for _, path := range pathList {
 		if path == adapter.config.VISPath {
-			data[path] = adapter.boardModel
+			data[path] = adapter.unitModel
 		} else {
 			return nil, aoserrors.Errorf("path %s doesn't exits", path)
 		}
@@ -119,8 +119,8 @@ func (adapter *boardModelAdapter) GetData(pathList []string) (data map[string]in
 	return data, nil
 }
 
-// SetData sets data by pathes.
-func (adapter *boardModelAdapter) SetData(data map[string]interface{}) (err error) {
+// SetData sets data by paths.
+func (adapter *unitModelAdapter) SetData(data map[string]interface{}) (err error) {
 	if len(data) == 0 {
 		return nil
 	}
@@ -135,21 +135,21 @@ func (adapter *boardModelAdapter) SetData(data map[string]interface{}) (err erro
 }
 
 // GetSubscribeChannel returns channel on which data changes will be sent.
-func (adapter *boardModelAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
+func (adapter *unitModelAdapter) GetSubscribeChannel() (channel <-chan map[string]interface{}) {
 	return nil
 }
 
 // Subscribe subscribes for data changes.
-func (adapter *boardModelAdapter) Subscribe(pathList []string) (err error) {
+func (adapter *unitModelAdapter) Subscribe(pathList []string) (err error) {
 	return nil
 }
 
 // Unsubscribe unsubscribes from data changes.
-func (adapter *boardModelAdapter) Unsubscribe(pathList []string) (err error) {
+func (adapter *unitModelAdapter) Unsubscribe(pathList []string) (err error) {
 	return nil
 }
 
 // UnsubscribeAll unsubscribes from all data changes.
-func (adapter *boardModelAdapter) UnsubscribeAll() (err error) {
+func (adapter *unitModelAdapter) UnsubscribeAll() (err error) {
 	return nil
 }
