@@ -19,7 +19,7 @@ package telemetryemulatoradapter_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"testing"
@@ -137,7 +137,7 @@ func TestSubscribeUnsubscribe(t *testing.T) {
  ******************************************************************************/
 
 func statsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
+	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -153,12 +153,12 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func attributesHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
+	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	dataJSON, err := ioutil.ReadAll(r.Body)
+	dataJSON, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Error(err)
 
@@ -201,6 +201,7 @@ func startHTTPServer() {
 	http.HandleFunc("/attributes/", attributesHandler)
 
 	go func() {
+		//nolint:gosec
 		if err := http.ListenAndServe("localhost:8801", nil); err != nil {
 			log.Errorf("Can't serve http server: %s", err)
 		}

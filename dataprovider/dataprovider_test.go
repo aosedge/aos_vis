@@ -105,7 +105,7 @@ func TestMain(m *testing.M) {
 		}
 
 		var sensors struct {
-			Data map[string]*dataprovider.BaseData
+			Data map[string]*dataprovider.BaseData `json:"data"`
 		}
 
 		decoder := json.NewDecoder(bytes.NewReader(configJSON))
@@ -133,7 +133,7 @@ func TestMain(m *testing.M) {
  * Tests
  ******************************************************************************/
 
-func TestGetData(t *testing.T) { // nolint:wsl
+func TestGetData(t *testing.T) { //nolint:wsl
 	/*
 		client -> {
 			"action": "get",

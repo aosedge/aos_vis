@@ -19,7 +19,6 @@ package unitmodeladapter_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -62,7 +61,7 @@ func init() {
 func TestMain(m *testing.M) {
 	var err error
 
-	tmpDir, err = ioutil.TempDir("", "vis_")
+	tmpDir, err = os.MkdirTemp("", "vis_")
 	if err != nil {
 		log.Fatalf("Error creating tmp dir: %s", err)
 	}
@@ -96,7 +95,7 @@ func TestGetUnitModel(t *testing.T) {
 	unitModelFile := path.Join(tmpDir, "unitmodel.txt")
 	originUnitModel := "TEST_UNIT_MODEL"
 
-	if err := ioutil.WriteFile(unitModelFile, []byte(originUnitModel), 0o600); err != nil {
+	if err := os.WriteFile(unitModelFile, []byte(originUnitModel), 0o600); err != nil {
 		t.Fatalf("Can't create unit model file: %s", err)
 	}
 

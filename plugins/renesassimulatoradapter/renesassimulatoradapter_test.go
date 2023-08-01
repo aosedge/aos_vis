@@ -34,6 +34,7 @@ import (
  * Types
  ******************************************************************************/
 
+//nolint:musttag
 type messageType struct {
 	Cmd string `json:"cmd"`
 	Arg struct {

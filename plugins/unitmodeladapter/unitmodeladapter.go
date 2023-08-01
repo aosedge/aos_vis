@@ -19,7 +19,7 @@ package unitmodeladapter
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 
@@ -65,11 +65,11 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 		return nil, aoserrors.Wrap(err)
 	}
 
-	unitModel, err := ioutil.ReadFile(localAdapter.config.FilePath)
+	unitModel, err := os.ReadFile(localAdapter.config.FilePath)
 	if err != nil {
 		log.Warnf("Can't read unit model: %s. Use default one: %s", err, defaultUnitModel)
 
-		if err = ioutil.WriteFile(localAdapter.config.FilePath,
+		if err = os.WriteFile(localAdapter.config.FilePath,
 			[]byte(defaultUnitModel), 0o600); err != nil {
 			return nil, aoserrors.Wrap(err)
 		}

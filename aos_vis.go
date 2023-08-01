@@ -20,7 +20,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -49,7 +49,7 @@ type journalHook struct {
  ******************************************************************************/
 
 // GitSummary provided by govvv at compile-time.
-var GitSummary string // nolint
+var GitSummary string //nolint:gochecknoglobals
 
 /*******************************************************************************
  * Init
@@ -125,14 +125,14 @@ func main() {
 
 	// Show versions
 	if *showVersion {
-		fmt.Printf("Version: %s/n", GitSummary) // nolint
+		fmt.Printf("Version: %s\n", GitSummary) //nolint:forbidigo
 		return
 	}
 
 	// Set log output
 	if *useJournal {
 		log.AddHook(newJournalHook())
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	} else {
 		log.SetOutput(os.Stdout)
 	}
@@ -169,7 +169,7 @@ func main() {
 	}
 
 	// handle SIGTERM
-	c := make(chan os.Signal, 2) // nolint:gomnd
+	c := make(chan os.Signal, 2) //nolint:gomnd
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 	server.Close()

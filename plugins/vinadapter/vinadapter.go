@@ -19,7 +19,6 @@ package vinadapter
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -69,7 +68,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 		return nil, aoserrors.Wrap(err)
 	}
 
-	vin, err := ioutil.ReadFile(localAdapter.config.FilePath)
+	vin, err := os.ReadFile(localAdapter.config.FilePath)
 	if err != nil {
 		vin = generateVIN()
 
@@ -79,7 +78,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 			return nil, aoserrors.Wrap(err)
 		}
 
-		if err = ioutil.WriteFile(localAdapter.config.FilePath, vin, 0o600); err != nil {
+		if err = os.WriteFile(localAdapter.config.FilePath, vin, 0o600); err != nil {
 			return nil, aoserrors.Wrap(err)
 		}
 	}
@@ -170,10 +169,9 @@ func generateVIN() (vin []byte) {
 
 	vin = make([]byte, vinLength)
 
-	rand.Seed(time.Now().UnixNano())
-
 	for i := range vin {
-		vin[i] = vinSymbols[rand.Intn(len(vinSymbols))] // nolint:gosec // test implementation
+		//nolint:gosec // test implementation
+		vin[i] = vinSymbols[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(len(vinSymbols))]
 	}
 
 	return vin
