@@ -19,7 +19,6 @@ package vinadapter_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -62,7 +61,7 @@ func init() {
 func TestMain(m *testing.M) {
 	var err error
 
-	tmpDir, err = ioutil.TempDir("", "vis_")
+	tmpDir, err = os.MkdirTemp("", "vis_")
 	if err != nil {
 		log.Fatalf("Error creating tmp dir: %s", err)
 	}
@@ -118,7 +117,7 @@ func TestGenerateVIN(t *testing.T) {
 		t.Fatal("Wrong VIN data type")
 	}
 
-	generatedVIN, err := ioutil.ReadFile(vinFile)
+	generatedVIN, err := os.ReadFile(vinFile)
 	if err != nil {
 		t.Fatalf("Can't read VIN file: %s", err)
 	}
@@ -132,7 +131,7 @@ func TestExistingVIN(t *testing.T) {
 	vinFile := path.Join(tmpDir, "vin.txt")
 	originVin := "TEST_VIN"
 
-	if err := ioutil.WriteFile(vinFile, []byte(originVin), 0o600); err != nil {
+	if err := os.WriteFile(vinFile, []byte(originVin), 0o600); err != nil {
 		t.Fatalf("Can't create VIN file: %s", err)
 	}
 

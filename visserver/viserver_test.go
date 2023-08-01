@@ -125,7 +125,7 @@ func TestMain(m *testing.M) {
 		}
 
 		var sensors struct {
-			Data map[string]*dataprovider.BaseData
+			Data map[string]*dataprovider.BaseData `json:"data"`
 		}
 
 		decoder := json.NewDecoder(bytes.NewReader(configJSON))

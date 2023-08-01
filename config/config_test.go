@@ -18,7 +18,6 @@
 package config_test
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -50,7 +49,7 @@ func createConfigFile() (err error) {
 "PermissionServerURL": "aosiam:8090"
 }`
 
-	if err := ioutil.WriteFile(path.Join("tmp", "visconfig.json"), []byte(configContent), 0o600); err != nil {
+	if err := os.WriteFile(path.Join("tmp", "visconfig.json"), []byte(configContent), 0o600); err != nil {
 		return aoserrors.Wrap(err)
 	}
 

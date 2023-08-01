@@ -51,7 +51,7 @@ type RenesasSimulatorAdapter struct {
 }
 
 type config struct {
-	ServerURL string
+	ServerURL string            `json:"serverUrl"`
 	SignalMap map[string]string `json:"signals"`
 }
 
