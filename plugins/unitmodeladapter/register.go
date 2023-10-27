@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package boardmodeladapter
+package unitmodeladapter
 
 import (
 	"github.com/aoscloud/aos_vis/dataprovider"
@@ -26,5 +26,5 @@ import (
  ******************************************************************************/
 
 func init() {
-	dataprovider.RegisterPlugin("boardmodeladapter", New)
+	dataprovider.RegisterPlugin("unitmodeladapter", New)
 }

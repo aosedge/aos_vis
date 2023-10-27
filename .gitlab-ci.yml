@@ -1,4 +1,4 @@
-image: golang:1.14
+image: golang:1.20
 
 stages:
   - build
@@ -13,7 +13,6 @@ build:
     - echo "-------   Start Build   -------"
     - /usr/local/go/bin/go build
 
-
 test:
   tags:
     - vis_ci
@@ -22,4 +21,3 @@ test:
     - echo "-------   Run Unit tests   -------"
     - /usr/local/go/bin/go test $(/usr/local/go/bin/go list ./... | grep -v "/vendor") -failfast -v -coverprofile .testCoverage.txt
     - /usr/local/go/bin/go tool cover -func=.testCoverage.txt
-    

@@ -15,25 +15,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package boardmodeladapter_test
+package unitmodeladapter_test
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/aoscloud/aos_vis/plugins/boardmodeladapter"
+	"github.com/aoscloud/aos_vis/plugins/unitmodeladapter"
 )
 
 /*******************************************************************************
  * Consts
  ******************************************************************************/
 
-const boardModelVISPath = "Attribute.Aos.BoardModel"
+const unitModelVISPath = "Attribute.Aos.UnitModel"
 
 /*******************************************************************************
  * Vars
@@ -62,7 +61,7 @@ func init() {
 func TestMain(m *testing.M) {
 	var err error
 
-	tmpDir, err = ioutil.TempDir("", "vis_")
+	tmpDir, err = os.MkdirTemp("", "vis_")
 	if err != nil {
 		log.Fatalf("Error creating tmp dir: %s", err)
 	}
@@ -81,47 +80,47 @@ func TestMain(m *testing.M) {
  ******************************************************************************/
 
 func TestGetName(t *testing.T) {
-	adapter, err := boardmodeladapter.New(generateConfig(boardModelVISPath, path.Join(tmpDir, "boardmodel.txt")))
+	adapter, err := unitmodeladapter.New(generateConfig(unitModelVISPath, path.Join(tmpDir, "unit_model.txt")))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
 	defer adapter.Close()
 
-	if name := adapter.GetName(); name != "boardmodeladapter" {
+	if name := adapter.GetName(); name != "unitmodeladapter" {
 		t.Errorf("Wrong adapter name: %s", name)
 	}
 }
 
-func TestGetBoardModel(t *testing.T) {
-	boardModelFile := path.Join(tmpDir, "boardmodel.txt")
-	originBoardModel := "TEST_BOARD_MODEL"
+func TestGetUnitModel(t *testing.T) {
+	unitModelFile := path.Join(tmpDir, "unitmodel.txt")
+	originUnitModel := "TEST_UNIT_MODEL"
 
-	if err := ioutil.WriteFile(boardModelFile, []byte(originBoardModel), 0o600); err != nil {
-		t.Fatalf("Can't create boardModel file: %s", err)
+	if err := os.WriteFile(unitModelFile, []byte(originUnitModel), 0o600); err != nil {
+		t.Fatalf("Can't create unit model file: %s", err)
 	}
 
-	adapter, err := boardmodeladapter.New(generateConfig(boardModelVISPath, boardModelFile))
+	adapter, err := unitmodeladapter.New(generateConfig(unitModelVISPath, unitModelFile))
 	if err != nil {
 		t.Fatalf("Can't create adapter: %s", err)
 	}
 	defer adapter.Close()
 
-	data, err := adapter.GetData([]string{boardModelVISPath})
+	data, err := adapter.GetData([]string{unitModelVISPath})
 	if err != nil {
 		t.Fatalf("Can't get data: %s", err)
 	}
 
-	if _, ok := data[boardModelVISPath]; !ok {
-		t.Fatal("boardModel not found in data")
+	if _, ok := data[unitModelVISPath]; !ok {
+		t.Fatal("unit model not found in data")
 	}
 
-	boardModel, ok := data[boardModelVISPath].(string)
+	unitModel, ok := data[unitModelVISPath].(string)
 	if !ok {
-		t.Fatal("Wrong boardModel data type")
+		t.Fatal("Wrong unit model data type")
 	}
 
-	if boardModel != originBoardModel {
-		t.Errorf("Wrong boardModel value: %s", boardModel)
+	if unitModel != originUnitModel {
+		t.Errorf("Wrong unit model value: %s", unitModel)
 	}
 }
 

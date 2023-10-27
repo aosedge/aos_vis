@@ -24,17 +24,17 @@ Configuration:
 }
 ```
 
-### boardmodeladapter
+### unitmodeladapter
 
 Provides board model from the file via VIS path.
 Configuration:
 
 ```json
 {
-    "Plugin": "boardmodeladapter",
+    "Plugin": "unitmodeladapter",
     "Params": {
-        "VISPath": "Attribute.Aos.BoardModel",
-        "FilePath": "/etc/aos/board_model"
+        "VISPath": "Attribute.Aos.UnitModel",
+        "FilePath": "/etc/aos/unit_model"
     }
 }
 ```
@@ -46,7 +46,7 @@ Configuration:
 
 ```json
 {
-    "Plugin": "boardmodeladapter",
+    "Plugin": "subjectsadapter",
     "Params": {
         "VISPath": "Attribute.Aos.Subjects",
         "FilePath": "/var/aos/subjects"
@@ -114,9 +114,9 @@ Specify parameters in visconfig.json file:
             }
         },
         {
-            "Plugin": "boardmodeladapter",
+            "Plugin": "unitmodeladapter",
             "Params": {
-                "VISPath": "Attribute.Aos.BoardModel",
+                "VISPath": "Attribute.Aos.UnitModel",
                 "FilePath": "/etc/aos/board_model"
             }
         },

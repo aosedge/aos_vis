@@ -21,7 +21,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"reflect"
@@ -67,7 +66,7 @@ func init() {
 func TestMain(m *testing.M) {
 	var err error
 
-	tmpDir, err = ioutil.TempDir("", "vis_")
+	tmpDir, err = os.MkdirTemp("", "vis_")
 	if err != nil {
 		log.Fatalf("Error creating tmp dir: %s", err)
 	}

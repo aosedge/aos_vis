@@ -54,7 +54,7 @@ func New(configJSON json.RawMessage) (adapter dataprovider.DataAdapter, err erro
 	localAdapter.baseAdapter.Name = "StorageAdapter"
 
 	var sensors struct {
-		Data map[string]*dataprovider.BaseData
+		Data map[string]*dataprovider.BaseData `json:"data"`
 	}
 
 	// Parse config
