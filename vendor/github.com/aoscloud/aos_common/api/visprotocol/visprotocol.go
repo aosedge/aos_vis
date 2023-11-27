@@ -53,7 +53,7 @@ type ErrorInfo struct {
 // Tokens VIS authorize tokens.
 type Tokens struct {
 	Authorization    string `json:"authorization,omitempty"`
-	WWWVehicleDevice string `json:"www-vehicle-device,omitempty"` // nolint:tagliatelle
+	WWWVehicleDevice string `json:"www-vehicle-device,omitempty"` //nolint:tagliatelle
 }
 
 // AuthRequest VIS authorize request.
