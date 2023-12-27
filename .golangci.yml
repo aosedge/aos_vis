@@ -54,7 +54,7 @@ linters-settings:
         ignored-numbers: 0o600,0o755,5,10,16,32,64
 
   gofumpt:
-    lang-version: "1.20"
+    lang-version: "1.21"
 
   nolintlint:
     require-specific: true

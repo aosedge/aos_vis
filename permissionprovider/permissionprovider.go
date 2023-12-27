@@ -92,7 +92,7 @@ func (provider *PermissionProvider) GetVisPermissionByToken(token string) (permi
 		return permissions, aoserrors.Wrap(err)
 	}
 
-	return response.Permissions.Permissions, nil
+	return response.GetPermissions().GetPermissions(), nil
 }
 
 // Close close connection with permission provider grpc server.

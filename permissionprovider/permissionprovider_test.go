@@ -138,11 +138,11 @@ func (server *testServer) GetPermissions(
 ) (rsp *pb.PermissionsResponse, err error) {
 	rsp = &pb.PermissionsResponse{}
 
-	if req.FunctionalServerId != visFunctionalServerID {
-		return rsp, aoserrors.Errorf("incorrect functional server ID: %s", req.FunctionalServerId)
+	if req.GetFunctionalServerId() != visFunctionalServerID {
+		return rsp, aoserrors.Errorf("incorrect functional server ID: %s", req.GetFunctionalServerId())
 	}
 
-	servicePermissions, ok := server.permissions[req.Secret]
+	servicePermissions, ok := server.permissions[req.GetSecret()]
 	if !ok {
 		return rsp, aoserrors.New("secret not found")
 	}
