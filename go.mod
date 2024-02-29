@@ -5,7 +5,7 @@ go 1.21
 replace github.com/ThalesIgnite/crypto11 => github.com/aoscloud/crypto11 v1.0.3-0.20220217163524-ddd0ace39e6f
 
 require (
-	github.com/aoscloud/aos_common v0.0.0-20231227133432-0c97aef1696d
+	github.com/aoscloud/aos_common v0.0.0-20240229163820-8da83091bc41
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf
 	github.com/gorilla/websocket v1.5.1
 	github.com/sirupsen/logrus v1.9.3
