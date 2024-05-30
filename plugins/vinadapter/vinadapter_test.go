@@ -127,6 +127,45 @@ func TestGenerateVIN(t *testing.T) {
 	}
 }
 
+func TestGenerateUniqueVIN(t *testing.T) {
+	var vins []string
+
+	for i := 0; i < 10; i++ {
+		vinFile := path.Join(tmpDir, "vin.txt")
+		if err := os.RemoveAll(vinFile); err != nil {
+			t.Fatalf("Can't remove VIN file: %v", err)
+		}
+
+		adapter, err := vinadapter.New(generateConfig(vinVISPath, vinFile))
+		if err != nil {
+			t.Fatalf("Can't create adapter: %v", err)
+		}
+		defer adapter.Close()
+
+		data, err := adapter.GetData([]string{vinVISPath})
+		if err != nil {
+			t.Fatalf("Can't get data: %v", err)
+		}
+
+		if _, ok := data[vinVISPath]; !ok {
+			t.Fatal("VIN not found in data")
+		}
+
+		vin, ok := data[vinVISPath].(string)
+		if !ok {
+			t.Fatal("Wrong VIN data type")
+		}
+
+		for _, v := range vins {
+			if vin == v {
+				t.Errorf("VIN is not unique: %v", vin)
+			}
+		}
+
+		vins = append(vins, vin)
+	}
+}
+
 func TestExistingVIN(t *testing.T) {
 	vinFile := path.Join(tmpDir, "vin.txt")
 	originVin := "TEST_VIN"
