@@ -18,11 +18,11 @@
 package vinadapter
 
 import (
+	"crypto/rand"
 	"encoding/json"
-	"math/rand"
+	"math/big"
 	"os"
 	"path/filepath"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -170,8 +170,9 @@ func generateVIN() (vin []byte) {
 	vin = make([]byte, vinLength)
 
 	for i := range vin {
-		//nolint:gosec // test implementation
-		vin[i] = vinSymbols[rand.New(rand.NewSource(time.Now().UnixNano())).Intn(len(vinSymbols))]
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(vinSymbols))))
+
+		vin[i] = vinSymbols[n.Int64()]
 	}
 
 	return vin
