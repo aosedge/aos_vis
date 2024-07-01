@@ -27,11 +27,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
-	"github.com/aoscloud/aos_common/aoserrors"
-	pb "github.com/aoscloud/aos_common/api/iamanager/v4"
+	"github.com/aosedge/aos_common/aoserrors"
+	pb "github.com/aosedge/aos_common/api/iamanager/v4"
 
-	"github.com/aoscloud/aos_vis/config"
-	"github.com/aoscloud/aos_vis/permissionprovider"
+	"github.com/aosedge/aos_vis/config"
+	"github.com/aosedge/aos_vis/permissionprovider"
 )
 
 /*******************************************************************************

@@ -26,14 +26,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoscloud/aos_common/aoserrors"
-	"github.com/aoscloud/aos_common/api/visprotocol"
-	"github.com/aoscloud/aos_common/wsclient"
+	"github.com/aosedge/aos_common/aoserrors"
+	"github.com/aosedge/aos_common/api/visprotocol"
+	"github.com/aosedge/aos_common/wsclient"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/aoscloud/aos_vis/config"
-	"github.com/aoscloud/aos_vis/dataprovider"
-	"github.com/aoscloud/aos_vis/visserver"
+	"github.com/aosedge/aos_vis/config"
+	"github.com/aosedge/aos_vis/dataprovider"
+	"github.com/aosedge/aos_vis/visserver"
 )
 
 const (

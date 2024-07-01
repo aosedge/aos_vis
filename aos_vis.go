@@ -25,15 +25,15 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/aoscloud/aos_common/aoserrors"
+	"github.com/aosedge/aos_common/aoserrors"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/coreos/go-systemd/journal"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/aoscloud/aos_vis/config"
-	"github.com/aoscloud/aos_vis/permissionprovider"
-	_ "github.com/aoscloud/aos_vis/plugins"
-	"github.com/aoscloud/aos_vis/visserver"
+	"github.com/aosedge/aos_vis/config"
+	"github.com/aosedge/aos_vis/permissionprovider"
+	_ "github.com/aosedge/aos_vis/plugins"
+	"github.com/aosedge/aos_vis/visserver"
 )
 
 /*******************************************************************************
