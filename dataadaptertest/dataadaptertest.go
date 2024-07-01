@@ -21,8 +21,8 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/aoscloud/aos_common/aoserrors"
-	"github.com/aoscloud/aos_vis/dataprovider"
+	"github.com/aosedge/aos_common/aoserrors"
+	"github.com/aosedge/aos_vis/dataprovider"
 )
 
 /*******************************************************************************
