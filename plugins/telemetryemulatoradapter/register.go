@@ -18,7 +18,7 @@
 package telemetryemulatoradapter
 
 import (
-	"github.com/aoscloud/aos_vis/dataprovider"
+	"github.com/aosedge/aos_vis/dataprovider"
 )
 
 /*******************************************************************************

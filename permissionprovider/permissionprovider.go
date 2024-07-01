@@ -25,11 +25,11 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/aoscloud/aos_common/aoserrors"
-	pb "github.com/aoscloud/aos_common/api/iamanager/v4"
-	"github.com/aoscloud/aos_common/utils/cryptutils"
+	"github.com/aosedge/aos_common/aoserrors"
+	pb "github.com/aosedge/aos_common/api/iamanager/v4"
+	"github.com/aosedge/aos_common/utils/cryptutils"
 
-	"github.com/aoscloud/aos_vis/config"
+	"github.com/aosedge/aos_vis/config"
 )
 
 /*******************************************************************************

@@ -26,8 +26,8 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/aoscloud/aos_vis/dataadaptertest"
-	"github.com/aoscloud/aos_vis/plugins/renesassimulatoradapter"
+	"github.com/aosedge/aos_vis/dataadaptertest"
+	"github.com/aosedge/aos_vis/plugins/renesassimulatoradapter"
 )
 
 /*******************************************************************************

@@ -25,14 +25,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aoscloud/aos_common/aoserrors"
-	"github.com/aoscloud/aos_common/api/visprotocol"
-	"github.com/aoscloud/aos_common/wsserver"
+	"github.com/aosedge/aos_common/aoserrors"
+	"github.com/aosedge/aos_common/api/visprotocol"
+	"github.com/aosedge/aos_common/wsserver"
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/aoscloud/aos_vis/config"
-	"github.com/aoscloud/aos_vis/dataprovider"
+	"github.com/aosedge/aos_vis/config"
+	"github.com/aosedge/aos_vis/dataprovider"
 )
 
 /*******************************************************************************

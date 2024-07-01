@@ -27,9 +27,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aoscloud/aos_common/aoserrors"
-	"github.com/aoscloud/aos_common/api/visprotocol"
-	subjectsadapter "github.com/aoscloud/aos_vis/plugins/subjectsadapter"
+	"github.com/aosedge/aos_common/aoserrors"
+	"github.com/aosedge/aos_common/api/visprotocol"
+	subjectsadapter "github.com/aosedge/aos_vis/plugins/subjectsadapter"
 	log "github.com/sirupsen/logrus"
 )
 

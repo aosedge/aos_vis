@@ -25,7 +25,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/aoscloud/aos_vis/plugins/unitmodeladapter"
+	"github.com/aosedge/aos_vis/plugins/unitmodeladapter"
 )
 
 /*******************************************************************************
