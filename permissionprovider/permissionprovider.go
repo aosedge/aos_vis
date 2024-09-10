@@ -26,7 +26,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/aosedge/aos_common/aoserrors"
-	pb "github.com/aosedge/aos_common/api/iamanager/v4"
+	pb "github.com/aosedge/aos_common/api/iamanager"
 	"github.com/aosedge/aos_common/utils/cryptutils"
 
 	"github.com/aosedge/aos_vis/config"
