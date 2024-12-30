@@ -107,9 +107,6 @@ func (provider *PermissionProvider) Close() {
  ******************************************************************************/
 
 func (provider *PermissionProvider) connect() (err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), iamRequestTimeout)
-	defer cancel()
-
 	var secureOpt grpc.DialOption
 
 	if provider.insecure {
@@ -123,7 +120,7 @@ func (provider *PermissionProvider) connect() (err error) {
 		secureOpt = grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig))
 	}
 
-	if provider.connection, err = grpc.DialContext(ctx, provider.serverURL, secureOpt, grpc.WithBlock()); err != nil {
+	if provider.connection, err = grpc.NewClient(provider.serverURL, secureOpt); err != nil {
 		return aoserrors.Wrap(err)
 	}
 
